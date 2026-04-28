@@ -2,7 +2,7 @@
 
 backend:
   name: github
-  repo: YOUR_GITHUB_USERNAME/mendaki-volunteer-hub
+  repo: aqideh/mendakivolapp
   branch: main
   # Optional: add base_url for a team OAuth flow on GitHub Pages.
   # base_url: https://YOUR-OAUTH-WORKER.example.workers.dev
