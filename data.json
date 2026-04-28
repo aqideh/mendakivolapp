@@ -1,0 +1,177 @@
+{
+  "site": {
+    "title": "MENDAKI Volunteer Hub",
+    "shortTitle": "MENDAKI",
+    "tagline": "Volunteer Hub",
+    "heroTitle": "Make a Difference with MENDAKI",
+    "heroSubtitle": "Join volunteers uplifting the Malay/Muslim community across Singapore.",
+    "primaryButtonLabel": "Browse Opportunities",
+    "registrationUrl": "https://linktr.ee/volunteermendaki",
+    "stats": [
+      {
+        "label": "Volunteers",
+        "value": "3,200+"
+      },
+      {
+        "label": "Programmes",
+        "value": "120+"
+      },
+      {
+        "label": "Beneficiaries",
+        "value": "50K+"
+      }
+    ],
+    "contact": {
+      "email": "volunteers@mendaki.org.sg",
+      "phone": "6245 5555",
+      "address": "51 Kee Sun Ave, S 457056",
+      "hours": "Mon - Fri, 9am - 6pm"
+    }
+  },
+  "about": {
+    "introTitle": "About MENDAKI",
+    "intro": "MENDAKI is Singapore's self-help group for the Malay/Muslim community since 1982. We advance education and community upliftment through four pillars: Confident Learners, Stronger Families, Future-Ready Workforce, and Thriving Communities.",
+    "whyVolunteer": "Become part of a meaningful community. No prior experience needed - training and orientation are provided for all roles.",
+    "pillars": [
+      {
+        "icon": "📘",
+        "name": "Confident Learners"
+      },
+      {
+        "icon": "🏠",
+        "name": "Stronger Families"
+      },
+      {
+        "icon": "🚀",
+        "name": "Future-Ready Workforce"
+      },
+      {
+        "icon": "🤝",
+        "name": "Thriving Communities"
+      }
+    ],
+    "faq": [
+      {
+        "question": "Do I need to be Malay/Muslim to volunteer?",
+        "answer": "No - we welcome volunteers of all backgrounds who share our commitment to community upliftment."
+      },
+      {
+        "question": "Is there a minimum age?",
+        "answer": "Most roles are open to those 18 and above. Some may accept 15-17 year olds with parental consent."
+      },
+      {
+        "question": "Do I need teaching experience?",
+        "answer": "No. Training and orientation are provided before you begin any role. All you need is enthusiasm and commitment."
+      },
+      {
+        "question": "How much time do I need?",
+        "answer": "Ad-hoc events need just a few hours. Long-term roles ask for 2-4 hours per session, typically monthly or bi-weekly."
+      },
+      {
+        "question": "Will I receive a certificate?",
+        "answer": "Yes. Volunteers who complete their commitment receive a certificate of appreciation and are eligible for our annual Volunteer Recognition Awards."
+      }
+    ]
+  },
+  "opportunities": [
+    {
+      "id": 0,
+      "type": "long-term",
+      "title": "RSL Maths Explorer",
+      "description": "Support preschool-aged children and parents in fun, hands-on maths activities that build early numeracy skills. You will work alongside MENDAKI educators to guide families through structured play-based learning sessions.",
+      "requirements": "No prior teaching experience needed. Training provided. Comfortable working with young children aged 4-6.",
+      "time": "Weekends, ~2 hrs/session",
+      "location": "Various Community Clubs",
+      "commitment": "Monthly, ongoing",
+      "status": "Open"
+    },
+    {
+      "id": 1,
+      "type": "long-term",
+      "title": "#amPowered Mentor",
+      "description": "Mentor a Malay/Muslim youth aged 15-18 to help them discover their strengths, build resilience, and navigate education and career pathways. Mentors meet their mentees at least twice a month.",
+      "requirements": "18 years and above. Willingness to commit to a 6-month mentoring relationship. Passion for youth development.",
+      "time": "Monthly, 6-month commitment",
+      "location": "Schools / Online",
+      "commitment": "6-month commitment",
+      "status": "Open"
+    },
+    {
+      "id": 2,
+      "type": "long-term",
+      "title": "Befriender",
+      "description": "Provide companionship to MENDAKI beneficiaries - seniors, single parents, or individuals facing hardship - through regular visits or calls. Your presence can make a profound difference to someone facing isolation.",
+      "requirements": "Empathetic, patient, and a good listener. No specific qualifications required.",
+      "time": "Flexible, monthly",
+      "location": "Island-wide",
+      "commitment": "Minimum 3 months",
+      "status": "Open"
+    },
+    {
+      "id": 3,
+      "type": "ad-hoc",
+      "title": "MAP Packing Day",
+      "description": "Help pack resource materials, stationery, and goodie bags for students enrolled in the MENDAKI Achievement Programme. A fun, social volunteering session that makes a direct impact on students across Singapore.",
+      "requirements": "Able-bodied and willing to work in a packing environment. No experience needed.",
+      "time": "One-time, ~4 hrs",
+      "location": "Wisma MENDAKI",
+      "commitment": "One-time",
+      "status": "Open"
+    },
+    {
+      "id": 4,
+      "type": "ad-hoc",
+      "title": "RSL Child Minder",
+      "description": "Provide attentive child-minding support during RSL parent workshops, so that parents can participate fully without worry. You will supervise and engage children with structured activities during the session.",
+      "requirements": "Patient and comfortable with young children. Basic first aid knowledge a plus but not required.",
+      "time": "Per workshop, ~3 hrs",
+      "location": "Various Community Clubs",
+      "commitment": "One-time per session",
+      "status": "Open"
+    },
+    {
+      "id": 5,
+      "type": "ad-hoc",
+      "title": "Raikan Ilmu Usher",
+      "description": "Be part of MENDAKI's flagship Raikan Ilmu awards ceremony - an inspiring celebration of student achievement. As an usher, you will guide guests, manage registration, and help create a memorable event experience.",
+      "requirements": "Presentable and well-spoken. Comfortable in a formal event setting. Smart casual or formal attire required.",
+      "time": "One-time, full day",
+      "location": "Suntec Convention Centre",
+      "commitment": "One-time",
+      "status": "4 left"
+    }
+  ],
+  "events": [
+    {
+      "id": "map-packing",
+      "date": "2026-04-12",
+      "name": "MAP Packing Day",
+      "detail": "Wisma MENDAKI - 9am-1pm",
+      "badge": "Open",
+      "opportunityId": 3
+    },
+    {
+      "id": "rsl-session",
+      "date": "2026-04-19",
+      "name": "RSL Maths Explorer - New Session",
+      "detail": "Various primary schools - Sat 9am",
+      "badge": "Open",
+      "opportunityId": 0
+    },
+    {
+      "id": "orientation",
+      "date": "2026-04-26",
+      "name": "Volunteer Orientation - Spring 2026",
+      "detail": "MENDAKI Hub, Braddell - 9am-12pm",
+      "badge": "Open"
+    },
+    {
+      "id": "raikan",
+      "date": "2026-05-05",
+      "name": "Raikan Ilmu Usher - May",
+      "detail": "Suntec Convention Centre - Full day",
+      "badge": "4 left",
+      "opportunityId": 5
+    }
+  ]
+}

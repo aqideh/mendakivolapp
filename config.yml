@@ -1,0 +1,158 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+
+backend:
+  name: github
+  repo: aqideh/mendaki-volunteer-hub
+  branch: main
+  # Required for GitHub Pages OAuth — deploy this worker and paste its URL below:
+  # base_url: https://YOUR-OAUTH-WORKER.example.workers.dev
+
+media_folder: assets/uploads
+public_folder: assets/uploads
+
+collections:
+  - name: news_feed
+    label: News Feed
+    files:
+      - name: news
+        label: News Feed
+        file: content/news.json
+        format: json
+        fields:
+          - label: News items
+            name: news
+            widget: list
+            label_singular: News item
+            summary: "{{fields.date}} - {{fields.title}}"
+            minimize_collapsed: true
+            fields:
+              - label: ID
+                name: id
+                widget: uuid
+                hint: Auto-generated. Leave unchanged.
+              - label: Category
+                name: category
+                widget: select
+                options:
+                  - Announcement
+                  - Programme
+                  - Volunteer
+              - label: Emoji
+                name: emoji
+                widget: string
+                required: false
+                hint: Optional icon shown on the public news listing.
+              - label: Title
+                name: title
+                widget: string
+              - label: Publication date
+                name: date
+                widget: datetime
+                date_format: YYYY-MM-DD
+                time_format: false
+                format: YYYY-MM-DD
+              - label: Read time
+                name: readTime
+                widget: string
+                required: false
+                hint: "Example: 3 min read"
+              - label: Featured on home
+                name: featured
+                widget: boolean
+                default: false
+                required: false
+                hint: Featured stories are prioritised on the home page.
+              - label: Body paragraphs
+                name: body
+                widget: list
+                label_singular: Paragraph
+                field:
+                  label: Paragraph
+                  name: paragraph
+                  widget: text
+
+  - name: volunteer_hub
+    label: Site Content
+    files:
+      - name: data
+        label: Website Content
+        file: content/data.json
+        format: json
+        fields:
+          - label: Site settings
+            name: site
+            widget: object
+            fields:
+              - { label: Site title, name: title, widget: string }
+              - { label: Short title, name: shortTitle, widget: string }
+              - { label: Tagline, name: tagline, widget: string }
+              - { label: Hero title, name: heroTitle, widget: string }
+              - { label: Hero subtitle, name: heroSubtitle, widget: text }
+              - { label: Primary button label, name: primaryButtonLabel, widget: string }
+              - { label: Registration URL, name: registrationUrl, widget: string }
+              - label: Statistics
+                name: stats
+                widget: list
+                summary: "{{fields.value}} {{fields.label}}"
+                fields:
+                  - { label: Value, name: value, widget: string }
+                  - { label: Label, name: label, widget: string }
+              - label: Contact
+                name: contact
+                widget: object
+                fields:
+                  - { label: Email, name: email, widget: string }
+                  - { label: Phone, name: phone, widget: string }
+                  - { label: Address, name: address, widget: string }
+                  - { label: Hours, name: hours, widget: string }
+          - label: About page
+            name: about
+            widget: object
+            fields:
+              - { label: Intro title, name: introTitle, widget: string }
+              - { label: Intro, name: intro, widget: text }
+              - { label: Why volunteer, name: whyVolunteer, widget: text }
+              - label: Pillars
+                name: pillars
+                widget: list
+                summary: "{{fields.name}}"
+                fields:
+                  - { label: Icon, name: icon, widget: string }
+                  - { label: Name, name: name, widget: string }
+              - label: FAQ
+                name: faq
+                widget: list
+                summary: "{{fields.question}}"
+                fields:
+                  - { label: Question, name: question, widget: string }
+                  - { label: Answer, name: answer, widget: text }
+          - label: Opportunities
+            name: opportunities
+            widget: list
+            summary: "{{fields.title}}"
+            fields:
+              - { label: ID, name: id, widget: number, value_type: int, min: 0 }
+              - label: Type
+                name: type
+                widget: select
+                options:
+                  - { label: Long-term, value: long-term }
+                  - { label: Ad-hoc, value: ad-hoc }
+              - { label: Title, name: title, widget: string }
+              - { label: Description, name: description, widget: text }
+              - { label: Requirements, name: requirements, widget: text }
+              - { label: Time, name: time, widget: string }
+              - { label: Location, name: location, widget: string }
+              - { label: Commitment, name: commitment, widget: string }
+              - { label: Status, name: status, widget: string, required: false }
+          - label: Events
+            name: events
+            widget: list
+            summary: "{{fields.date}} - {{fields.name}}"
+            fields:
+              - { label: ID, name: id, widget: string }
+              - { label: Date, name: date, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD }
+              - { label: Name, name: name, widget: string }
+              - { label: Detail, name: detail, widget: string }
+              - { label: Badge, name: badge, widget: string }
+              - { label: Related opportunity ID, name: opportunityId, widget: number, value_type: int, min: 0, required: false }
