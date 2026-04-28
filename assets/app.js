@@ -344,7 +344,8 @@ function findOpportunity(id) {
 }
 
 function findNews(id) {
-  return state.data.news.find(item => Number(item.id) === Number(id));
+  const targetId = String(id);
+  return state.data.news.find(item => String(item.id) === targetId);
 }
 
 function modalHeader(title, badgeText, badgeStyleClass) {
