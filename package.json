@@ -1,0 +1,9 @@
+{
+  "name": "mendaki-volunteer-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static MENDAKI Volunteer Hub web app with a Git-based CMS for GitHub Pages.",
+  "scripts": {
+    "serve": "python3 -m http.server 8080"
+  }
+}
