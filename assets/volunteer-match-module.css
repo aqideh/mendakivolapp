@@ -1,0 +1,43 @@
+.volunteer-match-module {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.volunteer-match-copy h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.4vw, 2.15rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.volunteer-match-copy p:not(.eyebrow) {
+  margin: 0.55rem 0 0;
+  max-width: 660px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.volunteer-match-button {
+  white-space: nowrap;
+  box-shadow: 0 12px 24px rgba(201, 168, 0, 0.2);
+}
+
+@media (max-width: 760px) {
+  .volunteer-match-module {
+    grid-template-columns: 1fr;
+    border-radius: 22px;
+    padding: 1rem;
+  }
+
+  .volunteer-match-button {
+    width: 100%;
+  }
+}
