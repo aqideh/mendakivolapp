@@ -3,7 +3,7 @@
 backend:
   name: github
   repo: aqideh/mendakivolapp
-  branch: main
+  branch: swipe
   # Optional: add base_url for a team OAuth flow on GitHub Pages.
   # base_url: https://YOUR-OAUTH-WORKER.example.workers.dev
 
@@ -139,6 +139,12 @@ collections:
                   - { label: Long-term, value: long-term }
                   - { label: Ad-hoc, value: ad-hoc }
               - { label: Title, name: title, widget: string }
+              - label: Photo
+                name: photo
+                widget: image
+                required: false
+                hint: Upload or choose the image shown on the full-page swipe card and detail view.
+              - { label: Photo alt text, name: photoAlt, widget: string, required: false, hint: Describe the photo for screen readers. }
               - { label: Description, name: description, widget: text }
               - { label: Requirements, name: requirements, widget: text }
               - { label: Time, name: time, widget: string }
