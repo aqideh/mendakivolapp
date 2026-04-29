@@ -146,38 +146,5 @@
       "commitment": "One-time",
       "status": "4 left"
     }
-  ],
-  "events": [
-    {
-      "id": "map-packing",
-      "date": "2026-04-12",
-      "name": "MAP Packing Day",
-      "detail": "Wisma MENDAKI - 9am-1pm",
-      "badge": "Open",
-      "opportunityId": 3
-    },
-    {
-      "id": "rsl-session",
-      "date": "2026-04-19",
-      "name": "RSL Maths Explorer - New Session",
-      "detail": "Various primary schools - Sat 9am",
-      "badge": "Open",
-      "opportunityId": 0
-    },
-    {
-      "id": "orientation",
-      "date": "2026-04-26",
-      "name": "Volunteer Orientation - Spring 2026",
-      "detail": "MENDAKI Hub, Braddell - 9am-12pm",
-      "badge": "Open"
-    },
-    {
-      "id": "raikan",
-      "date": "2026-05-05",
-      "name": "Raikan Ilmu Usher - May",
-      "detail": "Suntec Convention Centre - Full day",
-      "badge": "4 left",
-      "opportunityId": 5
-    }
   ]
 }
