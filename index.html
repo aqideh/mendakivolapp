@@ -10,7 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/opportunities-swipe.css">
   <script src="assets/app.js" defer></script>
+  <script src="assets/opportunities-swipe.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -19,12 +21,8 @@
     <div class="container header-inner">
       <button class="brand" type="button" data-page-target="home" aria-label="Go to home">
         <span class="brand-mark" aria-hidden="true">M</span>
-        <span>
-          <span class="brand-title" data-site-short-title>MENDAKI</span>
-          <span class="brand-subtitle" data-site-tagline>Volunteer Hub</span>
-        </span>
+        <span><span class="brand-title" data-site-short-title>MENDAKI</span><span class="brand-subtitle" data-site-tagline>Volunteer Hub</span></span>
       </button>
-
       <nav class="desktop-nav" aria-label="Primary">
         <button class="nav-link active" type="button" data-page-target="home">Home</button>
         <button class="nav-link" type="button" data-page-target="opportunities">Opportunities</button>
@@ -32,6 +30,7 @@
         <button class="nav-link" type="button" data-page-target="events">Events</button>
         <button class="nav-link" type="button" data-page-target="about">About</button>
       </nav>
+      <a class="admin-link" href="admin/" target="_blank" rel="noopener noreferrer">CMS</a>
     </div>
   </header>
 
@@ -39,8 +38,7 @@
     <section class="page active" id="page-home" aria-labelledby="home-title">
       <div class="container hero-grid">
         <div class="hero-card">
-          <div class="hero-orb hero-orb-one"></div>
-          <div class="hero-orb hero-orb-two"></div>
+          <div class="hero-orb hero-orb-one"></div><div class="hero-orb hero-orb-two"></div>
           <p class="eyebrow">Community volunteering</p>
           <h1 id="home-title" data-hero-title>Make a Difference with MENDAKI</h1>
           <p class="hero-copy" data-hero-subtitle>Join volunteers uplifting the Malay/Muslim community across Singapore.</p>
@@ -50,150 +48,58 @@
           </div>
           <div class="stat-row" id="hero-stats" aria-label="Volunteer hub statistics"></div>
         </div>
-
         <aside class="featured-panel" aria-labelledby="featured-panel-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow dark">Featured</p>
-              <h2 id="featured-panel-title">Open volunteer roles</h2>
-            </div>
-            <button class="text-button" type="button" data-page-target="opportunities">View all</button>
-          </div>
+          <div class="panel-head"><div><p class="eyebrow dark">Featured</p><h2 id="featured-panel-title">Open volunteer roles</h2></div><button class="text-button" type="button" data-page-target="opportunities">View all</button></div>
           <div class="mini-opps" id="home-opportunities"></div>
         </aside>
       </div>
-
       <div class="container section-grid">
-        <section class="content-section" aria-labelledby="latest-news-title">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow dark">Updates</p>
-              <h2 id="latest-news-title">Latest News</h2>
-            </div>
-            <button class="text-button" type="button" data-page-target="news">See all</button>
-          </div>
-          <div class="news-strip" id="home-news"></div>
-        </section>
-
-        <section class="content-section" aria-labelledby="upcoming-events-title">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow dark">Calendar</p>
-              <h2 id="upcoming-events-title">Upcoming Events</h2>
-            </div>
-            <button class="text-button" type="button" data-page-target="events">View all</button>
-          </div>
-          <div class="event-list" id="home-events"></div>
-        </section>
+        <section class="content-section" aria-labelledby="latest-news-title"><div class="section-header"><div><p class="eyebrow dark">Updates</p><h2 id="latest-news-title">Latest News</h2></div><button class="text-button" type="button" data-page-target="news">See all</button></div><div class="news-strip" id="home-news"></div></section>
+        <section class="content-section" aria-labelledby="upcoming-events-title"><div class="section-header"><div><p class="eyebrow dark">Calendar</p><h2 id="upcoming-events-title">Upcoming Events</h2></div><button class="text-button" type="button" data-page-target="events">View all</button></div><div class="event-list" id="home-events"></div></section>
       </div>
     </section>
 
     <section class="page" id="page-opportunities" aria-labelledby="opportunities-title">
       <div class="container page-topper">
         <p class="eyebrow dark">Volunteer roles</p>
-        <h1 id="opportunities-title">Find your role</h1>
-        <p>Search long-term and ad-hoc opportunities, then register interest through the MENDAKI volunteer link.</p>
+        <h1 id="opportunities-title">Swipe through opportunities</h1>
+        <p>Browse each volunteer role as a full-page card. Swipe horizontally, use the arrow controls, or search and filter to narrow the deck.</p>
       </div>
-
       <div class="container control-bar">
-        <label class="search-field">
-          <span class="sr-only">Search opportunities</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-          <input id="opp-search" type="search" placeholder="Search by role, location, or description">
-        </label>
-        <div class="filter-group" id="opp-filters" aria-label="Filter opportunities">
-          <button class="filter active" type="button" data-opp-filter="all">All</button>
-          <button class="filter" type="button" data-opp-filter="long-term">Long-term</button>
-          <button class="filter" type="button" data-opp-filter="ad-hoc">Ad-hoc</button>
-        </div>
+        <label class="search-field"><span class="sr-only">Search opportunities</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg><input id="opp-search" type="search" placeholder="Search by role, location, or description"></label>
+        <div class="filter-group" id="opp-filters" aria-label="Filter opportunities"><button class="filter active" type="button" data-opp-filter="all">All</button><button class="filter" type="button" data-opp-filter="long-term">Long-term</button><button class="filter" type="button" data-opp-filter="ad-hoc">Ad-hoc</button></div>
       </div>
-
-      <div class="container card-grid" id="opportunities-grid"></div>
+      <div class="container card-grid" id="opportunities-grid" aria-live="polite"></div>
       <div class="container empty-state" id="opportunities-empty" hidden>No opportunities found.</div>
     </section>
 
     <section class="page" id="page-news" aria-labelledby="news-title">
-      <div class="container page-topper">
-        <p class="eyebrow dark">Updates and stories</p>
-        <h1 id="news-title">News</h1>
-        <p>Browse announcements, programme updates, and volunteer stories.</p>
-      </div>
-      <div class="container control-bar compact">
-        <div class="filter-group" id="news-filters" aria-label="Filter news">
-          <button class="filter active" type="button" data-news-filter="all">All</button>
-          <button class="filter" type="button" data-news-filter="Announcement">Announcements</button>
-          <button class="filter" type="button" data-news-filter="Programme">Programmes</button>
-          <button class="filter" type="button" data-news-filter="Volunteer">Volunteer</button>
-        </div>
-      </div>
+      <div class="container page-topper"><p class="eyebrow dark">Updates and stories</p><h1 id="news-title">News</h1><p>Browse announcements, programme updates, and volunteer stories.</p></div>
+      <div class="container control-bar compact"><div class="filter-group" id="news-filters" aria-label="Filter news"><button class="filter active" type="button" data-news-filter="all">All</button><button class="filter" type="button" data-news-filter="Announcement">Announcements</button><button class="filter" type="button" data-news-filter="Programme">Programmes</button><button class="filter" type="button" data-news-filter="Volunteer">Volunteer</button></div></div>
       <div class="container news-grid" id="news-list"></div>
     </section>
 
-    <section class="page" id="page-events" aria-labelledby="events-title">
-      <div class="container page-topper">
-        <p class="eyebrow dark">Calendar</p>
-        <h1 id="events-title">Events</h1>
-        <p>Upcoming sessions, orientation dates, and one-time volunteer events.</p>
-      </div>
-      <div class="container event-list event-list-large" id="events-list"></div>
-    </section>
+    <section class="page" id="page-events" aria-labelledby="events-title"><div class="container page-topper"><p class="eyebrow dark">Calendar</p><h1 id="events-title">Events</h1><p>Upcoming sessions, orientation dates, and one-time volunteer events.</p></div><div class="container event-list event-list-large" id="events-list"></div></section>
 
     <section class="page" id="page-about" aria-labelledby="about-title">
-      <div class="container page-topper about-topper">
-        <p class="eyebrow dark">About</p>
-        <h1 id="about-title">MENDAKI Volunteer Hub</h1>
-        <p data-about-intro>MENDAKI is Singapore's self-help group for the Malay/Muslim community since 1982.</p>
-      </div>
+      <div class="container page-topper about-topper"><p class="eyebrow dark">About</p><h1 id="about-title">MENDAKI Volunteer Hub</h1><p data-about-intro>MENDAKI is Singapore's self-help group for the Malay/Muslim community since 1982.</p></div>
       <div class="container about-layout">
-        <section class="about-card" aria-labelledby="pillars-title">
-          <h2 id="pillars-title">Our pillars</h2>
-          <div class="pillar-grid" id="pillar-grid"></div>
-        </section>
-        <section class="about-card" aria-labelledby="why-title">
-          <h2 id="why-title">Why volunteer?</h2>
-          <p data-why-volunteer></p>
-          <div class="info-grid">
-            <div class="info-tile"><span>Hours</span><strong>Flexible</strong></div>
-            <div class="info-tile"><span>Training</span><strong>All roles</strong></div>
-            <div class="info-tile"><span>Community</span><strong>3,200+ vols</strong></div>
-            <div class="info-tile"><span>Recognition</span><strong>Awards</strong></div>
-          </div>
-        </section>
-        <section class="about-card" aria-labelledby="contact-title">
-          <h2 id="contact-title">Get in touch</h2>
-          <div class="contact-list" id="contact-list"></div>
-        </section>
-        <section class="about-card" aria-labelledby="faq-title">
-          <h2 id="faq-title">FAQ</h2>
-          <div class="faq-list" id="faq-list"></div>
-        </section>
+        <section class="about-card" aria-labelledby="pillars-title"><h2 id="pillars-title">Our pillars</h2><div class="pillar-grid" id="pillar-grid"></div></section>
+        <section class="about-card" aria-labelledby="why-title"><h2 id="why-title">Why volunteer?</h2><p data-why-volunteer></p><div class="info-grid"><div class="info-tile"><span>Hours</span><strong>Flexible</strong></div><div class="info-tile"><span>Training</span><strong>All roles</strong></div><div class="info-tile"><span>Community</span><strong>3,200+ vols</strong></div><div class="info-tile"><span>Recognition</span><strong>Awards</strong></div></div></section>
+        <section class="about-card" aria-labelledby="contact-title"><h2 id="contact-title">Get in touch</h2><div class="contact-list" id="contact-list"></div></section>
+        <section class="about-card" aria-labelledby="faq-title"><h2 id="faq-title">FAQ</h2><div class="faq-list" id="faq-list"></div></section>
       </div>
     </section>
   </main>
 
   <nav class="mobile-tabs" aria-label="Mobile primary navigation">
-    <button class="mobile-tab active" type="button" data-page-target="home" aria-label="Home">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
-      <span>Home</span>
-    </button>
-    <button class="mobile-tab" type="button" data-page-target="opportunities" aria-label="Opportunities">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 12v4m-2-2h4"></path></svg>
-      <span>Roles</span>
-    </button>
-    <button class="mobile-tab" type="button" data-page-target="news" aria-label="News">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a1 1 0 0 1 1 1v15H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
-      <span>News</span>
-    </button>
-    <button class="mobile-tab" type="button" data-page-target="about" aria-label="About">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg>
-      <span>About</span>
-    </button>
+    <button class="mobile-tab active" type="button" data-page-target="home" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></button>
+    <button class="mobile-tab" type="button" data-page-target="opportunities" aria-label="Opportunities"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 12v4m-2-2h4"></path></svg><span>Roles</span></button>
+    <button class="mobile-tab" type="button" data-page-target="news" aria-label="News"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a1 1 0 0 1 1 1v15H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span>News</span></button>
+    <button class="mobile-tab" type="button" data-page-target="about" aria-label="About"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg><span>About</span></button>
   </nav>
 
-  <div class="modal-layer" id="modal-layer" hidden>
-    <div class="modal-backdrop" data-close-modal></div>
-    <article class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"></article>
-  </div>
+  <div class="modal-layer" id="modal-layer" hidden><div class="modal-backdrop" data-close-modal></div><article class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"></article></div>
 
   <template id="icon-clock"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></template>
   <template id="icon-location"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg></template>
