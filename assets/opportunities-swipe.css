@@ -1,0 +1,213 @@
+:root { --swipe-card-min-height: min(720px, calc(100dvh - 230px)); }
+
+.opportunity-swipe-shell {
+  margin-top: 1rem;
+}
+
+.swipe-instructions {
+  color: var(--text-3);
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.opportunity-swipe-deck {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0;
+  padding: 0.15rem 0 1rem;
+  scrollbar-width: none;
+}
+
+.opportunity-swipe-deck::-webkit-scrollbar { display: none; }
+
+.opp-swipe-card {
+  flex: 0 0 100%;
+  min-height: var(--swipe-card-min-height);
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.05fr);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.opp-photo-wrap,
+.modal-opportunity-photo {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  background: var(--black);
+}
+
+.opp-photo-wrap img,
+.modal-opportunity-photo img,
+.mini-card-photo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.opp-photo-fallback {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.75rem;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top right, rgba(255, 215, 0, 0.26), transparent 16rem),
+    linear-gradient(135deg, var(--black), #22241f);
+  color: #fff;
+  text-align: center;
+  padding: 2rem;
+}
+
+.opp-photo-fallback span {
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.opp-photo-fallback p {
+  margin: 0;
+  max-width: 220px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.opp-swipe-content {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.25rem, 4vw, 2.4rem);
+}
+
+.opp-swipe-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.opp-swipe-card h2 {
+  margin: 0;
+  color: var(--black);
+  font-size: clamp(2rem, 5vw, 4.25rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.opp-swipe-description {
+  margin: 1rem 0 0;
+  color: var(--text-2);
+  font-size: clamp(1rem, 1.6vw, 1.1rem);
+  line-height: 1.72;
+}
+
+.opp-swipe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.opp-swipe-meta span {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 0.62rem 0.8rem;
+}
+
+.opp-swipe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.button-ghost {
+  color: var(--black);
+  background: #fff;
+  border: 1px solid var(--line);
+  text-decoration: none;
+}
+
+.swipe-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 1.25rem;
+}
+
+.swipe-control {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--black);
+  border-radius: 999px;
+  font-size: 1.65rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.swipe-control:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.swipe-count {
+  min-width: 5.5rem;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.mini-card-photo {
+  height: 96px;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  background: var(--yellow-light);
+}
+
+.modal-opportunity-photo {
+  width: 100%;
+  min-height: 260px;
+  border-radius: 18px;
+  margin-bottom: 1rem;
+}
+
+.modal-opportunity-photo.opp-photo-fallback {
+  min-height: 220px;
+}
+
+@media (max-width: 760px) {
+  :root { --swipe-card-min-height: calc(100dvh - 175px); }
+  .opp-swipe-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(260px, 42dvh) 1fr;
+    border-radius: 24px;
+  }
+  .opp-swipe-content { padding: 1.15rem; }
+  .opp-swipe-card h2 { font-size: clamp(2rem, 12vw, 3.4rem); }
+  .opp-swipe-description { font-size: 0.95rem; line-height: 1.62; }
+  .opp-swipe-actions .button { flex: 1 1 100%; }
+  .opp-swipe-meta { display: grid; gap: 0.45rem; }
+  .opp-swipe-meta span { justify-content: flex-start; }
+}
