@@ -1,10 +1,9 @@
 .home-quiz-module {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: 1fr;
+  align-content: space-between;
   gap: 1.25rem;
-  margin-top: 1.25rem;
   overflow: hidden;
 }
 
@@ -42,11 +41,25 @@
 
 .home-quiz-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .home-quiz-actions .button {
   min-width: 260px;
+}
+
+@media (min-width: 981px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.32fr) minmax(320px, 0.68fr);
+  }
+
+  .hero-grid .featured-panel {
+    grid-column: 1 / -1;
+  }
+
+  .home-quiz-module {
+    min-height: 430px;
+  }
 }
 
 @media (max-width: 760px) {
