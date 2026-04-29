@@ -5,6 +5,22 @@
   align-content: space-between;
   gap: 1.25rem;
   overflow: hidden;
+  padding-right: clamp(1.25rem, 8vw, 2.25rem);
+}
+
+.home-quiz-module::before {
+  content: '';
+  position: absolute;
+  right: clamp(0.75rem, 2.6vw, 1.6rem);
+  bottom: clamp(0.65rem, 2.4vw, 1.35rem);
+  width: min(42%, 230px);
+  aspect-ratio: 1;
+  background-image: url("data:image/svg+xml,%3Csvg width='260' height='260' viewBox='0 0 260 260' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='130' cy='130' r='112' fill='%23FFF8D7'/%3E%3Ccircle cx='206' cy='64' r='18' fill='%23FFD700'/%3E%3Ccircle cx='52' cy='196' r='14' fill='%23F0FBEC'/%3E%3Cpath d='M61 201c19-42 48-63 87-63 36 0 65 21 87 63' stroke='%23373A36' stroke-width='10' stroke-linecap='round'/%3E%3Cpath d='M77 198c13-27 32-41 57-41s44 14 57 41' fill='%23FFFFFF'/%3E%3Ccircle cx='112' cy='94' r='30' fill='%23D89A62'/%3E%3Cpath d='M83 91c5-27 22-42 50-42 16 0 29 6 38 17-7 13-20 20-38 20-12 0-24 2-36 5-4 1-9 1-14 0Z' fill='%23373A36'/%3E%3Cpath d='M91 127c13 16 29 24 49 24 21 0 38-8 51-24 20 12 34 34 40 66H52c6-32 19-54 39-66Z' fill='%23FFD700'/%3E%3Cpath d='M105 153h70v47h-70v-47Z' fill='%23FFFFFF'/%3E%3Cpath d='M121 171h38M121 187h28' stroke='%23373A36' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M57 139c22-12 42-10 61 6' stroke='%23373A36' stroke-width='10' stroke-linecap='round'/%3E%3Cpath d='M178 145c19-16 39-18 61-6' stroke='%23373A36' stroke-width='10' stroke-linecap='round'/%3E%3Ccircle cx='211' cy='121' r='20' fill='%23FFFFFF' stroke='%23373A36' stroke-width='8'/%3E%3Cpath d='m202 121 7 7 13-16' stroke='%23373A36' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M54 219h171' stroke='%23373A36' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.96;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .home-quiz-module::after {
@@ -33,7 +49,7 @@
 }
 
 .home-quiz-module p:not(.eyebrow) {
-  max-width: 620px;
+  max-width: min(620px, 68%);
   margin: 0.7rem 0 0;
   color: var(--text-2);
   line-height: 1.65;
@@ -66,6 +82,18 @@
   .home-quiz-module {
     grid-template-columns: 1fr;
     align-items: stretch;
+    padding-right: 1rem;
+    padding-bottom: 8.75rem;
+  }
+
+  .home-quiz-module::before {
+    width: 138px;
+    right: 1rem;
+    bottom: 0.75rem;
+  }
+
+  .home-quiz-module p:not(.eyebrow) {
+    max-width: 100%;
   }
 
   .home-quiz-actions {
