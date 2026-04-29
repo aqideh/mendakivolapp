@@ -138,6 +138,15 @@ collections:
                 options:
                   - { label: Long-term, value: long-term }
                   - { label: Ad-hoc, value: ad-hoc }
+              - label: Volunteer category
+                name: category
+                widget: select
+                hint: Used by the personality quiz and category filters.
+                options:
+                  - { label: Befrienders, value: befriender }
+                  - { label: Mentors, value: mentor }
+                  - { label: Facilitators, value: facilitator }
+                  - { label: Community volunteering, value: community-volunteering }
               - { label: Title, name: title, widget: string }
               - label: Photo
                 name: photo
