@@ -77,6 +77,7 @@
     {
       "id": 0,
       "type": "long-term",
+      "category": "facilitator",
       "title": "RSL Maths Explorer",
       "description": "Support preschool-aged children and parents in fun, hands-on maths activities that build early numeracy skills. You will work alongside MENDAKI educators to guide families through structured play-based learning sessions.",
       "requirements": "No prior teaching experience needed. Training provided. Comfortable working with young children aged 4-6.",
@@ -88,6 +89,7 @@
     {
       "id": 1,
       "type": "long-term",
+      "category": "mentor",
       "title": "#amPowered Mentor",
       "description": "Mentor a Malay/Muslim youth aged 15-18 to help them discover their strengths, build resilience, and navigate education and career pathways. Mentors meet their mentees at least twice a month.",
       "requirements": "18 years and above. Willingness to commit to a 6-month mentoring relationship. Passion for youth development.",
@@ -99,6 +101,7 @@
     {
       "id": 2,
       "type": "long-term",
+      "category": "befriender",
       "title": "Befriender",
       "description": "Provide companionship to MENDAKI beneficiaries - seniors, single parents, or individuals facing hardship - through regular visits or calls. Your presence can make a profound difference to someone facing isolation.",
       "requirements": "Empathetic, patient, and a good listener. No specific qualifications required.",
@@ -110,6 +113,7 @@
     {
       "id": 3,
       "type": "ad-hoc",
+      "category": "community-volunteering",
       "title": "MAP Packing Day",
       "description": "Help pack resource materials, stationery, and goodie bags for students enrolled in the MENDAKI Achievement Programme. A fun, social volunteering session that makes a direct impact on students across Singapore.",
       "requirements": "Able-bodied and willing to work in a packing environment. No experience needed.",
@@ -121,6 +125,7 @@
     {
       "id": 4,
       "type": "ad-hoc",
+      "category": "community-volunteering",
       "title": "RSL Child Minder",
       "description": "Provide attentive child-minding support during RSL parent workshops, so that parents can participate fully without worry. You will supervise and engage children with structured activities during the session.",
       "requirements": "Patient and comfortable with young children. Basic first aid knowledge a plus but not required.",
@@ -132,6 +137,7 @@
     {
       "id": 5,
       "type": "ad-hoc",
+      "category": "community-volunteering",
       "title": "Raikan Ilmu Usher",
       "description": "Be part of MENDAKI's flagship Raikan Ilmu awards ceremony - an inspiring celebration of student achievement. As an usher, you will guide guests, manage registration, and help create a memorable event experience.",
       "requirements": "Presentable and well-spoken. Comfortable in a formal event setting. Smart casual or formal attire required.",
