@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MENDAKI Volunteer Hub</title>
-  <meta name="description" content="Find MENDAKI volunteer opportunities, events, news, and community updates.">
+  <meta name="description" content="Find MENDAKI volunteer opportunities, news, and community updates.">
   <meta name="theme-color" content="#373A36">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="assets/opportunities-swipe.css">
   <link rel="stylesheet" href="assets/home-quiz-module.css">
   <script src="assets/app.js" defer></script>
+  <script src="assets/remove-events.js" defer></script>
   <script src="assets/opportunities-swipe.js" defer></script>
   <script src="assets/volunteer-quiz-router.js" defer></script>
   <script src="assets/quiz-confetti.js" defer></script>
@@ -30,7 +31,6 @@
         <button class="nav-link active" type="button" data-page-target="home">Home</button>
         <button class="nav-link" type="button" data-page-target="opportunities">Opportunities</button>
         <button class="nav-link" type="button" data-page-target="news">News</button>
-        <button class="nav-link" type="button" data-page-target="events">Events</button>
         <button class="nav-link" type="button" data-page-target="about">About</button>
       </nav>
       <a class="admin-link" href="admin/" target="_blank" rel="noopener noreferrer">CMS</a>
@@ -69,9 +69,8 @@
         </aside>
       </div>
 
-      <div class="container section-grid">
+      <div class="container section-grid home-news-only">
         <section class="content-section" aria-labelledby="latest-news-title"><div class="section-header"><div><p class="eyebrow dark">Updates</p><h2 id="latest-news-title">Latest News</h2></div><button class="text-button" type="button" data-page-target="news">See all</button></div><div class="news-strip" id="home-news"></div></section>
-        <section class="content-section" aria-labelledby="upcoming-events-title"><div class="section-header"><div><p class="eyebrow dark">Calendar</p><h2 id="upcoming-events-title">Upcoming Events</h2></div><button class="text-button" type="button" data-page-target="events">View all</button></div><div class="event-list" id="home-events"></div></section>
       </div>
     </section>
 
@@ -94,8 +93,6 @@
       <div class="container control-bar compact"><div class="filter-group" id="news-filters" aria-label="Filter news"><button class="filter active" type="button" data-news-filter="all">All</button><button class="filter" type="button" data-news-filter="Announcement">Announcements</button><button class="filter" type="button" data-news-filter="Programme">Programmes</button><button class="filter" type="button" data-news-filter="Volunteer">Volunteer</button></div></div>
       <div class="container news-grid" id="news-list"></div>
     </section>
-
-    <section class="page" id="page-events" aria-labelledby="events-title"><div class="container page-topper"><p class="eyebrow dark">Calendar</p><h1 id="events-title">Events</h1><p>Upcoming sessions, orientation dates, and one-time volunteer events.</p></div><div class="container event-list event-list-large" id="events-list"></div></section>
 
     <section class="page" id="page-about" aria-labelledby="about-title">
       <div class="container page-topper about-topper"><p class="eyebrow dark">About</p><h1 id="about-title">MENDAKI Volunteer Hub</h1><p data-about-intro>MENDAKI is Singapore's self-help group for the Malay/Muslim community since 1982.</p></div>
