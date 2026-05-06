@@ -7,7 +7,7 @@ const state = {
   lastFocus: null
 };
 
-const pageNames = ['home', 'opportunities', 'news', 'events', 'about'];
+const pageNames = ['home', 'opportunities', 'news', 'about'];
 
 function qs(selector, root = document) {
   return root.querySelector(selector);
@@ -98,6 +98,7 @@ async function loadData() {
 
   return {
     ...siteData,
+    opportunities: Array.isArray(siteData.opportunities) ? siteData.opportunities : [],
     news: Array.isArray(newsData.news) ? newsData.news : []
   };
 }
@@ -146,55 +147,7 @@ function renderHomeNews() {
   const items = [...state.data.news]
     .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || new Date(b.date) - new Date(a.date))
     .slice(0, 3);
-
   items.forEach(item => container.append(createNewsCard(item, true)));
-}
-
-function sortedEvents() {
-  return [...state.data.events].sort((a, b) => new Date(`${a.date}T00:00:00`) - new Date(`${b.date}T00:00:00`));
-}
-
-function upcomingEvents() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return sortedEvents().filter(event => new Date(`${event.date}T00:00:00`) >= today);
-}
-
-function createEventRow(eventItem) {
-  const date = new Date(`${eventItem.date}T00:00:00`);
-  const day = new Intl.DateTimeFormat('en-SG', { day: 'numeric' }).format(date);
-  const month = new Intl.DateTimeFormat('en-SG', { month: 'short' }).format(date);
-  const hasOpportunity = Number.isInteger(eventItem.opportunityId);
-  const row = make('button', {
-    type: 'button',
-    class: 'event-row',
-    dataset: hasOpportunity ? { oppId: String(eventItem.opportunityId) } : {}
-  }, [
-    make('div', { class: 'event-date' }, [make('div', {}, [make('strong', { text: day }), make('span', { text: month })])]),
-    make('div', {}, [make('h3', { text: eventItem.name }), make('p', { text: eventItem.detail })]),
-    make('span', { class: `badge ${badgeClass(eventItem.badge)}`, text: eventItem.badge || 'Open' })
-  ]);
-  if (!hasOpportunity) {
-    row.addEventListener('click', () => switchPage('opportunities'));
-  }
-  return row;
-}
-
-function renderHomeEvents() {
-  const container = qs('#home-events');
-  clear(container);
-  const list = upcomingEvents().slice(0, 4);
-  if (!list.length) {
-    container.append(make('div', { class: 'empty-state', text: 'No upcoming events are listed yet.' }));
-    return;
-  }
-  list.forEach(eventItem => container.append(createEventRow(eventItem)));
-}
-
-function renderAllEvents() {
-  const container = qs('#events-list');
-  clear(container);
-  sortedEvents().forEach(eventItem => container.append(createEventRow(eventItem)));
 }
 
 function createNewsCard(item, compact = false) {
@@ -310,10 +263,8 @@ function renderEverything() {
   renderSiteChrome();
   renderHomeOpportunities();
   renderHomeNews();
-  renderHomeEvents();
   renderOpportunities();
   renderNewsList();
-  renderAllEvents();
   renderAbout();
 }
 

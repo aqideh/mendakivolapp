@@ -3,7 +3,7 @@
 backend:
   name: github
   repo: aqideh/mendakivolapp
-  branch: main
+  branch: swipe
   # Optional: add base_url for a team OAuth flow on GitHub Pages.
   # base_url: https://YOUR-OAUTH-WORKER.example.workers.dev
 
@@ -138,21 +138,25 @@ collections:
                 options:
                   - { label: Long-term, value: long-term }
                   - { label: Ad-hoc, value: ad-hoc }
+              - label: Volunteer category
+                name: category
+                widget: select
+                hint: Used by the personality quiz and category filters.
+                options:
+                  - { label: Befrienders, value: befriender }
+                  - { label: Mentors, value: mentor }
+                  - { label: Facilitators, value: facilitator }
+                  - { label: Community volunteering, value: community-volunteering }
               - { label: Title, name: title, widget: string }
+              - label: Photo
+                name: photo
+                widget: image
+                required: false
+                hint: Upload or choose the image shown on the full-page swipe card and detail view.
+              - { label: Photo alt text, name: photoAlt, widget: string, required: false, hint: Describe the photo for screen readers. }
               - { label: Description, name: description, widget: text }
               - { label: Requirements, name: requirements, widget: text }
               - { label: Time, name: time, widget: string }
               - { label: Location, name: location, widget: string }
               - { label: Commitment, name: commitment, widget: string }
               - { label: Status, name: status, widget: string, required: false }
-          - label: Events
-            name: events
-            widget: list
-            summary: "{{fields.date}} - {{fields.name}}"
-            fields:
-              - { label: ID, name: id, widget: string }
-              - { label: Date, name: date, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD }
-              - { label: Name, name: name, widget: string }
-              - { label: Detail, name: detail, widget: string }
-              - { label: Badge, name: badge, widget: string }
-              - { label: Related opportunity ID, name: opportunityId, widget: number, value_type: int, min: 0, required: false }
