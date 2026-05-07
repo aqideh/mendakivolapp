@@ -91,11 +91,16 @@ async function fetchJson(relativePath) {
 }
 
 async function loadData() {
-  const [siteData, newsData, opportunitiesData] = await Promise.all([
+  const [siteData, newsData] = await Promise.all([
     fetchJson('content/data.json'),
-    fetchJson('content/news.json'),
-    fetchJson('content/opportunities.json').catch(() => ({ opportunities: siteData?.opportunities || [] }))
+    fetchJson('content/news.json')
   ]);
+  let opportunitiesData;
+  try {
+    opportunitiesData = await fetchJson('content/opportunities.json');
+  } catch (error) {
+    opportunitiesData = { opportunities: siteData.opportunities || [] };
+  }
 
   return {
     ...siteData,
@@ -131,7 +136,7 @@ function renderHomeOpportunities() {
   const container = qs('#home-opportunities');
   clear(container);
   state.data.opportunities.slice(0, 4).forEach(opp => {
-    const card = make('button', {
+    container.append(make('button', {
       type: 'button',
       class: 'mini-card',
       dataset: { oppId: String(opp.id) }
@@ -139,8 +144,7 @@ function renderHomeOpportunities() {
       make('span', { class: `badge ${badgeClass(opp.type)}`, text: typeLabel(opp.type) }),
       make('h3', { text: opp.title }),
       make('p', { text: opp.time })
-    ]);
-    container.append(card);
+    ]));
   });
 }
 
@@ -246,19 +250,15 @@ function renderAbout() {
   clear(faqList);
   (about.faq || []).forEach((item, index) => {
     const answerId = `faq-answer-${index}`;
-    const faqItem = make('div', { class: 'faq-item' }, [
+    faqList.append(make('div', { class: 'faq-item' }, [
       make('button', {
         type: 'button',
         class: 'faq-question',
         'aria-expanded': 'false',
         'aria-controls': answerId
-      }, [
-        document.createTextNode(item.question),
-        chevronIcon()
-      ]),
+      }, [document.createTextNode(item.question), chevronIcon()]),
       make('div', { id: answerId, class: 'faq-answer', hidden: '' }, [document.createTextNode(item.answer)])
-    ]);
-    faqList.append(faqItem);
+    ]));
   });
 }
 
@@ -301,7 +301,8 @@ function findOpportunity(id) {
 function findNews(id) {
   const targetId = String(id);
   return state.data.news.find(item => String(item.id) === targetId);
-}\n
+}
+
 function modalHeader(title, badgeText, badgeStyleClass) {
   return make('div', { class: 'modal-hero' }, [
     make('button', { type: 'button', class: 'close-button', 'aria-label': 'Close dialog', text: '×', dataset: { closeModal: 'true' } }),
