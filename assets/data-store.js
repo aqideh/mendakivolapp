@@ -63,6 +63,12 @@ const VolunteerDataStore = (() => {
     return normalized.startsWith('admin@') || normalized.includes('+admin@') ? 'admin' : 'volunteer';
   }
 
+  function clearAuthState() {
+    authState.user = null;
+    authState.profile = null;
+    clearSession();
+  }
+
   async function fetchAppUser(authUser) {
     if (!authState.supabase || !authUser?.id) return null;
     const { data, error } = await authState.supabase
@@ -123,9 +129,8 @@ const VolunteerDataStore = (() => {
     if (!authState.supabase) return getSession();
     const { data, error } = await authState.supabase.auth.getUser();
     if (error || !data?.user) {
-      authState.user = null;
-      authState.profile = null;
-      return getSession();
+      clearAuthState();
+      return null;
     }
 
     authState.user = data.user;
@@ -144,8 +149,12 @@ const VolunteerDataStore = (() => {
     }
 
     await refreshSupabaseSession();
-    authState.supabase.auth.onAuthStateChange(async () => {
-      await refreshSupabaseSession();
+    authState.supabase.auth.onAuthStateChange(async event => {
+      if (event === 'SIGNED_OUT') {
+        clearAuthState();
+      } else {
+        await refreshSupabaseSession();
+      }
       window.dispatchEvent(new CustomEvent('volunteer-auth-changed'));
     });
     authState.ready = true;
@@ -185,9 +194,7 @@ const VolunteerDataStore = (() => {
     if (authState.supabase) {
       await authState.supabase.auth.signOut();
     }
-    authState.user = null;
-    authState.profile = null;
-    clearSession();
+    clearAuthState();
   }
 
   function getSession() {
@@ -235,13 +242,11 @@ const VolunteerDataStore = (() => {
   }
 
   function currentEmail() {
-    const profile = getProfile() || {};
-    const session = getSession() || {};
-    return profile.email || session.email || '';
+    return getSession()?.email || '';
   }
 
   function isSignedIn() {
-    return Boolean(currentEmail());
+    return Boolean(getSession()?.email);
   }
 
   function isAdmin() {
