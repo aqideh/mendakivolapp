@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first three expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
+This branch introduces the first four expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
 
 ## Phase 1 scope included
 
@@ -32,12 +32,21 @@ This branch introduces the first three expansion layers for the MENDAKI Voluntee
 - Verified/adjusted attendance updates official completed opportunity count and verified hours.
 - Local attendance record persistence using `localStorage` for demo purposes.
 
+## Phase 4 scope included
+
+- Training page and navigation.
+- Training catalogue data in `content/data.json`.
+- CMS schema support for maintaining training sessions.
+- Training sign-up and cancellation flow.
+- Volunteer dashboard training status.
+- Admin training completion queue.
+- Local training sign-up persistence using `localStorage` for demo purposes.
+
 ## Scope intentionally not included yet
 
 - Production authentication.
 - Database connection.
 - Capacity and waitlist enforcement.
-- Training sign-ups.
 - Testimonial request workflow.
 - Calendar view.
 - Production audit logs and notification emails.
@@ -46,18 +55,19 @@ These are intended for later phases once the database and auth provider are sele
 
 ## Authentication approach
 
-The current implementation uses `localStorage` so the dashboard, sign-up, and attendance UX can be reviewed without a backend. This should be replaced before production with one of the following:
+The current implementation uses `localStorage` so the dashboard, sign-up, attendance, and training UX can be reviewed without a backend. This should be replaced before production with one of the following:
 
 - Supabase Auth.
 - Organisation SSO.
 - Auth0 or another identity provider.
 
-The local session/profile/sign-up/attendance keys are:
+The local session/profile/sign-up/attendance/training keys are:
 
 - `mendaki.volunteer.session.v1`
 - `mendaki.volunteer.profile.v1`
 - `mendaki.volunteer.signups.v1`
 - `mendaki.volunteer.attendance.v1`
+- `mendaki.volunteer.trainingSignups.v1`
 
 These are not secure and should not be treated as real authentication or durable production data.
 
@@ -67,7 +77,7 @@ The app should use this role model:
 
 | Role | Purpose |
 | --- | --- |
-| volunteer | Signs up, maintains profile, checks in/out for attendance, requests testimonials. |
+| volunteer | Signs up, maintains profile, checks in/out for attendance, signs up for training, requests testimonials. |
 | admin | Manages opportunities, training, attendance validation, testimonials, and reports. |
 | super_admin | Manages users, roles, system settings, and full audit access. |
 
@@ -77,7 +87,7 @@ For the local demo, an admin view can be reached by signing in with an email tha
 
 ## Sign-up model
 
-Phase 2 records local sign-ups with enough shape to map onto `opportunity_signups` later:
+Phase 2 records local opportunity sign-ups with enough shape to map onto `opportunity_signups` later:
 
 - `opportunityId`
 - `email`
@@ -95,7 +105,7 @@ Phase 2 records local sign-ups with enough shape to map onto `opportunity_signup
 - `completedAt`
 - `verifiedHours`
 
-When a database is connected, local sign-up records should be replaced with rows in `opportunity_signups` tied to the authenticated volunteer user.
+When a database is connected, local opportunity sign-up records should be replaced with rows in `opportunity_signups` tied to the authenticated volunteer user.
 
 ## Attendance model
 
@@ -112,43 +122,42 @@ Phase 3 uses a check-in/check-out + admin validation model:
 9. Admin verifies, adjusts, rejects, or requests clarification.
 10. Only `verified` or `adjusted` records contribute to official dashboard statistics and testimonials.
 
-The local attendance shape maps to the `attendance_claims` table in `db/phase-one-schema.sql`:
+For production, attendance codes should be stored and compared as hashes, not plaintext.
 
-- `signupId`
-- `opportunityId`
+## Training model
+
+Phase 4 records local training sign-ups with enough shape to map onto `training_signups` later:
+
+- `trainingId`
 - `email`
 - `volunteerName`
 - `title`
-- `claimStatus`
-- `checkInAt`
-- `checkOutAt`
-- `checkInCode`
-- `checkOutCode`
-- `claimedStart`
-- `claimedEnd`
-- `claimedHours`
-- `verifiedHours`
-- `adminNotes`
-- `reviewedBy`
-- `reviewedAt`
+- `date`
+- `time`
+- `location`
+- `trainer`
+- `status`
+- `signedUpAt`
+- `cancelledAt`
+- `completedAt`
 
-For production, attendance codes should be stored and compared as hashes, not plaintext.
+Training status is managed separately from volunteering hours. Admins mark registered training participants as completed. Completed training appears in the volunteer dashboard.
 
 ## Recommended next phase
 
-Phase 4 should focus on training:
+Phase 5 should focus on testimonial requests:
 
-1. Add training listing and detail pages.
-2. Add training sign-up and cancellation.
-3. Add training completion records.
-4. Link required training to opportunity categories where relevant.
-5. Show completed training in the volunteer dashboard.
+1. Add volunteer testimonial request form.
+2. Let volunteers select purpose and relevant verified activities.
+3. Restrict testimonial eligibility to verified hours/completed training where needed.
+4. Add admin review queue.
+5. Add approved/rejected/completed status tracking.
 
 Before production, replace the current local storage layer with real backend calls:
 
 1. Configure Supabase project and environment variables.
 2. Run `db/phase-one-schema.sql`.
 3. Replace `assets/phase-one-auth.js` local session functions with Supabase Auth calls.
-4. Replace JSON opportunity loading with database reads while keeping JSON fallback until migration is complete.
-5. Write opportunity sign-ups and attendance records to the database instead of local storage.
-6. Restrict admin verification actions to real admin/super_admin users through database policies.
+4. Replace JSON opportunity/training loading with database reads while keeping JSON fallback until migration is complete.
+5. Write opportunity sign-ups, attendance records, and training sign-ups to the database instead of local storage.
+6. Restrict admin actions to real admin/super_admin users through database policies.
