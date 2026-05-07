@@ -22,12 +22,15 @@ This branch introduces the first three expansion layers for the MENDAKI Voluntee
 
 ## Phase 3 scope included
 
-- Volunteer attendance self-reporting from the dashboard.
-- Attendance claim creation with claimed status, claimed hours, start/end time, and volunteer notes.
-- Admin verification queue for submitted attendance claims.
+- Volunteer attendance check-in/check-out from the dashboard.
+- A single attendance button per sign-up that changes from `Check in` to `Check out` after check-in.
+- 4-digit facilitator code prompt for both check-in and check-out.
+- Automatic timestamp capture for check-in and check-out.
+- Automatic volunteering-hours calculation from the elapsed time between both timestamps.
+- Admin verification queue for completed check-out records.
 - Admin review actions: verify, adjust, request clarification, and reject.
 - Verified/adjusted attendance updates official completed opportunity count and verified hours.
-- Local attendance claim persistence using `localStorage` for demo purposes.
+- Local attendance record persistence using `localStorage` for demo purposes.
 
 ## Scope intentionally not included yet
 
@@ -64,11 +67,11 @@ The app should use this role model:
 
 | Role | Purpose |
 | --- | --- |
-| volunteer | Signs up, maintains profile, self-reports attendance, requests testimonials. |
+| volunteer | Signs up, maintains profile, checks in/out for attendance, requests testimonials. |
 | admin | Manages opportunities, training, attendance validation, testimonials, and reports. |
 | super_admin | Manages users, roles, system settings, and full audit access. |
 
-There is no facilitator role. Volunteers self-report attendance; admins verify and validate submitted claims.
+There is no facilitator role in the app. Facilitators only provide the 4-digit attendance code at the physical volunteering opportunity; admins verify and validate submitted attendance records.
 
 For the local demo, an admin view can be reached by signing in with an email that starts with `admin@` or contains `+admin@`. Production should use a real role claim from the auth provider/database.
 
@@ -96,34 +99,40 @@ When a database is connected, local sign-up records should be replaced with rows
 
 ## Attendance model
 
-Phase 3 uses a self-report + admin validation model:
+Phase 3 uses a check-in/check-out + admin validation model:
 
 1. Volunteer signs up for an opportunity.
-2. Volunteer submits attendance from the dashboard.
-3. The claim is stored as `submitted`.
-4. Admin reviews the claim.
-5. Admin verifies, adjusts, rejects, or requests clarification.
-6. Only `verified` or `adjusted` claims contribute to official dashboard statistics and testimonials.
+2. Volunteer arrives at the opportunity and taps `Check in`.
+3. Volunteer enters the 4-digit facilitator code.
+4. The system records the check-in timestamp and changes the button to `Check out`.
+5. Volunteer taps `Check out` when leaving.
+6. Volunteer enters the 4-digit facilitator code again.
+7. The system records the check-out timestamp and calculates logged hours from the time difference.
+8. The record is stored as `submitted` for admin verification.
+9. Admin verifies, adjusts, rejects, or requests clarification.
+10. Only `verified` or `adjusted` records contribute to official dashboard statistics and testimonials.
 
-The local claim shape maps to the `attendance_claims` table in `db/phase-one-schema.sql`:
+The local attendance shape maps to the `attendance_claims` table in `db/phase-one-schema.sql`:
 
 - `signupId`
 - `opportunityId`
 - `email`
 - `volunteerName`
 - `title`
-- `claimedStatus`
 - `claimStatus`
+- `checkInAt`
+- `checkOutAt`
+- `checkInCode`
+- `checkOutCode`
 - `claimedStart`
 - `claimedEnd`
 - `claimedHours`
-- `volunteerNotes`
 - `verifiedHours`
 - `adminNotes`
 - `reviewedBy`
 - `reviewedAt`
 
-The schema separates claimed hours and verified hours intentionally.
+For production, attendance codes should be stored and compared as hashes, not plaintext.
 
 ## Recommended next phase
 
@@ -141,5 +150,5 @@ Before production, replace the current local storage layer with real backend cal
 2. Run `db/phase-one-schema.sql`.
 3. Replace `assets/phase-one-auth.js` local session functions with Supabase Auth calls.
 4. Replace JSON opportunity loading with database reads while keeping JSON fallback until migration is complete.
-5. Write opportunity sign-ups and attendance claims to the database instead of local storage.
+5. Write opportunity sign-ups and attendance records to the database instead of local storage.
 6. Restrict admin verification actions to real admin/super_admin users through database policies.
