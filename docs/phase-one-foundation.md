@@ -1,16 +1,83 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first six expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
+This branch introduces the first seven expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
 
-## Phase 6 authentication foundation included
+## Completed phases
+
+### Phase 1: Dashboard foundation
+
+- Volunteer dashboard route and navigation.
+- Sign-in/profile shell.
+- Volunteer profile form.
+- Dashboard statistics for verified hours, upcoming confirmed opportunities, and completed opportunities.
+- PostgreSQL/Supabase-ready schema in `db/phase-one-schema.sql`.
+- Role model with `volunteer`, `admin`, and `super_admin`.
+
+### Phase 2: In-app opportunity sign-ups
+
+- Opportunity sign-up flow inside the app.
+- Sign-up cancellation flow.
+- Volunteer dashboard sections for active and completed opportunities.
+- Admin sign-up review queue for confirming, waitlisting, or declining volunteers.
+- Lifecycle terms: `Sign up`, `Pending review`, `Confirmed`, `Waitlisted`, `Not selected`, `Cancelled`, and `Completed`.
+
+### Phase 3: Attendance check-in/check-out
+
+- Volunteer check-in/check-out for confirmed sign-ups.
+- Single attendance button that changes from `Check in` to `Check out`.
+- 4-digit facilitator code prompt for both check-in and check-out.
+- Timestamp capture and elapsed-hours calculation.
+- Admin attendance verification queue.
+- Admin verification, adjustment, clarification, and rejection flows.
+
+### Phase 4: Training module
+
+- Training page and navigation.
+- Training session listing.
+- Training sign-up and cancellation flow.
+- Volunteer dashboard training status.
+- Admin training completion queue.
+
+### Phase 5: Data access layer
+
+- Shared demo data access layer in `assets/data-store.js`.
+- Session, profile, opportunity sign-up, attendance, and training modules use `VolunteerDataStore`.
+- Direct feature-module dependency on browser storage keys has been reduced so a future backend adapter can replace the local demo implementation in one place.
+
+### Phase 6: Supabase authentication and roles
 
 - Supabase browser client is loaded from the public CDN.
 - `assets/supabase-config.js` contains the GitHub Pages Supabase browser configuration.
-- `VolunteerDataStore` now detects Supabase configuration and initialises Supabase Auth when configured.
+- `VolunteerDataStore` detects Supabase configuration and initialises Supabase Auth when configured.
 - Sign-in uses Supabase email/password when Supabase is configured.
-- If Supabase is not configured, the existing local demo sign-in flow remains active.
+- If Supabase is not configured, the existing local demo sign-in flow remains available.
 - App roles are read from the `app_users.role` row when an authenticated Supabase user is mapped to an app user.
 - First successful Supabase sign-in attempts to create a matching `app_users` row with role `volunteer` if one does not already exist.
+
+### Phase 7: CMS content management
+
+- CMS backend targets the `expansion` branch.
+- CMS sections have been reorganised into clearer admin-facing groups:
+  - `Manage Opportunities`
+  - `Manage Training Sessions`
+  - `News & Updates`
+  - `Site Settings`
+- Volunteer opportunities are managed from `content/opportunities.json`.
+- Training sessions are managed from `content/trainings.json`.
+- News items are managed from `content/news.json`.
+- General site settings and about-page content remain in `content/data.json`.
+- Opportunity and training status fields use dropdowns instead of free text.
+- CMS fields have clearer labels, ordering, and hints for admin users.
+- The public app loads opportunities and training sessions from the dedicated CMS files, with fallbacks to the legacy arrays in `content/data.json`.
+
+## CMS content map
+
+| CMS section | File | Purpose |
+| --- | --- | --- |
+| Manage Opportunities | `content/opportunities.json` | Public opportunity cards and detail modals. |
+| Manage Training Sessions | `content/trainings.json` | Public training catalogue and training sign-up flow. |
+| News & Updates | `content/news.json` | News listing and home-page news cards. |
+| Site Settings | `content/data.json` | Site title, hero copy, statistics, contact details, about page, pillars, and FAQ. |
 
 ## GitHub Pages Supabase configuration
 
@@ -27,7 +94,7 @@ Supabase URL configuration should include this URL in:
 
 ## Supabase test user
 
-Create the test user in Supabase Dashboard under Authentication → Users:
+Create the test user in Supabase Dashboard under Authentication -> Users:
 
 - Email: `volunteer@mendaki.org.sg`
 - Role in app: `volunteer`
@@ -52,6 +119,7 @@ The following keys remain in `VolunteerDataStore` while sign-up, attendance, and
 
 - `mendaki.volunteer.session.v1`
 - `mendaki.volunteer.profile.v1`
+- `mendaki.volunteer.profile.<email>.v1`
 - `mendaki.volunteer.signups.v1`
 - `mendaki.volunteer.attendance.v1`
 - `mendaki.volunteer.trainingSignups.v1`
@@ -60,14 +128,13 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Recommended next phase
 
-The next highest-priority phase should finish production role setup:
+The next highest-priority phase is Phase 8: Supabase-backed opportunities and sign-ups.
 
-1. Run `db/phase-one-schema.sql` in Supabase.
-2. Create the Supabase Auth test user.
-3. Confirm that first sign-in creates or maps an `app_users` row.
-4. Seed any future `admin` and `super_admin` rows.
-5. Confirm Row Level Security policies for volunteer and admin access.
-6. Replace local sign-up/attendance/training persistence with Supabase-backed methods inside `VolunteerDataStore`.
+1. Keep CMS as the temporary public-content source for opportunity and training listings.
+2. Add Supabase-backed reads/writes for opportunity sign-ups inside `VolunteerDataStore`.
+3. Migrate local sign-up records into Supabase tables.
+4. Keep local browser storage only as a development fallback.
+5. Restrict admin sign-up review actions through database policies.
 
 ## Remaining major scopes
 
