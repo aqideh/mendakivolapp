@@ -159,3 +159,32 @@ collections:
               - { label: Location, name: location, widget: string }
               - { label: Commitment, name: commitment, widget: string }
               - { label: Status, name: status, widget: string, required: false }
+          - label: Training sessions
+            name: trainings
+            widget: list
+            summary: "{{fields.title}}"
+            fields:
+              - { label: ID, name: id, widget: string }
+              - { label: Title, name: title, widget: string }
+              - { label: Description, name: description, widget: text }
+              - { label: Trainer, name: trainer, widget: string, required: false }
+              - label: Date
+                name: date
+                widget: datetime
+                date_format: YYYY-MM-DD
+                time_format: false
+                format: YYYY-MM-DD
+              - { label: Time, name: time, widget: string }
+              - { label: Location, name: location, widget: string }
+              - { label: Capacity, name: capacity, widget: number, value_type: int, min: 0 }
+              - { label: Status, name: status, widget: string, required: false }
+              - label: Recommended for categories
+                name: requiredFor
+                widget: select
+                multiple: true
+                required: false
+                options:
+                  - { label: Befrienders, value: befriender }
+                  - { label: Mentors, value: mentor }
+                  - { label: Facilitators, value: facilitator }
+                  - { label: Community volunteering, value: community-volunteering }
