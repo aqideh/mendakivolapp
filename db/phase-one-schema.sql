@@ -7,7 +7,7 @@ create extension if not exists pgcrypto;
 create type app_role as enum ('volunteer', 'admin', 'super_admin');
 create type opportunity_status as enum ('draft', 'open', 'full', 'closed', 'cancelled');
 create type signup_status as enum ('registered', 'waitlisted', 'cancelled', 'completed');
-create type attendance_claim_status as enum ('pending_submission', 'submitted', 'clarification_requested', 'verified', 'adjusted', 'rejected', 'no_show');
+create type attendance_claim_status as enum ('pending_submission', 'checked_in', 'submitted', 'clarification_requested', 'verified', 'adjusted', 'rejected', 'no_show');
 create type testimonial_status as enum ('draft', 'submitted', 'in_review', 'approved', 'rejected', 'completed');
 
 create table app_users (
@@ -58,6 +58,7 @@ create table opportunity_sessions (
   location_override text,
   capacity_override integer,
   status opportunity_status not null default 'open',
+  attendance_code_hash text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint opportunity_sessions_time_check check (ends_at > starts_at)
@@ -79,6 +80,10 @@ create table attendance_claims (
   signup_id uuid not null unique references opportunity_signups(id) on delete cascade,
   volunteer_user_id uuid not null references app_users(id) on delete cascade,
   claim_status attendance_claim_status not null default 'pending_submission',
+  check_in_at timestamptz,
+  check_out_at timestamptz,
+  check_in_code_hash text,
+  check_out_code_hash text,
   claimed_start_at timestamptz,
   claimed_end_at timestamptz,
   claimed_hours numeric(5,2),
@@ -91,7 +96,7 @@ create table attendance_claims (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint attendance_claims_time_check check (
-    claimed_start_at is null or claimed_end_at is null or claimed_end_at > claimed_start_at
+    check_in_at is null or check_out_at is null or check_out_at > check_in_at
   )
 );
 
@@ -151,6 +156,6 @@ create index idx_testimonial_requests_status on testimonial_requests(status);
 
 -- Suggested Supabase RLS direction:
 -- 1. Volunteers can select their own app_users, volunteer_profiles, signups, attendance_claims, training_signups, and testimonial_requests.
--- 2. Volunteers can insert/update their own profiles, signups, attendance claims, and testimonial requests within workflow constraints.
--- 3. Admins and super_admins can manage all rows.
+-- 2. Volunteers can check in and check out only for their own registered signups.
+-- 3. Admins and super_admins can manage all rows and issue facilitator attendance codes.
 -- 4. Only admins and super_admins can set verified_hours, reviewed_by, reviewed_at, and admin_notes.
