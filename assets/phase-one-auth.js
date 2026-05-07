@@ -80,6 +80,16 @@ function phaseOneCloseAuth() {
   document.body.style.overflow = '';
 }
 
+function phaseOneRenderAuthNavigation(signedIn) {
+  document.querySelectorAll('[data-auth-entry]').forEach(button => {
+    button.hidden = signedIn;
+    button.textContent = 'Sign in';
+  });
+  document.querySelectorAll('[data-dashboard-nav]').forEach(button => {
+    button.hidden = !signedIn;
+  });
+}
+
 function phaseOneRenderDashboard() {
   const session = phaseOneSession();
   const profile = phaseOneProfile();
@@ -89,9 +99,7 @@ function phaseOneRenderDashboard() {
   const interest = profile?.interest || 'Not selected';
   const availability = profile?.availability || 'Not added';
 
-  document.querySelectorAll('[data-auth-open]').forEach(button => {
-    button.textContent = signedIn ? 'My dashboard' : 'Sign in';
-  });
+  phaseOneRenderAuthNavigation(signedIn);
   document.querySelectorAll('[data-auth-sign-out]').forEach(button => {
     button.hidden = !signedIn;
   });
@@ -149,6 +157,7 @@ function formatPhaseOneInterest(value) {
 function phaseOneSignOut() {
   localStorage.removeItem(PHASE_ONE_SESSION_KEY);
   phaseOneRenderDashboard();
+  phaseOneSetActivePage('home');
 }
 
 function phaseTwoAppState() {
