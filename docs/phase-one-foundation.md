@@ -19,11 +19,13 @@ This branch introduces the first four expansion layers for the MENDAKI Volunteer
 - Dashboard sections for active sign-ups and attendance preview.
 - Dashboard statistics now update from local sign-up records.
 - Registration now stays inside the app shell instead of only linking out to an external form.
+- Sign-up lifecycle terminology: `Pending review`, `Confirmed`, `Waitlisted`, `Not selected`, `Cancelled`, and `Completed`.
+- Admin sign-up review queue to confirm, waitlist, or decline opportunity sign-ups.
 
 ## Phase 3 scope included
 
 - Volunteer attendance check-in/check-out from the dashboard.
-- A single attendance button per sign-up that changes from `Check in` to `Check out` after check-in.
+- A single attendance button per confirmed sign-up that changes from `Check in` to `Check out` after check-in.
 - 4-digit facilitator code prompt for both check-in and check-out.
 - Automatic timestamp capture for check-in and check-out.
 - Automatic volunteering-hours calculation from the elapsed time between both timestamps.
@@ -78,7 +80,7 @@ The app should use this role model:
 | Role | Purpose |
 | --- | --- |
 | volunteer | Signs up, maintains profile, checks in/out for attendance, signs up for training, requests testimonials. |
-| admin | Manages opportunities, training, attendance validation, testimonials, and reports. |
+| admin | Manages opportunities, sign-up confirmation, training, attendance validation, testimonials, and reports. |
 | super_admin | Manages users, roles, system settings, and full audit access. |
 
 There is no facilitator role in the app. Facilitators only provide the 4-digit attendance code at the physical volunteering opportunity; admins verify and validate submitted attendance records.
@@ -101,9 +103,27 @@ Phase 2 records local opportunity sign-ups with enough shape to map onto `opport
 - `hours`
 - `status`
 - `signedUpAt`
+- `reviewedAt`
+- `reviewedBy`
+- `confirmedAt`
+- `waitlistedAt`
+- `declinedAt`
 - `cancelledAt`
 - `completedAt`
 - `verifiedHours`
+
+Status terms:
+
+| Internal status | UI term | Meaning |
+| --- | --- | --- |
+| pending_review | Pending review | Volunteer has signed up but has not been accepted yet. |
+| confirmed | Confirmed | Admin accepted the volunteer for the opportunity. |
+| waitlisted | Waitlisted | Volunteer is queued because a slot is not yet available. |
+| declined | Not selected | Admin did not accept the volunteer for the opportunity. |
+| cancelled | Cancelled | Volunteer withdrew or the sign-up was removed. |
+| completed | Completed | Attendance has been verified. |
+
+Only confirmed sign-ups are eligible for check-in/check-out. Completed sign-ups appear only after verified or adjusted attendance.
 
 When a database is connected, local opportunity sign-up records should be replaced with rows in `opportunity_signups` tied to the authenticated volunteer user.
 
@@ -112,15 +132,16 @@ When a database is connected, local opportunity sign-up records should be replac
 Phase 3 uses a check-in/check-out + admin validation model:
 
 1. Volunteer signs up for an opportunity.
-2. Volunteer arrives at the opportunity and taps `Check in`.
-3. Volunteer enters the 4-digit facilitator code.
-4. The system records the check-in timestamp and changes the button to `Check out`.
-5. Volunteer taps `Check out` when leaving.
-6. Volunteer enters the 4-digit facilitator code again.
-7. The system records the check-out timestamp and calculates logged hours from the time difference.
-8. The record is stored as `submitted` for admin verification.
-9. Admin verifies, adjusts, rejects, or requests clarification.
-10. Only `verified` or `adjusted` records contribute to official dashboard statistics and testimonials.
+2. Admin confirms the sign-up.
+3. Volunteer arrives at the opportunity and taps `Check in`.
+4. Volunteer enters the 4-digit facilitator code.
+5. The system records the check-in timestamp and changes the button to `Check out`.
+6. Volunteer taps `Check out` when leaving.
+7. Volunteer enters the 4-digit facilitator code again.
+8. The system records the check-out timestamp and calculates logged hours from the time difference.
+9. The record is stored as `submitted` for admin verification.
+10. Admin verifies, adjusts, rejects, or requests clarification.
+11. Only `verified` or `adjusted` records contribute to official dashboard statistics and testimonials.
 
 For production, attendance codes should be stored and compared as hashes, not plaintext.
 
