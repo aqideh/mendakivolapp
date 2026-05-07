@@ -326,12 +326,11 @@ function openOpportunityModal(id) {
       make('section', { class: 'modal-section' }, [make('h3', { text: 'Requirements' }), make('p', { text: opp.requirements })])
     ]),
     make('div', { class: 'modal-actions' }, [
-      make('a', {
+      make('button', {
+        type: 'button',
         class: 'button button-primary',
-        href: state.data.site.registrationUrl,
-        target: '_blank',
-        rel: 'noopener noreferrer',
-        text: 'Register now'
+        text: 'Sign up for this role',
+        dataset: { signupOpportunity: String(opp.id) }
       }),
       make('button', { type: 'button', class: 'button', text: 'Close', dataset: { closeModal: 'true' } })
     ])
