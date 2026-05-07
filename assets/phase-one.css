@@ -130,7 +130,11 @@
 
 .profile-form input,
 .profile-form select,
-.profile-form textarea {
+.profile-form textarea,
+.attendance-report-form input,
+.attendance-report-form select,
+.attendance-report-form textarea,
+.attendance-review-form input {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -141,7 +145,8 @@
   font-weight: 600;
 }
 
-.profile-form textarea {
+.profile-form textarea,
+.attendance-report-form textarea {
   resize: vertical;
 }
 
@@ -156,13 +161,15 @@
   margin-top: 0.35rem;
 }
 
-.signup-list {
+.signup-list,
+.attendance-list {
   display: grid;
   gap: 0.7rem;
   margin-top: 1rem;
 }
 
-.signup-row {
+.signup-row,
+.attendance-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
@@ -173,17 +180,27 @@
   padding: 0.85rem;
 }
 
-.signup-row strong {
+.attendance-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.signup-row strong,
+.attendance-row strong {
   display: block;
   color: var(--black);
   line-height: 1.3;
 }
 
-.signup-row p {
+.signup-row p,
+.attendance-row p {
   margin: 0.22rem 0 0;
   color: var(--text-3);
   font-size: 0.82rem;
   line-height: 1.4;
+}
+
+.attendance-note {
+  color: var(--text-2) !important;
 }
 
 .signup-empty {
@@ -214,6 +231,63 @@
   border: 1px solid rgba(180, 20, 20, 0.18);
 }
 
+.attendance-card {
+  grid-column: 1 / -1;
+}
+
+.admin-attendance-card {
+  background:
+    radial-gradient(circle at top right, rgba(255, 215, 0, 0.16), transparent 16rem),
+    var(--surface);
+}
+
+.attendance-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.attendance-report-form label,
+.attendance-review-form label {
+  display: grid;
+  gap: 0.38rem;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.attendance-notes-label {
+  display: grid;
+  gap: 0.38rem;
+  margin-top: 0.85rem;
+}
+
+.admin-attendance-row {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  align-items: start;
+}
+
+.attendance-review-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.attendance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.attendance-actions .button {
+  padding-inline: 0.85rem;
+}
+
+.attendance-pending-note {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
 .auth-layer .modal-backdrop {
   background: rgba(10, 12, 10, 0.55);
 }
@@ -241,7 +315,8 @@
 }
 
 @media (max-width: 980px) {
-  .dashboard-layout {
+  .dashboard-layout,
+  .admin-attendance-row {
     grid-template-columns: 1fr;
   }
 }
@@ -256,7 +331,8 @@
     padding: 1rem;
   }
 
-  .dashboard-stat-grid {
+  .dashboard-stat-grid,
+  .attendance-form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -264,14 +340,21 @@
     width: 100%;
   }
 
-  .signup-row {
+  .signup-row,
+  .attendance-row {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
   .signup-row .badge,
-  .signup-row .text-button {
+  .signup-row .text-button,
+  .attendance-row .badge,
+  .attendance-row .button {
     justify-self: start;
+  }
+
+  .attendance-actions .button {
+    width: 100%;
   }
 
   .auth-layer {
