@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function installAuthPasswordField() {
   const form = document.querySelector('[data-auth-form]');
   if (!form || form.querySelector('[data-auth-password-field]')) return;
 
@@ -16,4 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   label.append(input);
   form.insertBefore(label, submit);
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installAuthPasswordField);
+} else {
+  installAuthPasswordField();
+}
