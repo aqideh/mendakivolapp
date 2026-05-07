@@ -330,6 +330,8 @@ const VolunteerDataStore = (() => {
   };
 })();
 
+window.VolunteerDataStore = VolunteerDataStore;
+
 VolunteerDataStore.initAuth().then(() => {
   window.dispatchEvent(new CustomEvent('volunteer-auth-ready'));
 });
