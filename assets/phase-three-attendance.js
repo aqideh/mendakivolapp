@@ -230,16 +230,22 @@ function phaseThreeAdminRow(claim) {
       <p class="attendance-note">Check-in code entered: ${phaseThreeEscape(claim.checkInCode || 'n/a')} · Check-out code entered: ${phaseThreeEscape(claim.checkOutCode || 'n/a')}</p>
     </div>
     <form class="attendance-review-form" data-attendance-review="${phaseThreeEscape(claim.id)}">
-      <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" value="${phaseThreeEscape(claim.claimedHours || '')}" required></label>
+      <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" placeholder="${phaseThreeEscape(claim.claimedHours || 0)}"></label>
       <label>Admin notes<input name="adminNotes" placeholder="Optional note"></label>
       <div class="attendance-actions">
-        <button class="button button-primary" type="submit" name="action" value="verify">Verify</button>
-        <button class="button dashboard-secondary" type="submit" name="action" value="adjust">Adjust</button>
+        <button class="button button-primary" type="submit" name="action" value="verify" data-smart-review-action>Verify</button>
         <button class="button dashboard-secondary" type="submit" name="action" value="clarify">Clarify</button>
         <button class="button dashboard-secondary" type="submit" name="action" value="reject">Reject</button>
       </div>
     </form>
   `;
+  const input = row.querySelector('input[name="verifiedHours"]');
+  const smartButton = row.querySelector('[data-smart-review-action]');
+  input?.addEventListener('input', () => {
+    const hasAdminValue = input.value.trim() !== '';
+    smartButton.textContent = hasAdminValue ? 'Adjust' : 'Verify';
+    smartButton.value = hasAdminValue ? 'adjust' : 'verify';
+  });
   return row;
 }
 
@@ -329,7 +335,8 @@ function phaseThreeHandlePunch(signupId, action) {
 function phaseThreeReviewClaim(form, submitter) {
   const claimId = form.dataset.attendanceReview;
   const data = new FormData(form);
-  const action = submitter?.value || 'verify';
+  const enteredHours = String(data.get('verifiedHours') || '').trim();
+  const action = submitter?.value || (enteredHours ? 'adjust' : 'verify');
   const claims = phaseThreeClaims();
   const claim = claims.find(item => item.id === claimId);
   if (!claim) return;
@@ -343,7 +350,7 @@ function phaseThreeReviewClaim(form, submitter) {
   claim.claimStatus = statusByAction[action] || 'verified';
   claim.verifiedHours = claim.claimStatus === 'rejected' || claim.claimStatus === 'clarification_requested'
     ? 0
-    : Number(data.get('verifiedHours') || claim.claimedHours || 0);
+    : Number(enteredHours || claim.claimedHours || 0);
   claim.adminNotes = String(data.get('adminNotes') || '').trim();
   claim.reviewedBy = phaseThreeEmail() || 'admin';
   claim.reviewedAt = new Date().toISOString();
