@@ -36,6 +36,37 @@ function phaseTwoCurrentVolunteerEmail() {
   return phaseOneProfile()?.email || phaseOneSession()?.email || '';
 }
 
+function phaseTwoIsAdmin() {
+  const role = String(phaseOneSession()?.role || '').toLowerCase();
+  const email = phaseTwoCurrentVolunteerEmail().toLowerCase();
+  return role === 'admin' || role === 'super_admin' || email.includes('+admin@') || email.startsWith('admin@');
+}
+
+function phaseTwoStatusLabel(status) {
+  const labels = {
+    pending_review: 'Pending review',
+    registered: 'Pending review',
+    confirmed: 'Confirmed',
+    waitlisted: 'Waitlisted',
+    declined: 'Not selected',
+    cancelled: 'Cancelled',
+    completed: 'Completed'
+  };
+  return labels[status] || status || 'Pending review';
+}
+
+function phaseTwoStatusBadgeClass(status) {
+  if (status === 'confirmed') return 'badge-open';
+  if (status === 'completed') return 'badge-open';
+  if (status === 'waitlisted') return 'badge-programme';
+  if (status === 'declined' || status === 'cancelled') return 'badge-ad-hoc';
+  return 'badge-volunteer';
+}
+
+function phaseTwoActiveStatuses() {
+  return ['pending_review', 'registered', 'confirmed', 'waitlisted'];
+}
+
 function phaseOneSetActivePage(page) {
   document.querySelectorAll('.page').forEach(section => {
     section.classList.toggle('active', section.id === `page-${page}`);
@@ -107,7 +138,7 @@ function phaseOneRenderDashboard() {
   const profileCopy = document.querySelector('[data-dashboard-profile-copy]');
   if (profileCopy) {
     profileCopy.textContent = signedIn
-      ? 'Your profile is stored locally for Phase 1. It will map to the database profile table when auth is connected.'
+      ? 'Your profile is stored locally for review. Production sign-ups should map to the database sign-up lifecycle.'
       : 'Sign in to create your volunteer profile.';
   }
 
@@ -184,7 +215,22 @@ function phaseTwoOpportunityHours(opp) {
 
 function phaseTwoIsSignedUp(oppId) {
   const email = phaseTwoCurrentVolunteerEmail();
-  return phaseTwoSignups().some(item => item.email === email && String(item.opportunityId) === String(oppId) && item.status === 'registered');
+  return phaseTwoSignups().some(item => item.email === email && String(item.opportunityId) === String(oppId) && phaseTwoActiveStatuses().includes(item.status));
+}
+
+function phaseTwoUserSignupForOpportunity(oppId) {
+  const email = phaseTwoCurrentVolunteerEmail();
+  return phaseTwoSignups().find(item => item.email === email && String(item.opportunityId) === String(oppId) && item.status !== 'cancelled');
+}
+
+function phaseTwoSignupCounts(oppId) {
+  const signups = phaseTwoSignups().filter(item => String(item.opportunityId) === String(oppId));
+  return {
+    pending: signups.filter(item => item.status === 'pending_review' || item.status === 'registered').length,
+    confirmed: signups.filter(item => item.status === 'confirmed' || item.status === 'completed').length,
+    waitlisted: signups.filter(item => item.status === 'waitlisted').length,
+    completed: signups.filter(item => item.status === 'completed').length
+  };
 }
 
 function phaseTwoCreateSignup(oppId) {
@@ -213,8 +259,11 @@ function phaseTwoCreateSignup(oppId) {
     location: opp.location,
     commitment: opp.commitment,
     hours: phaseTwoOpportunityHours(opp),
-    status: 'registered',
+    status: 'pending_review',
     signedUpAt: existing?.signedUpAt || new Date().toISOString(),
+    reviewedAt: '',
+    reviewedBy: '',
+    adminNotes: '',
     updatedAt: new Date().toISOString()
   };
 
@@ -225,19 +274,40 @@ function phaseTwoCreateSignup(oppId) {
   }
   phaseTwoWriteSignups(signups);
   phaseTwoRenderDashboardSignups();
+  if (typeof renderOpportunities === 'function') renderOpportunities();
   return { ok: true, signup: record };
 }
 
 function phaseTwoCancelSignup(oppId) {
   const email = phaseTwoCurrentVolunteerEmail();
   const signups = phaseTwoSignups();
-  const existing = signups.find(item => item.email === email && String(item.opportunityId) === String(oppId) && item.status === 'registered');
+  const existing = signups.find(item => item.email === email && String(item.opportunityId) === String(oppId) && phaseTwoActiveStatuses().includes(item.status));
   if (!existing) return { ok: false, reason: 'not_found' };
   existing.status = 'cancelled';
   existing.cancelledAt = new Date().toISOString();
   existing.updatedAt = new Date().toISOString();
   phaseTwoWriteSignups(signups);
   phaseTwoRenderDashboardSignups();
+  if (typeof renderOpportunities === 'function') renderOpportunities();
+  return { ok: true };
+}
+
+function phaseTwoUpdateSignupStatus(signupId, status) {
+  if (!phaseTwoIsAdmin()) return { ok: false, reason: 'not_authorised' };
+  const signups = phaseTwoSignups();
+  const signup = signups.find(item => item.id === signupId);
+  if (!signup) return { ok: false, reason: 'not_found' };
+  signup.status = status;
+  signup.reviewedAt = new Date().toISOString();
+  signup.reviewedBy = phaseTwoCurrentVolunteerEmail() || 'admin';
+  signup.updatedAt = new Date().toISOString();
+  if (status === 'confirmed') signup.confirmedAt = signup.reviewedAt;
+  if (status === 'waitlisted') signup.waitlistedAt = signup.reviewedAt;
+  if (status === 'declined') signup.declinedAt = signup.reviewedAt;
+  phaseTwoWriteSignups(signups);
+  phaseTwoRenderDashboardSignups();
+  if (typeof renderOpportunities === 'function') renderOpportunities();
+  if (typeof phaseThreeRender === 'function') phaseThreeRender();
   return { ok: true };
 }
 
@@ -250,7 +320,7 @@ function phaseTwoEnsureDashboardSections() {
   upcoming.dataset.signupDashboardCard = 'upcoming';
   upcoming.innerHTML = `
     <div class="section-header">
-      <div><h2>My sign-ups</h2><p class="dashboard-muted">Opportunities you have registered for.</p></div>
+      <div><h2>My opportunity sign-ups</h2><p class="dashboard-muted">Sign-ups move from Pending review to Confirmed once an admin accepts your slot.</p></div>
       <button class="text-button" type="button" data-page-target="opportunities">Browse more</button>
     </div>
     <div class="signup-list" data-upcoming-signups></div>
@@ -260,17 +330,29 @@ function phaseTwoEnsureDashboardSections() {
   completed.className = 'dashboard-card signup-dashboard-card';
   completed.dataset.signupDashboardCard = 'completed';
   completed.innerHTML = `
-    <h2>Attendance preview</h2>
-    <p class="dashboard-muted">Phase 2 tracks sign-ups. Attendance self-reporting and admin verification will be implemented in the next phase.</p>
+    <h2>Completed opportunities</h2>
+    <p class="dashboard-muted">Completed opportunities appear here only after attendance is verified.</p>
     <div class="signup-list" data-completed-signups></div>
+  `;
+
+  const admin = document.createElement('section');
+  admin.className = 'dashboard-card signup-dashboard-card admin-signup-card';
+  admin.dataset.signupDashboardCard = 'admin';
+  admin.hidden = true;
+  admin.innerHTML = `
+    <div class="section-header">
+      <div><h2>Admin sign-up review</h2><p class="dashboard-muted">View all opportunity sign-ups and confirm, waitlist, or decline volunteers.</p></div>
+    </div>
+    <div class="signup-list" data-admin-signups></div>
   `;
 
   const statsCard = document.querySelector('#stats-title')?.closest('.dashboard-card');
   if (statsCard) {
     statsCard.insertAdjacentElement('afterend', upcoming);
     upcoming.insertAdjacentElement('afterend', completed);
+    completed.insertAdjacentElement('afterend', admin);
   } else {
-    layout.append(upcoming, completed);
+    layout.append(upcoming, completed, admin);
   }
 }
 
@@ -278,7 +360,8 @@ function phaseTwoRenderDashboardSignups() {
   const email = phaseTwoCurrentVolunteerEmail();
   const signedIn = Boolean(email);
   const userSignups = signedIn ? phaseTwoSignups().filter(item => item.email === email) : [];
-  const activeSignups = userSignups.filter(item => item.status === 'registered');
+  const activeSignups = userSignups.filter(item => phaseTwoActiveStatuses().includes(item.status));
+  const confirmedSignups = userSignups.filter(item => item.status === 'confirmed');
   const completedSignups = userSignups.filter(item => item.status === 'completed');
   const verifiedHours = completedSignups.reduce((total, item) => total + Number(item.verifiedHours || item.hours || 0), 0);
 
@@ -286,7 +369,7 @@ function phaseTwoRenderDashboardSignups() {
   const upcomingNode = document.querySelector('[data-stat-upcoming]');
   const completedNode = document.querySelector('[data-stat-completed]');
   if (hoursNode) hoursNode.textContent = String(verifiedHours);
-  if (upcomingNode) upcomingNode.textContent = String(activeSignups.length);
+  if (upcomingNode) upcomingNode.textContent = String(confirmedSignups.length);
   if (completedNode) completedNode.textContent = String(completedSignups.length);
 
   const upcomingList = document.querySelector('[data-upcoming-signups]');
@@ -307,6 +390,8 @@ function phaseTwoRenderDashboardSignups() {
     ));
     if (signedIn && completedSignups.length === 0) completedList.append(phaseTwoEmptyRow('No completed opportunities yet.'));
   }
+
+  phaseTwoRenderAdminSignupQueue();
 }
 
 function phaseTwoSignupRow(signup) {
@@ -316,10 +401,14 @@ function phaseTwoSignupRow(signup) {
     <div>
       <strong>${escapePhaseTwo(signup.title)}</strong>
       <p>${escapePhaseTwo(signup.time || 'Time to be confirmed')} · ${escapePhaseTwo(signup.location || 'Location to be confirmed')}</p>
+      ${signup.status === 'pending_review' || signup.status === 'registered' ? '<p>MENDAKI will review and confirm your slot.</p>' : ''}
+      ${signup.status === 'confirmed' ? '<p>You are confirmed. Check in when you arrive.</p>' : ''}
+      ${signup.status === 'waitlisted' ? '<p>You are waitlisted. MENDAKI will update you if a slot opens.</p>' : ''}
+      ${signup.status === 'declined' ? '<p>You were not selected for this opportunity.</p>' : ''}
     </div>
-    <span class="badge ${signup.status === 'registered' ? 'badge-open' : 'badge-volunteer'}">${escapePhaseTwo(signup.status)}</span>
+    <span class="badge ${phaseTwoStatusBadgeClass(signup.status)}">${escapePhaseTwo(phaseTwoStatusLabel(signup.status))}</span>
   `;
-  if (signup.status === 'registered') {
+  if (phaseTwoActiveStatuses().includes(signup.status)) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'text-button';
@@ -328,6 +417,53 @@ function phaseTwoSignupRow(signup) {
     row.append(button);
   }
   return row;
+}
+
+function phaseTwoRenderAdminSignupQueue() {
+  const card = document.querySelector('[data-signup-dashboard-card="admin"]');
+  const list = document.querySelector('[data-admin-signups]');
+  if (!card || !list) return;
+  const isAdmin = phaseTwoIsAdmin();
+  card.hidden = !isAdmin;
+  if (!isAdmin) return;
+
+  const signups = phaseTwoSignups().filter(item => item.status !== 'cancelled').sort((a, b) => new Date(b.updatedAt || b.signedUpAt || 0) - new Date(a.updatedAt || a.signedUpAt || 0));
+  list.replaceChildren();
+  if (!signups.length) {
+    list.append(phaseTwoEmptyRow('No opportunity sign-ups yet.'));
+    return;
+  }
+  signups.forEach(signup => list.append(phaseTwoAdminSignupRow(signup)));
+}
+
+function phaseTwoAdminSignupRow(signup) {
+  const row = document.createElement('div');
+  row.className = 'signup-row admin-signup-row';
+  row.innerHTML = `
+    <div>
+      <strong>${escapePhaseTwo(signup.volunteerName || 'Volunteer')}</strong>
+      <p>${escapePhaseTwo(signup.email)} · ${escapePhaseTwo(signup.title)}</p>
+      <p>${escapePhaseTwo(signup.time || 'Time to be confirmed')} · ${escapePhaseTwo(signup.location || 'Location to be confirmed')}</p>
+    </div>
+    <span class="badge ${phaseTwoStatusBadgeClass(signup.status)}">${escapePhaseTwo(phaseTwoStatusLabel(signup.status))}</span>
+  `;
+  const actions = document.createElement('div');
+  actions.className = 'signup-admin-actions';
+  if (signup.status !== 'confirmed' && signup.status !== 'completed') actions.append(phaseTwoAdminButton('Confirm', signup.id, 'confirmed'));
+  if (signup.status !== 'waitlisted' && signup.status !== 'completed') actions.append(phaseTwoAdminButton('Waitlist', signup.id, 'waitlisted'));
+  if (signup.status !== 'declined' && signup.status !== 'completed') actions.append(phaseTwoAdminButton('Decline', signup.id, 'declined'));
+  row.append(actions);
+  return row;
+}
+
+function phaseTwoAdminButton(text, signupId, status) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = status === 'confirmed' ? 'button button-primary' : 'button dashboard-secondary';
+  button.textContent = text;
+  button.dataset.adminSignupStatus = status;
+  button.dataset.signupId = signupId;
+  return button;
 }
 
 function phaseTwoEmptyRow(text) {
@@ -349,12 +485,13 @@ function phaseTwoPatchOpportunityModal(oppId) {
   const externalRegister = actions.querySelector('a.button-primary');
   if (!externalRegister || actions.querySelector('[data-signup-opportunity]')) return;
 
-  const signedUp = phaseTwoIsSignedUp(oppId);
+  const signup = phaseTwoUserSignupForOpportunity(oppId);
+  const signedUp = Boolean(signup && phaseTwoActiveStatuses().includes(signup.status));
   const signupButton = document.createElement('button');
   signupButton.type = 'button';
   signupButton.className = 'button button-primary';
   signupButton.dataset.signupOpportunity = String(oppId);
-  signupButton.textContent = signedUp ? 'Already signed up' : 'Sign up for this role';
+  signupButton.textContent = signedUp ? phaseTwoStatusLabel(signup.status) : 'Sign up for this role';
   signupButton.disabled = signedUp;
   externalRegister.replaceWith(signupButton);
 
@@ -400,9 +537,9 @@ function phaseTwoBind() {
         return;
       }
       phaseTwoPatchOpportunityModal(signupButton.dataset.signupOpportunity);
-      signupButton.textContent = 'Already signed up';
+      signupButton.textContent = 'Pending review';
       signupButton.disabled = true;
-      phaseTwoShowModalNotice('You are signed up. This now appears in your dashboard.');
+      phaseTwoShowModalNotice('Your sign-up is pending review. It will appear in your dashboard.');
       return;
     }
 
@@ -420,6 +557,12 @@ function phaseTwoBind() {
           modalSignup.textContent = 'Sign up for this role';
         }
       }
+    }
+
+    const adminStatusButton = event.target.closest('[data-admin-signup-status]');
+    if (adminStatusButton) {
+      event.preventDefault();
+      phaseTwoUpdateSignupStatus(adminStatusButton.dataset.signupId, adminStatusButton.dataset.adminSignupStatus);
     }
   }, true);
 
