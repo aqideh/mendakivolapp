@@ -1,57 +1,48 @@
-const PHASE_THREE_ATTENDANCE_KEY = 'mendaki.volunteer.attendance.v1';
+const PHASE_THREE_ATTENDANCE_KEY = VolunteerDataStore.keys.attendanceClaims;
 const PHASE_THREE_CODE_PATTERN = /^\d{4}$/;
 
 function phaseThreeReadJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || 'null');
-  } catch (error) {
-    console.warn(`Could not parse ${key}`, error);
-    return null;
-  }
+  return VolunteerDataStore.readJson(key, null);
 }
 
 function phaseThreeWriteJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  return VolunteerDataStore.writeJson(key, value);
 }
 
 function phaseThreeClaims() {
-  const value = phaseThreeReadJson(PHASE_THREE_ATTENDANCE_KEY);
-  return Array.isArray(value) ? value : [];
+  return VolunteerDataStore.getAttendanceClaims();
 }
 
 function phaseThreeWriteClaims(claims) {
-  phaseThreeWriteJson(PHASE_THREE_ATTENDANCE_KEY, claims);
+  return VolunteerDataStore.saveAttendanceClaims(claims);
 }
 
 function phaseThreeProfile() {
-  return phaseThreeReadJson('mendaki.volunteer.profile.v1') || {};
+  return VolunteerDataStore.getProfile() || {};
 }
 
 function phaseThreeSession() {
-  return phaseThreeReadJson('mendaki.volunteer.session.v1') || {};
+  return VolunteerDataStore.normaliseSessionRole() || {};
 }
 
 function phaseThreeSignups() {
-  const value = phaseThreeReadJson('mendaki.volunteer.signups.v1');
-  return Array.isArray(value) ? value : [];
+  return VolunteerDataStore.getOpportunitySignups();
 }
 
 function phaseThreeWriteSignups(signups) {
-  phaseThreeWriteJson('mendaki.volunteer.signups.v1', signups);
+  return VolunteerDataStore.saveOpportunitySignups(signups);
 }
 
 function phaseThreeEmail() {
-  return phaseThreeProfile().email || phaseThreeSession().email || '';
+  return VolunteerDataStore.currentEmail();
 }
 
 function phaseThreeIsSignedIn() {
-  return Boolean(phaseThreeEmail());
+  return VolunteerDataStore.isSignedIn();
 }
 
 function phaseThreeIsAdmin() {
-  const role = String(phaseThreeSession().role || '').toLowerCase();
-  const email = phaseThreeEmail().toLowerCase();
-  return role === 'admin' || role === 'super_admin' || email.includes('+admin@') || email.startsWith('admin@');
+  return VolunteerDataStore.isAdmin();
 }
 
 function phaseThreeClaimForSignup(signupId) {
