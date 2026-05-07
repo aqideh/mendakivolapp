@@ -124,6 +124,23 @@
     return Array.isArray(data) ? data.map(rowToOpportunity) : [];
   }
 
+  function refreshOpportunityViews() {
+    if (typeof window.renderHomeOpportunities === 'function') window.renderHomeOpportunities();
+    if (typeof window.renderOpportunities === 'function') window.renderOpportunities();
+    if (typeof window.phaseTwoRenderDashboardSignups === 'function') window.phaseTwoRenderDashboardSignups();
+  }
+
+  async function applySupabaseOpportunities() {
+    const opportunities = await fetchSupabaseOpportunities();
+    if (!opportunities.length) return { ok: false, count: 0 };
+    if (window.state?.data) {
+      window.state.data.opportunities = opportunities;
+      refreshOpportunityViews();
+      window.dispatchEvent(new CustomEvent('volunteer-opportunities-synced'));
+    }
+    return { ok: true, count: opportunities.length };
+  }
+
   async function syncOpportunityToSupabase(opp) {
     const supabase = client();
     const current = session();
@@ -247,6 +264,7 @@
 
   Object.assign(window.VolunteerDataStore, {
     fetchSupabaseOpportunities,
+    applySupabaseOpportunities,
     syncOpportunityToSupabase,
     syncOpportunitiesToSupabase,
     fetchSupabaseOpportunitySignups,
@@ -255,10 +273,12 @@
 
   window.addEventListener('volunteer-auth-ready', () => {
     installSignupPersistenceWrappers();
+    applySupabaseOpportunities();
     syncSignupsAndRefresh();
   });
   window.addEventListener('volunteer-auth-changed', () => {
     installSignupPersistenceWrappers();
+    applySupabaseOpportunities();
     syncSignupsAndRefresh();
   });
   window.addEventListener('volunteer-signups-synced', refreshVisibleSignupViews);
@@ -266,6 +286,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     installSignupPersistenceWrappers();
     window.setTimeout(installSignupPersistenceWrappers, 0);
-    window.setTimeout(syncSignupsAndRefresh, 150);
+    window.setTimeout(applySupabaseOpportunities, 120);
+    window.setTimeout(syncSignupsAndRefresh, 180);
   });
 })();
