@@ -1,47 +1,39 @@
-const PHASE_FOUR_TRAINING_SIGNUPS_KEY = 'mendaki.volunteer.trainingSignups.v1';
+const PHASE_FOUR_TRAINING_SIGNUPS_KEY = VolunteerDataStore.keys.trainingSignups;
 
 function phaseFourReadJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || 'null');
-  } catch (error) {
-    console.warn(`Could not parse ${key}`, error);
-    return null;
-  }
+  return VolunteerDataStore.readJson(key, null);
 }
 
 function phaseFourWriteJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  return VolunteerDataStore.writeJson(key, value);
 }
 
 function phaseFourSession() {
-  return phaseFourReadJson('mendaki.volunteer.session.v1') || {};
+  return VolunteerDataStore.normaliseSessionRole() || {};
 }
 
 function phaseFourProfile() {
-  return phaseFourReadJson('mendaki.volunteer.profile.v1') || {};
+  return VolunteerDataStore.getProfile() || {};
 }
 
 function phaseFourEmail() {
-  return phaseFourProfile().email || phaseFourSession().email || '';
+  return VolunteerDataStore.currentEmail();
 }
 
 function phaseFourIsSignedIn() {
-  return Boolean(phaseFourEmail());
+  return VolunteerDataStore.isSignedIn();
 }
 
 function phaseFourIsAdmin() {
-  const role = String(phaseFourSession().role || '').toLowerCase();
-  const email = phaseFourEmail().toLowerCase();
-  return role === 'admin' || role === 'super_admin' || email.includes('+admin@') || email.startsWith('admin@');
+  return VolunteerDataStore.isAdmin();
 }
 
 function phaseFourTrainingSignups() {
-  const value = phaseFourReadJson(PHASE_FOUR_TRAINING_SIGNUPS_KEY);
-  return Array.isArray(value) ? value : [];
+  return VolunteerDataStore.getTrainingSignups();
 }
 
 function phaseFourWriteTrainingSignups(signups) {
-  phaseFourWriteJson(PHASE_FOUR_TRAINING_SIGNUPS_KEY, signups);
+  return VolunteerDataStore.saveTrainingSignups(signups);
 }
 
 function phaseFourAppState() {
