@@ -24,7 +24,8 @@ function phaseOneProfile() {
 }
 
 function phaseTwoSignups() {
-  return Array.isArray(phaseOneReadJson(PHASE_TWO_SIGNUPS_KEY)) ? phaseOneReadJson(PHASE_TWO_SIGNUPS_KEY) : [];
+  const value = phaseOneReadJson(PHASE_TWO_SIGNUPS_KEY);
+  return Array.isArray(value) ? value : [];
 }
 
 function phaseTwoWriteSignups(signups) {
@@ -150,12 +151,16 @@ function phaseOneSignOut() {
   phaseOneRenderDashboard();
 }
 
-function phaseTwoDataReady() {
-  return Boolean(window.state?.data?.opportunities || window.state?.data);
+function phaseTwoAppState() {
+  try {
+    return typeof state !== 'undefined' ? state : null;
+  } catch (error) {
+    return null;
+  }
 }
 
 function phaseTwoOpportunities() {
-  return window.state?.data?.opportunities || [];
+  return phaseTwoAppState()?.data?.opportunities || [];
 }
 
 function phaseTwoFindOpportunity(id) {
