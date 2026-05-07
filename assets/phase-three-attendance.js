@@ -104,6 +104,12 @@ function phaseThreeHoursBetween(startValue, endValue) {
   return Math.round(((end - start) / 36e5) * 100) / 100;
 }
 
+function phaseThreeNormaliseHours(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return '0';
+  return String(number);
+}
+
 function phaseThreeEnsureDashboardSections() {
   const layout = document.querySelector('.dashboard-layout');
   if (!layout || document.querySelector('[data-attendance-card]')) return;
@@ -150,20 +156,26 @@ function phaseThreeRenderVolunteerAttendance() {
   if (!list) return;
 
   const email = phaseThreeEmail();
-  const signups = phaseThreeSignups().filter(signup => signup.email === email && signup.status !== 'cancelled');
+  const allSignups = phaseThreeSignups().filter(signup => signup.email === email && signup.status !== 'cancelled');
+  const confirmedSignups = allSignups.filter(signup => signup.status === 'confirmed' || signup.status === 'completed');
   list.replaceChildren();
 
   if (!phaseThreeIsSignedIn()) {
-    list.append(phaseThreeEmpty('Sign in to check in and check out of volunteer opportunities.'));
+    list.append(phaseThreeEmpty('Sign in to check in and check out of confirmed volunteer opportunities.'));
     return;
   }
 
-  if (signups.length === 0) {
+  if (allSignups.length === 0) {
     list.append(phaseThreeEmpty('No sign-ups available for attendance yet.'));
     return;
   }
 
-  signups.forEach(signup => list.append(phaseThreeVolunteerRow(signup)));
+  if (confirmedSignups.length === 0) {
+    list.append(phaseThreeEmpty('Only confirmed opportunities are available for check-in. Pending review and waitlisted sign-ups will appear here after admin confirmation.'));
+    return;
+  }
+
+  confirmedSignups.forEach(signup => list.append(phaseThreeVolunteerRow(signup)));
 }
 
 function phaseThreeVolunteerRow(signup) {
@@ -218,6 +230,7 @@ function phaseThreeRenderAdminQueue() {
 }
 
 function phaseThreeAdminRow(claim) {
+  const systemHours = phaseThreeNormaliseHours(claim.claimedHours || 0);
   const row = document.createElement('div');
   row.className = 'attendance-row admin-attendance-row';
   row.innerHTML = `
@@ -226,11 +239,11 @@ function phaseThreeAdminRow(claim) {
       <p>${phaseThreeEscape(claim.volunteerName)} · ${phaseThreeEscape(claim.email)}</p>
       <p>Check in: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkInAt))}</p>
       <p>Check out: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>
-      <p>System-calculated hours: ${phaseThreeEscape(claim.claimedHours || 0)}h</p>
+      <p>System-calculated hours: ${phaseThreeEscape(systemHours)}h</p>
       <p class="attendance-note">Check-in code entered: ${phaseThreeEscape(claim.checkInCode || 'n/a')} · Check-out code entered: ${phaseThreeEscape(claim.checkOutCode || 'n/a')}</p>
     </div>
     <form class="attendance-review-form" data-attendance-review="${phaseThreeEscape(claim.id)}">
-      <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" placeholder="${phaseThreeEscape(claim.claimedHours || 0)}"></label>
+      <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" value="${phaseThreeEscape(systemHours)}" data-system-hours="${phaseThreeEscape(systemHours)}"></label>
       <label>Admin notes<input name="adminNotes" placeholder="Optional note"></label>
       <div class="attendance-actions">
         <button class="button button-primary" type="submit" name="action" value="verify" data-smart-review-action>Verify</button>
@@ -241,11 +254,14 @@ function phaseThreeAdminRow(claim) {
   `;
   const input = row.querySelector('input[name="verifiedHours"]');
   const smartButton = row.querySelector('[data-smart-review-action]');
-  input?.addEventListener('input', () => {
-    const hasAdminValue = input.value.trim() !== '';
-    smartButton.textContent = hasAdminValue ? 'Adjust' : 'Verify';
-    smartButton.value = hasAdminValue ? 'adjust' : 'verify';
-  });
+  const refreshButton = () => {
+    const currentHours = phaseThreeNormaliseHours(input?.value || 0);
+    const isAdjusted = currentHours !== systemHours;
+    smartButton.textContent = isAdjusted ? 'Adjust' : 'Verify';
+    smartButton.value = isAdjusted ? 'adjust' : 'verify';
+  };
+  input?.addEventListener('input', refreshButton);
+  refreshButton();
   return row;
 }
 
@@ -271,6 +287,10 @@ function phaseThreePromptCode(action) {
 function phaseThreeHandlePunch(signupId, action) {
   const signup = phaseThreeSignups().find(item => item.id === signupId);
   if (!signup) return;
+  if (signup.status !== 'confirmed' && signup.status !== 'completed') {
+    window.alert('Only confirmed opportunities can be checked in or checked out.');
+    return;
+  }
   const code = phaseThreePromptCode(action);
   if (!code) return;
 
@@ -336,7 +356,8 @@ function phaseThreeReviewClaim(form, submitter) {
   const claimId = form.dataset.attendanceReview;
   const data = new FormData(form);
   const enteredHours = String(data.get('verifiedHours') || '').trim();
-  const action = submitter?.value || (enteredHours ? 'adjust' : 'verify');
+  const systemHours = String(form.querySelector('input[name="verifiedHours"]')?.dataset.systemHours || '').trim();
+  const action = submitter?.value || (enteredHours && enteredHours !== systemHours ? 'adjust' : 'verify');
   const claims = phaseThreeClaims();
   const claim = claims.find(item => item.id === claimId);
   if (!claim) return;
