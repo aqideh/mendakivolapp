@@ -6,7 +6,8 @@ create extension if not exists pgcrypto;
 
 create type app_role as enum ('volunteer', 'admin', 'super_admin');
 create type opportunity_status as enum ('draft', 'open', 'full', 'closed', 'cancelled');
-create type signup_status as enum ('registered', 'waitlisted', 'cancelled', 'completed');
+create type signup_status as enum ('pending_review', 'confirmed', 'waitlisted', 'declined', 'cancelled', 'completed');
+create type training_signup_status as enum ('registered', 'cancelled', 'completed');
 create type attendance_claim_status as enum ('pending_submission', 'checked_in', 'submitted', 'clarification_requested', 'verified', 'adjusted', 'rejected', 'no_show');
 create type testimonial_status as enum ('draft', 'submitted', 'in_review', 'approved', 'rejected', 'completed');
 
@@ -68,9 +69,16 @@ create table opportunity_signups (
   id uuid primary key default gen_random_uuid(),
   opportunity_session_id uuid not null references opportunity_sessions(id) on delete cascade,
   volunteer_user_id uuid not null references app_users(id) on delete cascade,
-  status signup_status not null default 'registered',
+  status signup_status not null default 'pending_review',
   signed_up_at timestamptz not null default now(),
+  confirmed_at timestamptz,
+  waitlisted_at timestamptz,
+  declined_at timestamptz,
   cancelled_at timestamptz,
+  completed_at timestamptz,
+  reviewed_by uuid references app_users(id),
+  reviewed_at timestamptz,
+  admin_notes text,
   cancellation_reason text,
   unique (opportunity_session_id, volunteer_user_id)
 );
@@ -119,8 +127,9 @@ create table training_signups (
   id uuid primary key default gen_random_uuid(),
   training_id uuid not null references trainings(id) on delete cascade,
   volunteer_user_id uuid not null references app_users(id) on delete cascade,
-  status signup_status not null default 'registered',
+  status training_signup_status not null default 'registered',
   completed_at timestamptz,
+  cancelled_at timestamptz,
   signed_up_at timestamptz not null default now(),
   unique (training_id, volunteer_user_id)
 );
@@ -150,12 +159,14 @@ group by volunteer_user_id;
 
 create index idx_opportunity_sessions_starts_at on opportunity_sessions(starts_at);
 create index idx_opportunity_signups_volunteer on opportunity_signups(volunteer_user_id);
+create index idx_opportunity_signups_status on opportunity_signups(status);
 create index idx_attendance_claims_status on attendance_claims(claim_status);
 create index idx_trainings_starts_at on trainings(starts_at);
+create index idx_training_signups_status on training_signups(status);
 create index idx_testimonial_requests_status on testimonial_requests(status);
 
 -- Suggested Supabase RLS direction:
 -- 1. Volunteers can select their own app_users, volunteer_profiles, signups, attendance_claims, training_signups, and testimonial_requests.
--- 2. Volunteers can check in and check out only for their own registered signups.
+-- 2. Volunteers can check in and check out only for their own confirmed opportunity signups.
 -- 3. Admins and super_admins can manage all rows and issue facilitator attendance codes.
 -- 4. Only admins and super_admins can set verified_hours, reviewed_by, reviewed_at, and admin_notes.
