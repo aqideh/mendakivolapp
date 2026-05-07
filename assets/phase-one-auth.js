@@ -93,17 +93,21 @@ function phaseOneOpenAuth() {
   const form = document.querySelector('[data-auth-form]');
   const copy = document.querySelector('[data-auth-copy]');
   const submit = form?.querySelector('button[type="submit"]');
+  const passwordField = form?.querySelector('[data-auth-password-field]');
+  const passwordInput = form?.querySelector('input[name="password"]');
   if (form) {
     form.email.value = session?.email || profile?.email || '';
     form.name.value = session?.name || profile?.name || '';
   }
+  if (passwordField) passwordField.hidden = !phaseOneUsingSupabase();
+  if (passwordInput) passwordInput.required = phaseOneUsingSupabase();
   if (copy) {
     copy.textContent = phaseOneUsingSupabase()
-      ? 'Enter your email to receive a Supabase magic link. Admin access comes from your app user role.'
+      ? 'Sign in with your Supabase email and password. Admin access comes from your app user role.'
       : 'Local demo sign-in is active because Supabase is not configured yet.';
   }
   if (submit) {
-    submit.textContent = phaseOneUsingSupabase() ? 'Send magic link' : 'Continue';
+    submit.textContent = phaseOneUsingSupabase() ? 'Sign in' : 'Continue';
   }
   layer.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -616,25 +620,27 @@ function phaseOneBind() {
     const data = new FormData(event.currentTarget);
     const email = String(data.get('email') || '').trim();
     const name = String(data.get('name') || '').trim();
+    const password = String(data.get('password') || '');
     const submit = event.currentTarget.querySelector('button[type="submit"]');
     const originalText = submit?.textContent;
 
     if (phaseOneUsingSupabase()) {
       if (submit) {
         submit.disabled = true;
-        submit.textContent = 'Sending...';
+        submit.textContent = 'Signing in...';
       }
-      const result = await VolunteerDataStore.signInWithMagicLink(email, name);
+      const result = await VolunteerDataStore.signInWithPassword(email, password, name);
       if (submit) {
         submit.disabled = false;
-        submit.textContent = originalText || 'Send magic link';
+        submit.textContent = originalText || 'Sign in';
       }
       if (!result.ok) {
-        window.alert(`Could not send magic link: ${result.reason}`);
+        window.alert(`Could not sign in: ${result.reason}`);
         return;
       }
-      window.alert('Check your email for a sign-in link.');
       phaseOneCloseAuth();
+      phaseOneRenderDashboard();
+      phaseOneSetActivePage('dashboard');
       return;
     }
 
