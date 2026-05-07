@@ -34,6 +34,10 @@ function phaseTwoIsAdmin() {
   return VolunteerDataStore.isAdmin();
 }
 
+function phaseOneUsingSupabase() {
+  return Boolean(VolunteerDataStore.authState?.usingSupabase);
+}
+
 function phaseTwoStatusLabel(status) {
   const labels = {
     pending_review: 'Pending review',
@@ -87,9 +91,19 @@ function phaseOneOpenAuth() {
   const session = phaseOneSession();
   const profile = phaseOneProfile();
   const form = document.querySelector('[data-auth-form]');
+  const copy = document.querySelector('[data-auth-copy]');
+  const submit = form?.querySelector('button[type="submit"]');
   if (form) {
     form.email.value = session?.email || profile?.email || '';
     form.name.value = session?.name || profile?.name || '';
+  }
+  if (copy) {
+    copy.textContent = phaseOneUsingSupabase()
+      ? 'Enter your email to receive a Supabase magic link. Admin access comes from your app user role.'
+      : 'Local demo sign-in is active because Supabase is not configured yet.';
+  }
+  if (submit) {
+    submit.textContent = phaseOneUsingSupabase() ? 'Send magic link' : 'Continue';
   }
   layer.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -130,7 +144,7 @@ function phaseOneRenderDashboard() {
   const profileCopy = document.querySelector('[data-dashboard-profile-copy]');
   if (profileCopy) {
     profileCopy.textContent = signedIn
-      ? 'Your profile is stored locally for review. Production sign-ups should map to the database sign-up lifecycle.'
+      ? (phaseOneUsingSupabase() ? 'Signed in with Supabase Auth. App roles should come from the app_users table.' : 'Your profile is stored locally for review. Production sign-ups should map to the database sign-up lifecycle.')
       : 'Sign in to create your volunteer profile.';
   }
 
@@ -139,6 +153,7 @@ function phaseOneRenderDashboard() {
     summary.replaceChildren(
       phaseOnePill('Name', signedIn ? displayName : 'Guest'),
       phaseOnePill('Email', email),
+      phaseOnePill('Role', signedIn ? (session?.role || 'volunteer') : 'Not signed in'),
       phaseOnePill('Interest', formatPhaseOneInterest(interest)),
       phaseOnePill('Availability', availability)
     );
@@ -177,8 +192,8 @@ function formatPhaseOneInterest(value) {
   return labels[value] || value || 'Not selected';
 }
 
-function phaseOneSignOut() {
-  VolunteerDataStore.clearSession();
+async function phaseOneSignOut() {
+  await VolunteerDataStore.signOut();
   phaseOneRenderDashboard();
   phaseOneSetActivePage('home');
 }
@@ -596,15 +611,39 @@ function phaseOneBind() {
     }
   }, true);
 
-  document.querySelector('[data-auth-form]')?.addEventListener('submit', event => {
+  document.querySelector('[data-auth-form]')?.addEventListener('submit', async event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const email = String(data.get('email') || '').trim();
+    const name = String(data.get('name') || '').trim();
+    const submit = event.currentTarget.querySelector('button[type="submit"]');
+    const originalText = submit?.textContent;
+
+    if (phaseOneUsingSupabase()) {
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = 'Sending...';
+      }
+      const result = await VolunteerDataStore.signInWithMagicLink(email, name);
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = originalText || 'Send magic link';
+      }
+      if (!result.ok) {
+        window.alert(`Could not send magic link: ${result.reason}`);
+        return;
+      }
+      window.alert('Check your email for a sign-in link.');
+      phaseOneCloseAuth();
+      return;
+    }
+
     const session = {
       email,
-      name: String(data.get('name') || '').trim(),
+      name,
       role: VolunteerDataStore.roleForEmail(email),
-      signedInAt: new Date().toISOString()
+      signedInAt: new Date().toISOString(),
+      provider: 'local-demo'
     };
     VolunteerDataStore.saveSession(session);
     const existing = phaseOneProfile() || {};
@@ -629,12 +668,13 @@ function phaseOneBind() {
       updatedAt: new Date().toISOString()
     };
     VolunteerDataStore.saveProfile(profile);
-    if (profile.email) {
+    if (profile.email && !phaseOneUsingSupabase()) {
       VolunteerDataStore.saveSession({
         email: profile.email,
         name: profile.name,
         role: VolunteerDataStore.roleForEmail(profile.email),
-        signedInAt: new Date().toISOString()
+        signedInAt: new Date().toISOString(),
+        provider: 'local-demo'
       });
     }
     phaseOneRenderDashboard();
@@ -644,6 +684,14 @@ function phaseOneBind() {
     if (window.location.hash.replace('#', '') === 'dashboard') {
       phaseOneSetActivePage('dashboard');
     }
+  });
+
+  window.addEventListener('volunteer-auth-ready', () => {
+    phaseOneRenderDashboard();
+  });
+
+  window.addEventListener('volunteer-auth-changed', () => {
+    phaseOneRenderDashboard();
   });
 
   document.addEventListener('keydown', event => {
