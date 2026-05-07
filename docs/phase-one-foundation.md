@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first four expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
+This branch introduces the first five expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
 
 ## Phase 1 scope included
 
@@ -15,7 +15,6 @@ This branch introduces the first four expansion layers for the MENDAKI Volunteer
 
 - Opportunity sign-up flow from the existing opportunity detail modal.
 - Sign-up cancellation flow.
-- Local sign-up persistence using `localStorage` for demo purposes.
 - Dashboard sections for active sign-ups and attendance preview.
 - Dashboard statistics now update from local sign-up records.
 - Registration now stays inside the app shell instead of only linking out to an external form.
@@ -32,7 +31,6 @@ This branch introduces the first four expansion layers for the MENDAKI Volunteer
 - Admin verification queue for completed check-out records.
 - Admin review actions: verify, adjust, request clarification, and reject.
 - Verified/adjusted attendance updates official completed opportunity count and verified hours.
-- Local attendance record persistence using `localStorage` for demo purposes.
 
 ## Phase 4 scope included
 
@@ -42,7 +40,12 @@ This branch introduces the first four expansion layers for the MENDAKI Volunteer
 - Training sign-up and cancellation flow.
 - Volunteer dashboard training status.
 - Admin training completion queue.
-- Local training sign-up persistence using `localStorage` for demo purposes.
+
+## Phase 5 foundation scope included
+
+- Shared demo data access layer in `assets/data-store.js`.
+- Session, profile, opportunity sign-up, attendance, and training modules now access demo persistence through `VolunteerDataStore`.
+- Direct feature-module dependency on browser storage keys has been reduced so a future backend adapter can replace the local demo implementation in one place.
 
 ## Scope intentionally not included yet
 
@@ -55,15 +58,11 @@ This branch introduces the first four expansion layers for the MENDAKI Volunteer
 
 These are intended for later phases once the database and auth provider are selected.
 
-## Authentication approach
+## Authentication and data access approach
 
-The current implementation uses `localStorage` so the dashboard, sign-up, attendance, and training UX can be reviewed without a backend. This should be replaced before production with one of the following:
+The current implementation uses `VolunteerDataStore`, backed by `localStorage`, so the dashboard, sign-up, attendance, and training UX can be reviewed without a backend. The UI modules should continue to call the data store instead of directly reading/writing browser storage.
 
-- Supabase Auth.
-- Organisation SSO.
-- Auth0 or another identity provider.
-
-The local session/profile/sign-up/attendance/training keys are:
+The current local demo keys are centralised in `assets/data-store.js`:
 
 - `mendaki.volunteer.session.v1`
 - `mendaki.volunteer.profile.v1`
@@ -71,7 +70,11 @@ The local session/profile/sign-up/attendance/training keys are:
 - `mendaki.volunteer.attendance.v1`
 - `mendaki.volunteer.trainingSignups.v1`
 
-These are not secure and should not be treated as real authentication or durable production data.
+These are not secure and should not be treated as real authentication or durable production data. Before production, replace the data store internals with backend calls and replace demo sign-in with one of the following:
+
+- Supabase Auth.
+- Organisation SSO.
+- Auth0 or another identity provider.
 
 ## Role model
 
@@ -125,8 +128,6 @@ Status terms:
 
 Only confirmed sign-ups are eligible for check-in/check-out. Completed sign-ups appear only after verified or adjusted attendance.
 
-When a database is connected, local opportunity sign-up records should be replaced with rows in `opportunity_signups` tied to the authenticated volunteer user.
-
 ## Attendance model
 
 Phase 3 uses a check-in/check-out + admin validation model:
@@ -166,19 +167,19 @@ Training status is managed separately from volunteering hours. Admins mark regis
 
 ## Recommended next phase
 
-Phase 5 should focus on testimonial requests:
+The next highest-priority phase should replace demo admin detection and implement production-ready role checks:
 
-1. Add volunteer testimonial request form.
-2. Let volunteers select purpose and relevant verified activities.
-3. Restrict testimonial eligibility to verified hours/completed training where needed.
-4. Add admin review queue.
-5. Add approved/rejected/completed status tracking.
+1. Choose the auth provider.
+2. Map authenticated users to `app_users` rows.
+3. Replace email-pattern admin detection with backend role claims.
+4. Restrict admin-only actions to real `admin` and `super_admin` roles.
+5. Keep `VolunteerDataStore` as the single interface that the UI calls.
 
-Before production, replace the current local storage layer with real backend calls:
+Before production:
 
 1. Configure Supabase project and environment variables.
 2. Run `db/phase-one-schema.sql`.
-3. Replace `assets/phase-one-auth.js` local session functions with Supabase Auth calls.
+3. Replace `VolunteerDataStore` local methods with Supabase-backed methods.
 4. Replace JSON opportunity/training loading with database reads while keeping JSON fallback until migration is complete.
 5. Write opportunity sign-ups, attendance records, and training sign-ups to the database instead of local storage.
 6. Restrict admin actions to real admin/super_admin users through database policies.
