@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first five expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
+This branch introduces the first six expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
 
 ## Phase 1 scope included
 
@@ -47,20 +47,38 @@ This branch introduces the first five expansion layers for the MENDAKI Volunteer
 - Session, profile, opportunity sign-up, attendance, and training modules now access demo persistence through `VolunteerDataStore`.
 - Direct feature-module dependency on browser storage keys has been reduced so a future backend adapter can replace the local demo implementation in one place.
 
+## Phase 6 authentication foundation included
+
+- Supabase browser client is loaded from the public CDN.
+- `assets/supabase-config.example.js` documents the required project URL and public anon credential.
+- `assets/supabase-config.js` is ignored by Git so local/project credentials are not committed.
+- `VolunteerDataStore` now detects Supabase configuration and initialises Supabase Auth when configured.
+- Sign-in uses Supabase magic links when Supabase is configured.
+- If Supabase is not configured, the existing local demo sign-in flow remains active.
+- App roles are read from the `app_users.role` row when an authenticated Supabase user is mapped to an app user.
+
+## Supabase setup inputs required
+
+Create `assets/supabase-config.js` from `assets/supabase-config.example.js` and provide:
+
+1. Supabase project URL.
+2. Supabase public anon credential.
+3. Auth redirect URL for local/dev deployment.
+4. Auth redirect URL for production deployment.
+5. Decision on magic-link-only sign-in versus password or SSO later.
+6. Initial admin user emails to seed in `app_users`.
+
 ## Scope intentionally not included yet
 
-- Production authentication.
-- Database connection.
+- Full database-backed sign-up, attendance, and training persistence.
 - Capacity and waitlist enforcement.
 - Testimonial request workflow.
 - Calendar view.
 - Production audit logs and notification emails.
 
-These are intended for later phases once the database and auth provider are selected.
-
 ## Authentication and data access approach
 
-The current implementation uses `VolunteerDataStore`, backed by `localStorage`, so the dashboard, sign-up, attendance, and training UX can be reviewed without a backend. The UI modules should continue to call the data store instead of directly reading/writing browser storage.
+The current implementation uses `VolunteerDataStore`. In local demo mode, it is backed by `localStorage`. When Supabase is configured, the store initialises Supabase Auth and syncs the authenticated session into the app shell. The UI modules should continue to call the data store instead of directly reading/writing browser storage or Supabase.
 
 The current local demo keys are centralised in `assets/data-store.js`:
 
@@ -70,11 +88,7 @@ The current local demo keys are centralised in `assets/data-store.js`:
 - `mendaki.volunteer.attendance.v1`
 - `mendaki.volunteer.trainingSignups.v1`
 
-These are not secure and should not be treated as real authentication or durable production data. Before production, replace the data store internals with backend calls and replace demo sign-in with one of the following:
-
-- Supabase Auth.
-- Organisation SSO.
-- Auth0 or another identity provider.
+These local keys are not secure and should not be treated as real authentication or durable production data.
 
 ## Role model
 
@@ -88,98 +102,14 @@ The app should use this role model:
 
 There is no facilitator role in the app. Facilitators only provide the 4-digit attendance code at the physical volunteering opportunity; admins verify and validate submitted attendance records.
 
-For the local demo, an admin view can be reached by signing in with an email that starts with `admin@` or contains `+admin@`. Production should use a real role claim from the auth provider/database.
-
-## Sign-up model
-
-Phase 2 records local opportunity sign-ups with enough shape to map onto `opportunity_signups` later:
-
-- `opportunityId`
-- `email`
-- `volunteerName`
-- `title`
-- `type`
-- `category`
-- `time`
-- `location`
-- `commitment`
-- `hours`
-- `status`
-- `signedUpAt`
-- `reviewedAt`
-- `reviewedBy`
-- `confirmedAt`
-- `waitlistedAt`
-- `declinedAt`
-- `cancelledAt`
-- `completedAt`
-- `verifiedHours`
-
-Status terms:
-
-| Internal status | UI term | Meaning |
-| --- | --- | --- |
-| pending_review | Pending review | Volunteer has signed up but has not been accepted yet. |
-| confirmed | Confirmed | Admin accepted the volunteer for the opportunity. |
-| waitlisted | Waitlisted | Volunteer is queued because a slot is not yet available. |
-| declined | Not selected | Admin did not accept the volunteer for the opportunity. |
-| cancelled | Cancelled | Volunteer withdrew or the sign-up was removed. |
-| completed | Completed | Attendance has been verified. |
-
-Only confirmed sign-ups are eligible for check-in/check-out. Completed sign-ups appear only after verified or adjusted attendance.
-
-## Attendance model
-
-Phase 3 uses a check-in/check-out + admin validation model:
-
-1. Volunteer signs up for an opportunity.
-2. Admin confirms the sign-up.
-3. Volunteer arrives at the opportunity and taps `Check in`.
-4. Volunteer enters the 4-digit facilitator code.
-5. The system records the check-in timestamp and changes the button to `Check out`.
-6. Volunteer taps `Check out` when leaving.
-7. Volunteer enters the 4-digit facilitator code again.
-8. The system records the check-out timestamp and calculates logged hours from the time difference.
-9. The record is stored as `submitted` for admin verification.
-10. Admin verifies, adjusts, rejects, or requests clarification.
-11. Only `verified` or `adjusted` records contribute to official dashboard statistics and testimonials.
-
-For production, attendance codes should be stored and compared as hashes, not plaintext.
-
-## Training model
-
-Phase 4 records local training sign-ups with enough shape to map onto `training_signups` later:
-
-- `trainingId`
-- `email`
-- `volunteerName`
-- `title`
-- `date`
-- `time`
-- `location`
-- `trainer`
-- `status`
-- `signedUpAt`
-- `cancelledAt`
-- `completedAt`
-
-Training status is managed separately from volunteering hours. Admins mark registered training participants as completed. Completed training appears in the volunteer dashboard.
+In local demo mode only, an admin view can still be reached by signing in with an email that starts with `admin@` or contains `+admin@`. When Supabase is configured, admin access should come from the `app_users.role` field, not the email-pattern fallback.
 
 ## Recommended next phase
 
-The next highest-priority phase should replace demo admin detection and implement production-ready role checks:
+The next highest-priority phase should finish production role setup:
 
-1. Choose the auth provider.
-2. Map authenticated users to `app_users` rows.
-3. Replace email-pattern admin detection with backend role claims.
-4. Restrict admin-only actions to real `admin` and `super_admin` roles.
-5. Keep `VolunteerDataStore` as the single interface that the UI calls.
-
-Before production:
-
-1. Configure Supabase project and environment variables.
-2. Run `db/phase-one-schema.sql`.
-3. Replace `VolunteerDataStore` local methods with Supabase-backed methods.
-4. Replace JSON opportunity/training loading with database reads while keeping JSON fallback until migration is complete.
-5. Write opportunity sign-ups, attendance records, and training sign-ups to the database instead of local storage.
-6. Restrict admin actions to real admin/super_admin users through database policies.
+1. Run `db/phase-one-schema.sql` in Supabase.
+2. Add an auth trigger or onboarding flow to create `app_users` records for new Supabase users.
+3. Seed initial `admin` and `super_admin` rows.
+4. Confirm Row Level Security policies for volunteer and admin access.
+5. Replace local sign-up/attendance/training persistence with Supabase-backed methods inside `VolunteerDataStore`.
