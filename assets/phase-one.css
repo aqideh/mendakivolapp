@@ -298,6 +298,20 @@
   margin-top: 0.85rem;
 }
 
+.facilitator-code-field {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 215, 0, 0.12);
+  padding: 0.85rem;
+}
+
+.facilitator-code-help {
+  color: var(--text-3);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .admin-attendance-row {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
   align-items: start;
