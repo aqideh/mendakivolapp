@@ -269,8 +269,9 @@ function renderEverything() {
 }
 
 function setActiveControls(page) {
-  qsa('[data-page-target]').forEach(button => {
-    const active = button.dataset.pageTarget === page;
+  qsa('[data-page-target], [data-expansion-page-target]').forEach(button => {
+    const target = button.dataset.expansionPageTarget || button.dataset.pageTarget;
+    const active = target === page;
     button.classList.toggle('active', active);
     if (button.classList.contains('nav-link') || button.classList.contains('mobile-tab')) {
       button.setAttribute('aria-current', active ? 'page' : 'false');
