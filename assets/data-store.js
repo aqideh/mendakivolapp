@@ -78,11 +78,36 @@ const VolunteerDataStore = (() => {
     return data || null;
   }
 
+  async function ensureAppUser(authUser, fullName = '') {
+    if (!authState.supabase || !authUser?.id) return null;
+    const existing = await fetchAppUser(authUser);
+    if (existing) return existing;
+
+    const email = authUser.email || '';
+    const name = fullName || authUser.user_metadata?.full_name || authUser.user_metadata?.name || email;
+    const { data, error } = await authState.supabase
+      .from('app_users')
+      .insert({
+        auth_user_id: authUser.id,
+        email,
+        full_name: name,
+        role: 'volunteer'
+      })
+      .select('id, auth_user_id, email, full_name, role')
+      .single();
+
+    if (error) {
+      console.warn('Could not create app user profile', error);
+      return null;
+    }
+    return data || null;
+  }
+
   function sessionFromAuthUser(authUser, appUser = null) {
     if (!authUser) return null;
     const email = authUser.email || appUser?.email || '';
     const name = appUser?.full_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || email;
-    const role = appUser?.role || authUser.app_metadata?.role || authUser.user_metadata?.role || roleForEmail(email);
+    const role = appUser?.role || authUser.app_metadata?.role || authUser.user_metadata?.role || 'volunteer';
     return {
       email,
       name,
@@ -138,6 +163,21 @@ const VolunteerDataStore = (() => {
       }
     });
     if (error) return { ok: false, reason: error.message };
+    return { ok: true };
+  }
+
+  async function signInWithPassword(email, password, fullName = '') {
+    if (!authState.supabase) return { ok: false, reason: 'supabase_not_configured' };
+    const { data, error } = await authState.supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, reason: error.message };
+
+    const user = data?.user;
+    if (user) {
+      authState.user = user;
+      authState.profile = await ensureAppUser(user, fullName);
+      const session = sessionFromAuthUser(user, authState.profile);
+      if (session) saveSession(session);
+    }
     return { ok: true };
   }
 
@@ -228,6 +268,7 @@ const VolunteerDataStore = (() => {
     initAuth,
     refreshSupabaseSession,
     signInWithMagicLink,
+    signInWithPassword,
     signOut,
     getSession,
     saveSession,
