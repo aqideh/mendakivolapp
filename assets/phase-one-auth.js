@@ -1,45 +1,37 @@
-const PHASE_ONE_SESSION_KEY = 'mendaki.volunteer.session.v1';
-const PHASE_ONE_PROFILE_KEY = 'mendaki.volunteer.profile.v1';
-const PHASE_TWO_SIGNUPS_KEY = 'mendaki.volunteer.signups.v1';
+const PHASE_ONE_SESSION_KEY = VolunteerDataStore.keys.session;
+const PHASE_ONE_PROFILE_KEY = VolunteerDataStore.keys.profile;
+const PHASE_TWO_SIGNUPS_KEY = VolunteerDataStore.keys.opportunitySignups;
 
 function phaseOneReadJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || 'null');
-  } catch (error) {
-    console.warn(`Could not parse ${key}`, error);
-    return null;
-  }
+  return VolunteerDataStore.readJson(key, null);
 }
 
 function phaseOneWriteJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  return VolunteerDataStore.writeJson(key, value);
 }
 
 function phaseOneSession() {
-  return phaseOneReadJson(PHASE_ONE_SESSION_KEY);
+  return VolunteerDataStore.normaliseSessionRole();
 }
 
 function phaseOneProfile() {
-  return phaseOneReadJson(PHASE_ONE_PROFILE_KEY);
+  return VolunteerDataStore.getProfile();
 }
 
 function phaseTwoSignups() {
-  const value = phaseOneReadJson(PHASE_TWO_SIGNUPS_KEY);
-  return Array.isArray(value) ? value : [];
+  return VolunteerDataStore.getOpportunitySignups();
 }
 
 function phaseTwoWriteSignups(signups) {
-  phaseOneWriteJson(PHASE_TWO_SIGNUPS_KEY, signups);
+  return VolunteerDataStore.saveOpportunitySignups(signups);
 }
 
 function phaseTwoCurrentVolunteerEmail() {
-  return phaseOneProfile()?.email || phaseOneSession()?.email || '';
+  return VolunteerDataStore.currentEmail();
 }
 
 function phaseTwoIsAdmin() {
-  const role = String(phaseOneSession()?.role || '').toLowerCase();
-  const email = phaseTwoCurrentVolunteerEmail().toLowerCase();
-  return role === 'admin' || role === 'super_admin' || email.includes('+admin@') || email.startsWith('admin@');
+  return VolunteerDataStore.isAdmin();
 }
 
 function phaseTwoStatusLabel(status) {
@@ -186,7 +178,7 @@ function formatPhaseOneInterest(value) {
 }
 
 function phaseOneSignOut() {
-  localStorage.removeItem(PHASE_ONE_SESSION_KEY);
+  VolunteerDataStore.clearSession();
   phaseOneRenderDashboard();
   phaseOneSetActivePage('home');
 }
@@ -607,15 +599,16 @@ function phaseOneBind() {
   document.querySelector('[data-auth-form]')?.addEventListener('submit', event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const email = String(data.get('email') || '').trim();
     const session = {
-      email: String(data.get('email') || '').trim(),
+      email,
       name: String(data.get('name') || '').trim(),
-      role: 'volunteer',
+      role: VolunteerDataStore.roleForEmail(email),
       signedInAt: new Date().toISOString()
     };
-    phaseOneWriteJson(PHASE_ONE_SESSION_KEY, session);
+    VolunteerDataStore.saveSession(session);
     const existing = phaseOneProfile() || {};
-    phaseOneWriteJson(PHASE_ONE_PROFILE_KEY, {
+    VolunteerDataStore.saveProfile({
       ...existing,
       email: session.email,
       name: session.name
@@ -635,12 +628,12 @@ function phaseOneBind() {
       availability: String(data.get('availability') || '').trim(),
       updatedAt: new Date().toISOString()
     };
-    phaseOneWriteJson(PHASE_ONE_PROFILE_KEY, profile);
+    VolunteerDataStore.saveProfile(profile);
     if (profile.email) {
-      phaseOneWriteJson(PHASE_ONE_SESSION_KEY, {
+      VolunteerDataStore.saveSession({
         email: profile.email,
         name: profile.name,
-        role: 'volunteer',
+        role: VolunteerDataStore.roleForEmail(profile.email),
         signedInAt: new Date().toISOString()
       });
     }
