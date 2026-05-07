@@ -18,8 +18,38 @@ function installAuthPasswordField() {
   form.insertBefore(label, submit);
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', installAuthPasswordField);
-} else {
-  installAuthPasswordField();
+function moveDashboardNavToHeaderActions() {
+  const headerActions = document.querySelector('.header-actions');
+  const dashboardButton = document.querySelector('.desktop-nav [data-dashboard-nav]');
+  const signInButton = document.querySelector('.header-actions [data-auth-entry]');
+  if (!headerActions || !dashboardButton || dashboardButton.dataset.headerDashboard === 'true') return;
+
+  dashboardButton.dataset.headerDashboard = 'true';
+  dashboardButton.classList.remove('nav-link');
+  dashboardButton.classList.add('admin-link', 'dashboard-header-link');
+  dashboardButton.textContent = 'Dashboard';
+  dashboardButton.removeAttribute('aria-current');
+  headerActions.insertBefore(dashboardButton, signInButton || headerActions.firstChild);
 }
+
+function syncDashboardAuthActions() {
+  const signedIn = Boolean(window.VolunteerDataStore?.getSession?.()?.email);
+  document.querySelectorAll('.dashboard-profile-card [data-auth-entry]').forEach(button => {
+    button.hidden = signedIn;
+  });
+}
+
+function installHeaderAndAuthEnhancements() {
+  installAuthPasswordField();
+  moveDashboardNavToHeaderActions();
+  syncDashboardAuthActions();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installHeaderAndAuthEnhancements);
+} else {
+  installHeaderAndAuthEnhancements();
+}
+
+window.addEventListener('volunteer-auth-ready', syncDashboardAuthActions);
+window.addEventListener('volunteer-auth-changed', syncDashboardAuthActions);
