@@ -91,14 +91,17 @@ async function fetchJson(relativePath) {
 }
 
 async function loadData() {
-  const [siteData, newsData] = await Promise.all([
+  const [siteData, newsData, opportunitiesData] = await Promise.all([
     fetchJson('content/data.json'),
-    fetchJson('content/news.json')
+    fetchJson('content/news.json'),
+    fetchJson('content/opportunities.json').catch(() => ({ opportunities: siteData?.opportunities || [] }))
   ]);
 
   return {
     ...siteData,
-    opportunities: Array.isArray(siteData.opportunities) ? siteData.opportunities : [],
+    opportunities: Array.isArray(opportunitiesData.opportunities)
+      ? opportunitiesData.opportunities
+      : Array.isArray(siteData.opportunities) ? siteData.opportunities : [],
     news: Array.isArray(newsData.news) ? newsData.news : []
   };
 }
@@ -298,8 +301,7 @@ function findOpportunity(id) {
 function findNews(id) {
   const targetId = String(id);
   return state.data.news.find(item => String(item.id) === targetId);
-}
-
+}\n
 function modalHeader(title, badgeText, badgeStyleClass) {
   return make('div', { class: 'modal-hero' }, [
     make('button', { type: 'button', class: 'close-button', 'aria-label': 'Close dialog', text: '×', dataset: { closeModal: 'true' } }),
