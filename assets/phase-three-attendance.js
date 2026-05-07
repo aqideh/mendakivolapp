@@ -1,4 +1,5 @@
 const PHASE_THREE_ATTENDANCE_KEY = 'mendaki.volunteer.attendance.v1';
+const PHASE_THREE_CODE_PATTERN = /^\d{4}$/;
 
 function phaseThreeReadJson(key) {
   try {
@@ -59,26 +60,48 @@ function phaseThreeClaimForSignup(signupId) {
 
 function phaseThreeClaimStatusLabel(status) {
   const labels = {
-    pending_submission: 'Pending submission',
-    submitted: 'Submitted',
+    pending_submission: 'Not checked in',
+    checked_in: 'Checked in',
+    submitted: 'Checked out',
     clarification_requested: 'Clarification requested',
     verified: 'Verified',
     adjusted: 'Adjusted',
     rejected: 'Rejected',
     no_show: 'No-show'
   };
-  return labels[status] || status || 'Pending submission';
+  return labels[status] || status || 'Not checked in';
 }
 
 function phaseThreeStatusClass(status) {
   if (status === 'verified' || status === 'adjusted') return 'badge-open';
   if (status === 'rejected' || status === 'no_show') return 'badge-ad-hoc';
   if (status === 'submitted') return 'badge-programme';
+  if (status === 'checked_in') return 'badge-long-term';
   return 'badge-volunteer';
 }
 
 function phaseThreeEscape(value) {
   return String(value || '').replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+}
+
+function phaseThreeFormatTimestamp(value) {
+  if (!value) return 'Not recorded';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not recorded';
+  return new Intl.DateTimeFormat('en-SG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function phaseThreeHoursBetween(startValue, endValue) {
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+  return Math.round(((end - start) / 36e5) * 100) / 100;
 }
 
 function phaseThreeEnsureDashboardSections() {
@@ -91,8 +114,8 @@ function phaseThreeEnsureDashboardSections() {
   volunteerCard.innerHTML = `
     <div class="section-header">
       <div>
-        <h2>Attendance self-reporting</h2>
-        <p class="dashboard-muted">Submit your attendance after completing a volunteer opportunity. Admins will validate official hours.</p>
+        <h2>Attendance check-in</h2>
+        <p class="dashboard-muted">Tap Check in when you arrive and Check out when you leave. Enter the 4-digit code given by the facilitator each time.</p>
       </div>
     </div>
     <div class="attendance-list" data-attendance-list></div>
@@ -106,7 +129,7 @@ function phaseThreeEnsureDashboardSections() {
     <div class="section-header">
       <div>
         <h2>Admin attendance verification</h2>
-        <p class="dashboard-muted">Review volunteer self-reported attendance and validate final verified hours.</p>
+        <p class="dashboard-muted">Review check-in/check-out records and validate final volunteering hours.</p>
       </div>
     </div>
     <div class="attendance-list" data-admin-attendance-list></div>
@@ -131,12 +154,12 @@ function phaseThreeRenderVolunteerAttendance() {
   list.replaceChildren();
 
   if (!phaseThreeIsSignedIn()) {
-    list.append(phaseThreeEmpty('Sign in to self-report attendance.'));
+    list.append(phaseThreeEmpty('Sign in to check in and check out of volunteer opportunities.'));
     return;
   }
 
   if (signups.length === 0) {
-    list.append(phaseThreeEmpty('No sign-ups available for attendance reporting yet.'));
+    list.append(phaseThreeEmpty('No sign-ups available for attendance yet.'));
     return;
   }
 
@@ -146,23 +169,30 @@ function phaseThreeRenderVolunteerAttendance() {
 function phaseThreeVolunteerRow(signup) {
   const claim = phaseThreeClaimForSignup(signup.id);
   const status = claim?.claimStatus || 'pending_submission';
+  const isLocked = ['submitted', 'verified', 'adjusted'].includes(status);
+  const isRejectedOrClarify = status === 'rejected' || status === 'clarification_requested';
+  const action = status === 'checked_in' ? 'checkout' : 'checkin';
   const row = document.createElement('div');
   row.className = 'attendance-row';
   row.innerHTML = `
     <div>
       <strong>${phaseThreeEscape(signup.title)}</strong>
       <p>${phaseThreeEscape(signup.time || 'Time to be confirmed')} · ${phaseThreeEscape(signup.location || 'Location to be confirmed')}</p>
-      ${claim?.volunteerNotes ? `<p class="attendance-note">Note: ${phaseThreeEscape(claim.volunteerNotes)}</p>` : ''}
+      ${claim?.checkInAt ? `<p class="attendance-note">Checked in: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkInAt))}</p>` : ''}
+      ${claim?.checkOutAt ? `<p class="attendance-note">Checked out: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>` : ''}
+      ${claim?.claimedHours ? `<p class="attendance-note">Logged hours: ${phaseThreeEscape(claim.claimedHours)}h pending admin verification</p>` : ''}
+      ${claim?.adminNotes ? `<p class="attendance-note">Admin note: ${phaseThreeEscape(claim.adminNotes)}</p>` : ''}
     </div>
     <span class="badge ${phaseThreeStatusClass(status)}">${phaseThreeEscape(phaseThreeClaimStatusLabel(status))}</span>
   `;
 
-  if (!claim || status === 'clarification_requested' || status === 'rejected') {
+  if (!isLocked || isRejectedOrClarify) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'button dashboard-secondary';
-    button.dataset.attendanceReport = signup.id;
-    button.textContent = claim ? 'Resubmit' : 'Report attendance';
+    button.className = status === 'checked_in' ? 'button button-primary' : 'button dashboard-secondary';
+    button.dataset.attendancePunch = signup.id;
+    button.dataset.attendanceAction = action;
+    button.textContent = status === 'checked_in' ? 'Check out' : 'Check in';
     row.append(button);
   }
 
@@ -181,7 +211,7 @@ function phaseThreeRenderAdminQueue() {
   const claims = phaseThreeClaims().filter(claim => claim.claimStatus === 'submitted' || claim.claimStatus === 'clarification_requested');
   list.replaceChildren();
   if (claims.length === 0) {
-    list.append(phaseThreeEmpty('No attendance claims awaiting admin review.'));
+    list.append(phaseThreeEmpty('No attendance records awaiting admin review.'));
     return;
   }
   claims.forEach(claim => list.append(phaseThreeAdminRow(claim)));
@@ -194,8 +224,10 @@ function phaseThreeAdminRow(claim) {
     <div>
       <strong>${phaseThreeEscape(claim.title)}</strong>
       <p>${phaseThreeEscape(claim.volunteerName)} · ${phaseThreeEscape(claim.email)}</p>
-      <p>Claimed ${phaseThreeEscape(claim.claimedHours)} hours (${phaseThreeEscape(claim.claimedStart || 'start n/a')} to ${phaseThreeEscape(claim.claimedEnd || 'end n/a')})</p>
-      ${claim.volunteerNotes ? `<p class="attendance-note">Volunteer note: ${phaseThreeEscape(claim.volunteerNotes)}</p>` : ''}
+      <p>Check in: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkInAt))}</p>
+      <p>Check out: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>
+      <p>System-calculated hours: ${phaseThreeEscape(claim.claimedHours || 0)}h</p>
+      <p class="attendance-note">Check-in code entered: ${phaseThreeEscape(claim.checkInCode || 'n/a')} · Check-out code entered: ${phaseThreeEscape(claim.checkOutCode || 'n/a')}</p>
     </div>
     <form class="attendance-review-form" data-attendance-review="${phaseThreeEscape(claim.id)}">
       <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" value="${phaseThreeEscape(claim.claimedHours || '')}" required></label>
@@ -218,74 +250,80 @@ function phaseThreeEmpty(text) {
   return row;
 }
 
-function phaseThreeOpenReportForm(signupId) {
-  const signup = phaseThreeSignups().find(item => item.id === signupId);
-  if (!signup) return;
-  const existing = phaseThreeClaimForSignup(signupId);
-  const modal = document.querySelector('#modal');
-  const layer = document.querySelector('#modal-layer');
-  if (!modal || !layer) return;
-
-  modal.replaceChildren();
-  modal.innerHTML = `
-    <div class="modal-hero">
-      <button type="button" class="close-button" aria-label="Close dialog" data-close-modal="true">×</button>
-      <span class="badge badge-programme">Attendance</span>
-      <h2 id="modal-title">Report attendance</h2>
-    </div>
-    <form class="modal-body attendance-report-form" data-attendance-report-form="${phaseThreeEscape(signupId)}">
-      <section class="modal-section">
-        <h3>${phaseThreeEscape(signup.title)}</h3>
-        <p>${phaseThreeEscape(signup.time || 'Time to be confirmed')} · ${phaseThreeEscape(signup.location || 'Location to be confirmed')}</p>
-      </section>
-      <div class="attendance-form-grid">
-        <label>Status<select name="claimedStatus" required><option value="attended">Attended</option><option value="partially_attended">Partially attended</option><option value="unable_to_attend">Unable to attend</option></select></label>
-        <label>Claimed hours<input name="claimedHours" type="number" min="0" max="24" step="0.25" value="${phaseThreeEscape(existing?.claimedHours || signup.hours || '')}" required></label>
-        <label>Start time<input name="claimedStart" type="time" value="${phaseThreeEscape(existing?.claimedStart || '')}"></label>
-        <label>End time<input name="claimedEnd" type="time" value="${phaseThreeEscape(existing?.claimedEnd || '')}"></label>
-      </div>
-      <label class="attendance-notes-label">Notes<textarea name="volunteerNotes" rows="4" placeholder="Add context for admin review, if needed.">${phaseThreeEscape(existing?.volunteerNotes || '')}</textarea></label>
-      <div class="modal-actions">
-        <button class="button button-primary" type="submit">Submit for verification</button>
-        <button class="button" type="button" data-close-modal="true">Cancel</button>
-      </div>
-    </form>
-  `;
-  layer.hidden = false;
-  document.body.style.overflow = 'hidden';
-  requestAnimationFrame(() => modal.focus({ preventScroll: true }));
+function phaseThreePromptCode(action) {
+  const label = action === 'checkout' ? 'check out' : 'check in';
+  const code = window.prompt(`Enter the 4-digit facilitator code to ${label}.`);
+  if (code === null) return null;
+  const normalized = code.trim();
+  if (!PHASE_THREE_CODE_PATTERN.test(normalized)) {
+    window.alert('Please enter a valid 4-digit code.');
+    return null;
+  }
+  return normalized;
 }
 
-function phaseThreeSubmitClaim(form) {
-  const signupId = form.dataset.attendanceReportForm;
+function phaseThreeHandlePunch(signupId, action) {
   const signup = phaseThreeSignups().find(item => item.id === signupId);
   if (!signup) return;
+  const code = phaseThreePromptCode(action);
+  if (!code) return;
 
-  const data = new FormData(form);
+  const now = new Date().toISOString();
   const claims = phaseThreeClaims();
-  const existing = claims.find(claim => claim.signupId === signupId);
-  const record = {
-    id: existing?.id || crypto.randomUUID(),
-    signupId,
-    opportunityId: signup.opportunityId,
-    email: signup.email,
-    volunteerName: signup.volunteerName,
-    title: signup.title,
-    claimedStatus: String(data.get('claimedStatus') || 'attended'),
-    claimStatus: 'submitted',
-    claimedStart: String(data.get('claimedStart') || ''),
-    claimedEnd: String(data.get('claimedEnd') || ''),
-    claimedHours: Number(data.get('claimedHours') || 0),
-    volunteerNotes: String(data.get('volunteerNotes') || '').trim(),
-    submittedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+  let claim = claims.find(item => item.signupId === signupId);
 
-  if (existing) Object.assign(existing, record);
-  else claims.push(record);
+  if (action === 'checkin') {
+    if (!claim) {
+      claim = {
+        id: crypto.randomUUID(),
+        signupId,
+        opportunityId: signup.opportunityId,
+        email: signup.email,
+        volunteerName: signup.volunteerName,
+        title: signup.title,
+        createdAt: now
+      };
+      claims.push(claim);
+    }
+
+    Object.assign(claim, {
+      claimStatus: 'checked_in',
+      checkInAt: now,
+      checkInCode: code,
+      checkOutAt: '',
+      checkOutCode: '',
+      claimedStatus: 'checked_in',
+      claimedStart: now,
+      claimedEnd: '',
+      claimedHours: 0,
+      verifiedHours: 0,
+      submittedAt: '',
+      reviewedBy: '',
+      reviewedAt: '',
+      adminNotes: '',
+      updatedAt: now
+    });
+  } else if (action === 'checkout') {
+    if (!claim || !claim.checkInAt) {
+      window.alert('No check-in timestamp found. Please check in first.');
+      return;
+    }
+    const hours = phaseThreeHoursBetween(claim.checkInAt, now);
+    Object.assign(claim, {
+      claimStatus: 'submitted',
+      checkOutAt: now,
+      checkOutCode: code,
+      claimedStatus: 'attended',
+      claimedStart: claim.checkInAt,
+      claimedEnd: now,
+      claimedHours: hours,
+      submittedAt: now,
+      updatedAt: now
+    });
+  }
+
   phaseThreeWriteClaims(claims);
   phaseThreeRender();
-  phaseThreeCloseModal();
 }
 
 function phaseThreeReviewClaim(form, submitter) {
@@ -345,34 +383,19 @@ function phaseThreeUpdateStats() {
     statCard.append(note);
   }
   const pendingNode = document.querySelector('[data-stat-pending-attendance]');
-  if (pendingNode) pendingNode.textContent = `${submittedCount} attendance claim${submittedCount === 1 ? '' : 's'} pending admin action.`;
-}
-
-function phaseThreeCloseModal() {
-  const layer = document.querySelector('#modal-layer');
-  const modal = document.querySelector('#modal');
-  if (layer) layer.hidden = true;
-  if (modal) modal.replaceChildren();
-  document.body.style.overflow = '';
+  if (pendingNode) pendingNode.textContent = `${submittedCount} attendance record${submittedCount === 1 ? '' : 's'} pending admin verification.`;
 }
 
 function phaseThreeBind() {
   document.addEventListener('click', event => {
-    const reportButton = event.target.closest('[data-attendance-report]');
-    if (reportButton) {
+    const punchButton = event.target.closest('[data-attendance-punch]');
+    if (punchButton) {
       event.preventDefault();
-      phaseThreeOpenReportForm(reportButton.dataset.attendanceReport);
+      phaseThreeHandlePunch(punchButton.dataset.attendancePunch, punchButton.dataset.attendanceAction);
     }
   }, true);
 
   document.addEventListener('submit', event => {
-    const reportForm = event.target.closest('[data-attendance-report-form]');
-    if (reportForm) {
-      event.preventDefault();
-      phaseThreeSubmitClaim(reportForm);
-      return;
-    }
-
     const reviewForm = event.target.closest('[data-attendance-review]');
     if (reviewForm) {
       event.preventDefault();
