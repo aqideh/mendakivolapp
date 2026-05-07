@@ -162,14 +162,16 @@
 }
 
 .signup-list,
-.attendance-list {
+.attendance-list,
+.training-dashboard-list {
   display: grid;
   gap: 0.7rem;
   margin-top: 1rem;
 }
 
 .signup-row,
-.attendance-row {
+.attendance-row,
+.training-dashboard-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
@@ -185,14 +187,16 @@
 }
 
 .signup-row strong,
-.attendance-row strong {
+.attendance-row strong,
+.training-dashboard-row strong {
   display: block;
   color: var(--black);
   line-height: 1.3;
 }
 
 .signup-row p,
-.attendance-row p {
+.attendance-row p,
+.training-dashboard-row p {
   margin: 0.22rem 0 0;
   color: var(--text-3);
   font-size: 0.82rem;
@@ -231,11 +235,13 @@
   border: 1px solid rgba(180, 20, 20, 0.18);
 }
 
-.attendance-card {
+.attendance-card,
+.training-dashboard-card {
   grid-column: 1 / -1;
 }
 
-.admin-attendance-card {
+.admin-attendance-card,
+.admin-training-card {
   background:
     radial-gradient(circle at top right, rgba(255, 215, 0, 0.16), transparent 16rem),
     var(--surface);
@@ -288,6 +294,70 @@
   border-top: 1px solid var(--line);
 }
 
+.training-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.training-card {
+  display: grid;
+  align-content: space-between;
+  gap: 1rem;
+  min-height: 380px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at top right, rgba(255, 215, 0, 0.16), transparent 12rem),
+    var(--surface);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.training-card-top,
+.training-actions,
+.training-required {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.training-card h2 {
+  margin: 0;
+  color: var(--black);
+  font-size: clamp(1.35rem, 2.8vw, 2rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.training-card p {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.training-meta {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--text-3);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.training-required {
+  color: var(--text-3);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.training-required span {
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--black);
+  padding: 0.3rem 0.55rem;
+}
+
 .auth-layer .modal-backdrop {
   background: rgba(10, 12, 10, 0.55);
 }
@@ -314,6 +384,12 @@
   border-color: rgba(55, 58, 54, 0.08);
 }
 
+@media (max-width: 1100px) {
+  .training-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .dashboard-layout,
   .admin-attendance-row {
@@ -332,16 +408,19 @@
   }
 
   .dashboard-stat-grid,
-  .attendance-form-grid {
+  .attendance-form-grid,
+  .training-grid {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-actions .button {
+  .dashboard-actions .button,
+  .training-actions .button {
     width: 100%;
   }
 
   .signup-row,
-  .attendance-row {
+  .attendance-row,
+  .training-dashboard-row {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
@@ -349,7 +428,9 @@
   .signup-row .badge,
   .signup-row .text-button,
   .attendance-row .badge,
-  .attendance-row .button {
+  .attendance-row .button,
+  .training-dashboard-row .badge,
+  .training-dashboard-row .button {
     justify-self: start;
   }
 
