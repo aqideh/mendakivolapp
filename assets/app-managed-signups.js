@@ -37,8 +37,22 @@ function managedSignupTypeLabel(type = '') {
   return type === 'long-term' ? 'Long-term' : 'Ad-hoc';
 }
 
-function managedSignupIsSignedUp(id) {
-  return typeof phaseTwoIsSignedUp === 'function' && phaseTwoIsSignedUp(id);
+function managedSignupStatusLabel(status) {
+  return typeof phaseTwoStatusLabel === 'function' ? phaseTwoStatusLabel(status) : status;
+}
+
+function managedSignupStatusBadgeClass(status) {
+  return typeof phaseTwoStatusBadgeClass === 'function' ? phaseTwoStatusBadgeClass(status) : 'badge-volunteer';
+}
+
+function managedSignupCurrentSignup(id) {
+  return typeof phaseTwoUserSignupForOpportunity === 'function' ? phaseTwoUserSignupForOpportunity(id) : null;
+}
+
+function managedSignupCounts(id) {
+  return typeof phaseTwoSignupCounts === 'function'
+    ? phaseTwoSignupCounts(id)
+    : { pending: 0, confirmed: 0, waitlisted: 0, completed: 0 };
 }
 
 function managedSignupOpenOpportunityModal(id) {
@@ -47,18 +61,20 @@ function managedSignupOpenOpportunityModal(id) {
   const layer = document.querySelector('#modal-layer');
   if (!opp || !modal || !layer) return;
 
-  const signedUp = managedSignupIsSignedUp(id);
+  const signup = managedSignupCurrentSignup(id);
+  const counts = managedSignupCounts(id);
+  const active = signup && !['cancelled', 'declined', 'completed'].includes(signup.status);
   const actions = [
     managedSignupMake('button', {
       type: 'button',
       class: 'button button-primary',
-      text: signedUp ? 'Already signed up' : 'Sign up for this role',
+      text: active ? managedSignupStatusLabel(signup.status) : 'Sign up for this role',
       dataset: { signupOpportunity: String(id) },
-      disabled: signedUp ? 'true' : null
+      disabled: active ? 'true' : null
     })
   ];
 
-  if (signedUp) {
+  if (active) {
     actions.push(managedSignupMake('button', {
       type: 'button',
       class: 'button dashboard-secondary',
@@ -79,6 +95,7 @@ function managedSignupOpenOpportunityModal(id) {
       managedSignupMake('button', { type: 'button', class: 'close-button', 'aria-label': 'Close dialog', text: '×', dataset: { closeModal: 'true' } }),
       managedSignupMake('div', { class: 'hero-orb hero-orb-one' }),
       managedSignupMake('span', { class: `badge ${managedSignupBadgeClass(opp.type)}`, text: managedSignupTypeLabel(opp.type) }),
+      signup ? managedSignupMake('span', { class: `badge ${managedSignupStatusBadgeClass(signup.status)}`, text: managedSignupStatusLabel(signup.status) }) : null,
       managedSignupMake('h2', { id: 'modal-title', text: opp.title })
     ]),
     managedSignupMake('div', { class: 'modal-body' }, [
@@ -86,6 +103,10 @@ function managedSignupOpenOpportunityModal(id) {
         managedSignupMake('span', { class: 'modal-chip' }, [managedSignupIcon('icon-clock'), document.createTextNode(opp.time || '')]),
         managedSignupMake('span', { class: 'modal-chip' }, [managedSignupIcon('icon-location'), document.createTextNode(opp.location || '')]),
         managedSignupMake('span', { class: 'modal-chip' }, [managedSignupIcon('icon-calendar'), document.createTextNode(opp.commitment || '')])
+      ]),
+      managedSignupMake('section', { class: 'modal-section' }, [
+        managedSignupMake('h3', { text: 'Sign-up status' }),
+        managedSignupMake('p', { text: `${counts.pending} pending review · ${counts.confirmed} confirmed · ${counts.waitlisted} waitlisted · ${counts.completed} completed` })
       ]),
       managedSignupMake('section', { class: 'modal-section' }, [
         managedSignupMake('h3', { text: 'About this role' }),
