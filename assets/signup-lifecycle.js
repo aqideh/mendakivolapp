@@ -13,6 +13,9 @@ function lifecycleOpportunityStatusText(opportunityId) {
   return parts.length ? parts.join(' · ') : 'No sign-ups yet';
 }
 
+let lifecycleObserver = null;
+let lifecycleRenderQueued = false;
+
 function lifecycleEnhanceOpportunityCards() {
   document.querySelectorAll('[data-opp-id]').forEach(card => {
     const id = card.dataset.oppId;
@@ -26,15 +29,38 @@ function lifecycleEnhanceOpportunityCards() {
       actionArea.insertAdjacentElement(actionArea.classList.contains('opp-swipe-actions') ? 'beforebegin' : 'beforeend', status);
     }
 
-    status.textContent = lifecycleOpportunityStatusText(id);
+    const nextText = lifecycleOpportunityStatusText(id);
+    if (status.textContent !== nextText) status.textContent = nextText;
   });
 }
 
-const lifecycleObserver = new MutationObserver(() => lifecycleEnhanceOpportunityCards());
+function lifecycleScheduleEnhance() {
+  if (lifecycleRenderQueued) return;
+  lifecycleRenderQueued = true;
+  window.requestAnimationFrame(() => {
+    lifecycleRenderQueued = false;
+    lifecycleObserver?.disconnect();
+    lifecycleEnhanceOpportunityCards();
+    lifecycleObserveOpportunityContainers();
+  });
+}
+
+function lifecycleObserveOpportunityContainers() {
+  if (!lifecycleObserver) return;
+  const targets = [
+    document.querySelector('#opportunities-grid'),
+    document.querySelector('#home-opportunities')
+  ].filter(Boolean);
+
+  targets.forEach(target => {
+    lifecycleObserver.observe(target, { childList: true });
+  });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+  lifecycleObserver = new MutationObserver(lifecycleScheduleEnhance);
   lifecycleEnhanceOpportunityCards();
-  lifecycleObserver.observe(document.body, { childList: true, subtree: true });
+  lifecycleObserveOpportunityContainers();
 });
 
-window.addEventListener('storage', lifecycleEnhanceOpportunityCards);
+window.addEventListener('storage', lifecycleScheduleEnhance);
