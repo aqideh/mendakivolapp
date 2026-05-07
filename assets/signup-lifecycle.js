@@ -31,6 +31,61 @@ function lifecycleConfirmedSignupsOnly(signups) {
   return signups.filter(signup => signup.status === 'confirmed' || signup.status === 'completed');
 }
 
+function lifecycleReadJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
+function lifecycleWriteJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function lifecycleRoleForEmail(email) {
+  const value = String(email || '').trim().toLowerCase();
+  return value.startsWith('admin@') || value.includes('+admin@') ? 'admin' : 'volunteer';
+}
+
+function lifecycleCurrentEmail() {
+  const profile = lifecycleReadJson('mendaki.volunteer.profile.v1') || {};
+  const session = lifecycleReadJson('mendaki.volunteer.session.v1') || {};
+  return String(profile.email || session.email || '').trim().toLowerCase();
+}
+
+function lifecycleIsAdmin() {
+  const session = lifecycleReadJson('mendaki.volunteer.session.v1') || {};
+  const role = String(session.role || '').toLowerCase();
+  return role === 'admin' || role === 'super_admin' || lifecycleRoleForEmail(lifecycleCurrentEmail()) === 'admin';
+}
+
+function lifecycleNormaliseAdminSession() {
+  const session = lifecycleReadJson('mendaki.volunteer.session.v1');
+  if (!session?.email) return;
+  const role = lifecycleRoleForEmail(session.email);
+  if (session.role !== role) {
+    lifecycleWriteJson('mendaki.volunteer.session.v1', { ...session, role });
+  }
+}
+
+function lifecycleInstallAdminOverrides() {
+  if (typeof phaseTwoIsAdmin === 'function') phaseTwoIsAdmin = lifecycleIsAdmin;
+  if (typeof phaseThreeIsAdmin === 'function') phaseThreeIsAdmin = lifecycleIsAdmin;
+  if (typeof phaseFourIsAdmin === 'function') phaseFourIsAdmin = lifecycleIsAdmin;
+}
+
+function lifecycleRefreshAdminSections() {
+  lifecycleNormaliseAdminSession();
+  lifecycleInstallAdminOverrides();
+  if (typeof phaseOneRenderDashboard === 'function') phaseOneRenderDashboard();
+  if (typeof phaseThreeRender === 'function') phaseThreeRender();
+  if (typeof phaseFourRender === 'function') phaseFourRender();
+  document.querySelectorAll('[data-signup-dashboard-card="admin"], [data-attendance-card="admin"], [data-training-dashboard-card="admin"]').forEach(card => {
+    card.hidden = !lifecycleIsAdmin();
+  });
+}
+
 if (typeof phaseThreeRenderVolunteerAttendance === 'function') {
   const originalPhaseThreeRenderVolunteerAttendance = phaseThreeRenderVolunteerAttendance;
   phaseThreeRenderVolunteerAttendance = function lifecyclePhaseThreeRenderVolunteerAttendance() {
@@ -66,8 +121,25 @@ if (typeof phaseThreeRenderVolunteerAttendance === 'function') {
 
 const lifecycleObserver = new MutationObserver(() => lifecycleEnhanceOpportunityCards());
 document.addEventListener('DOMContentLoaded', () => {
+  lifecycleInstallAdminOverrides();
   lifecycleEnhanceOpportunityCards();
   lifecycleObserver.observe(document.body, { childList: true, subtree: true });
+  window.setTimeout(lifecycleRefreshAdminSections, 0);
 });
 
-window.addEventListener('storage', lifecycleEnhanceOpportunityCards);
+document.addEventListener('submit', event => {
+  if (event.target.closest('[data-auth-form], [data-profile-form]')) {
+    window.setTimeout(lifecycleRefreshAdminSections, 0);
+  }
+}, true);
+
+document.addEventListener('click', event => {
+  if (event.target.closest('[data-auth-sign-out]')) {
+    window.setTimeout(lifecycleRefreshAdminSections, 0);
+  }
+}, true);
+
+window.addEventListener('storage', () => {
+  lifecycleEnhanceOpportunityCards();
+  lifecycleRefreshAdminSections();
+});
