@@ -116,14 +116,7 @@ function createOpportunityCard(opp, index, total) {
         make('span', {}, [iconFromTemplate('icon-calendar'), document.createTextNode(opp.commitment || '')])
       ]),
       make('div', { class: 'opp-swipe-actions' }, [
-        make('button', { type: 'button', class: 'button button-primary', text: 'View details', dataset: { oppId: String(opp.id) } }),
-        make('a', {
-          class: 'button button-ghost',
-          href: state.data.site.registrationUrl,
-          target: '_blank',
-          rel: 'noopener noreferrer',
-          text: 'Register interest'
-        })
+        make('button', { type: 'button', class: 'button button-primary', text: 'View details', dataset: { oppId: String(opp.id) } })
       ])
     ])
   ]);
@@ -256,12 +249,11 @@ function openOpportunityModal(id) {
       make('section', { class: 'modal-section' }, [make('h3', { text: 'Requirements' }), make('p', { text: opp.requirements })])
     ]),
     make('div', { class: 'modal-actions' }, [
-      make('a', {
+      make('button', {
+        type: 'button',
         class: 'button button-primary',
-        href: state.data.site.registrationUrl,
-        target: '_blank',
-        rel: 'noopener noreferrer',
-        text: 'Register now'
+        text: 'Sign up for this role',
+        dataset: { signupOpportunity: String(opp.id) }
       }),
       make('button', { type: 'button', class: 'button', text: 'Close', dataset: { closeModal: 'true' } })
     ])
