@@ -26,7 +26,12 @@ collections:
             label_singular: Opportunity
             minimize_collapsed: true
             fields:
-              - { label: ID, name: id, widget: number, value_type: int, min: 0, hint: Use a unique number. Existing opportunities use 0-5. }
+              - label: ID
+                name: id
+                widget: number
+                value_type: int
+                min: 0
+                hint: "Use a unique number. Existing opportunities use 0-5."
               - label: Type
                 name: type
                 widget: select
@@ -36,25 +41,45 @@ collections:
               - label: Volunteer category
                 name: category
                 widget: select
-                hint: Used by the personality quiz and category filters.
+                hint: "Used by the personality quiz and category filters."
                 options:
                   - { label: Befrienders, value: befriender }
                   - { label: Mentors, value: mentor }
                   - { label: Facilitators, value: facilitator }
                   - { label: Community volunteering, value: community-volunteering }
-              - { label: Title, name: title, widget: string }
+              - label: Title
+                name: title
+                widget: string
               - label: Photo
                 name: photo
                 widget: image
                 required: false
-                hint: Upload or choose the image shown on the full-page swipe card and detail view.
-              - { label: Photo alt text, name: photoAlt, widget: string, required: false, hint: Describe the photo for screen readers. }
-              - { label: Description, name: description, widget: text }
-              - { label: Requirements, name: requirements, widget: text }
-              - { label: Time, name: time, widget: string }
-              - { label: Location, name: location, widget: string }
-              - { label: Commitment, name: commitment, widget: string }
-              - { label: Status, name: status, widget: string, required: false, hint: Example: Open, 4 left, Closed }
+                hint: "Upload or choose the image shown on the full-page swipe card and detail view."
+              - label: Photo alt text
+                name: photoAlt
+                widget: string
+                required: false
+                hint: "Describe the photo for screen readers."
+              - label: Description
+                name: description
+                widget: text
+              - label: Requirements
+                name: requirements
+                widget: text
+              - label: Time
+                name: time
+                widget: string
+              - label: Location
+                name: location
+                widget: string
+              - label: Commitment
+                name: commitment
+                widget: string
+              - label: Status
+                name: status
+                widget: string
+                required: false
+                hint: "Example: Open, 4 left, Closed"
 
   - name: news_feed
     label: News Feed
@@ -74,7 +99,7 @@ collections:
               - label: ID
                 name: id
                 widget: uuid
-                hint: Auto-generated. Leave unchanged.
+                hint: "Auto-generated. Leave unchanged."
               - label: Category
                 name: category
                 widget: select
@@ -86,7 +111,7 @@ collections:
                 name: emoji
                 widget: string
                 required: false
-                hint: Optional icon shown on the public news listing.
+                hint: "Optional icon shown on the public news listing."
               - label: Title
                 name: title
                 widget: string
@@ -106,7 +131,7 @@ collections:
                 widget: boolean
                 default: false
                 required: false
-                hint: Featured stories are prioritised on the home page.
+                hint: "Featured stories are prioritised on the home page."
               - label: Body paragraphs
                 name: body
                 widget: list
