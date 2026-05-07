@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="assets/opportunities-swipe.css">
   <link rel="stylesheet" href="assets/home-quiz-module.css">
   <link rel="stylesheet" href="assets/phase-one.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/supabase-config.js" defer></script>
   <script src="assets/data-store.js" defer></script>
   <script src="assets/app.js" defer></script>
   <script src="assets/opportunities-swipe.js" defer></script>
@@ -195,7 +197,7 @@
       <button class="close-button" type="button" data-auth-close aria-label="Close sign in dialog">×</button>
       <p class="eyebrow dark">Volunteer account</p>
       <h2 id="auth-title">Sign in to your volunteer dashboard</h2>
-      <p class="dashboard-muted">Phase 1 uses a local demo session. Connect Supabase Auth or an SSO provider before production use.</p>
+      <p class="dashboard-muted" data-auth-copy>Local demo sign-in is active because Supabase is not configured yet.</p>
       <form class="profile-form" data-auth-form>
         <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
         <label>Full name<input name="name" autocomplete="name" placeholder="Your name" required></label>
