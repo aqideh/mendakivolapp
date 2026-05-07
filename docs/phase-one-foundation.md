@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first seven expansion layers for the MENDAKI Volunteer Hub. It keeps the current public volunteer listing intact while preparing the app for a database-backed volunteer management system.
+This branch introduces the first eight expansion layers for the MENDAKI Volunteer Hub. It keeps CMS-managed public content intact while moving opportunity sign-up lifecycle data towards Supabase-backed shared persistence.
 
 ## Completed phases
 
@@ -70,6 +70,17 @@ This branch introduces the first seven expansion layers for the MENDAKI Voluntee
 - CMS fields have clearer labels, ordering, and hints for admin users.
 - The public app loads opportunities and training sessions from the dedicated CMS files, with fallbacks to the legacy arrays in `content/data.json`.
 
+### Phase 8: Supabase-backed opportunities and sign-ups
+
+- Added `db/phase-eight-supabase-signups.sql` for shared opportunity and sign-up persistence.
+- Added `app_opportunities` as a Supabase-readable opportunity table seeded from the current CMS opportunity list.
+- Added `app_opportunity_signups` as the shared sign-up lifecycle table.
+- Added RLS policies so volunteers can read/write their own sign-ups while admins and super admins can review all sign-ups.
+- Added `assets/phase-eight-supabase.js` as the adapter layer between the existing local demo UI and Supabase tables.
+- Opportunity sign-up, cancellation, admin confirm, admin waitlist, and admin decline actions are now mirrored to Supabase when Supabase is configured.
+- On sign-in/auth refresh, opportunity sign-ups are loaded from Supabase and cached locally so existing dashboard, attendance, and lifecycle UI continues to render.
+- Public opportunity listings can load from Supabase `app_opportunities`; if the Supabase table is empty or unavailable, the app keeps using CMS JSON content as a fallback.
+
 ## CMS content map
 
 | CMS section | File | Purpose |
@@ -78,6 +89,15 @@ This branch introduces the first seven expansion layers for the MENDAKI Voluntee
 | Manage Training Sessions | `content/trainings.json` | Public training catalogue and training sign-up flow. |
 | News & Updates | `content/news.json` | News listing and home-page news cards. |
 | Site Settings | `content/data.json` | Site title, hero copy, statistics, contact details, about page, pillars, and FAQ. |
+
+## Supabase setup order
+
+Run these scripts in order:
+
+1. `db/phase-one-schema.sql`
+2. `db/phase-eight-supabase-signups.sql`
+
+Then create/map test users in `app_users` and verify RLS policies by signing in as both a volunteer and an admin.
 
 ## GitHub Pages Supabase configuration
 
@@ -115,7 +135,7 @@ In local demo mode only, an admin view can still be reached by signing in with a
 
 ## Current local demo keys
 
-The following keys remain in `VolunteerDataStore` while sign-up, attendance, and training persistence are still local-demo backed:
+The following keys remain in `VolunteerDataStore` as cache/fallback storage while attendance and training persistence are still local-demo backed:
 
 - `mendaki.volunteer.session.v1`
 - `mendaki.volunteer.profile.v1`
@@ -128,17 +148,17 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Recommended next phase
 
-The next highest-priority phase is Phase 8: Supabase-backed opportunities and sign-ups.
+The next highest-priority phase is Phase 9: Supabase-backed attendance.
 
-1. Keep CMS as the temporary public-content source for opportunity and training listings.
-2. Add Supabase-backed reads/writes for opportunity sign-ups inside `VolunteerDataStore`.
-3. Migrate local sign-up records into Supabase tables.
-4. Keep local browser storage only as a development fallback.
-5. Restrict admin sign-up review actions through database policies.
+1. Move check-in/check-out records from `mendaki.volunteer.attendance.v1` to Supabase.
+2. Link attendance records to Supabase-backed opportunity sign-ups.
+3. Keep attendance verification updates transactional where possible.
+4. Preserve local cache only as a development fallback.
 
 ## Remaining major scopes
 
-- Full database-backed sign-up, attendance, and training persistence.
+- Supabase-backed attendance persistence.
+- Supabase-backed training sign-up persistence.
 - Real attendance-code validation.
 - Transactional attendance verification.
 - Capacity and waitlist enforcement.
