@@ -95,6 +95,7 @@ async function loadData() {
     fetchJson('content/data.json'),
     fetchJson('content/news.json')
   ]);
+
   let opportunitiesData;
   try {
     opportunitiesData = await fetchJson('content/opportunities.json');
@@ -102,11 +103,21 @@ async function loadData() {
     opportunitiesData = { opportunities: siteData.opportunities || [] };
   }
 
+  let trainingsData;
+  try {
+    trainingsData = await fetchJson('content/trainings.json');
+  } catch (error) {
+    trainingsData = { trainings: siteData.trainings || [] };
+  }
+
   return {
     ...siteData,
     opportunities: Array.isArray(opportunitiesData.opportunities)
       ? opportunitiesData.opportunities
       : Array.isArray(siteData.opportunities) ? siteData.opportunities : [],
+    trainings: Array.isArray(trainingsData.trainings)
+      ? trainingsData.trainings
+      : Array.isArray(siteData.trainings) ? siteData.trainings : [],
     news: Array.isArray(newsData.news) ? newsData.news : []
   };
 }
