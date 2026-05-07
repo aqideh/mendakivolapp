@@ -89,16 +89,20 @@ function phaseOneOpenAuth() {
   const modal = document.querySelector('.auth-modal');
   if (!layer || !modal) return;
   const session = phaseOneSession();
-  const profile = phaseOneProfile();
   const form = document.querySelector('[data-auth-form]');
   const copy = document.querySelector('[data-auth-copy]');
   const submit = form?.querySelector('button[type="submit"]');
   const passwordField = form?.querySelector('[data-auth-password-field]');
   const passwordInput = form?.querySelector('input[name="password"]');
+  const nameField = form?.querySelector('[data-auth-name-field]');
+  const nameInput = form?.querySelector('input[name="name"]');
   if (form) {
-    form.email.value = session?.email || profile?.email || '';
-    form.name.value = session?.name || profile?.name || '';
+    form.email.value = session?.email || '';
+    if (nameInput) nameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
   }
+  if (nameField) nameField.hidden = phaseOneUsingSupabase();
+  if (nameInput) nameInput.required = !phaseOneUsingSupabase();
   if (passwordField) passwordField.hidden = !phaseOneUsingSupabase();
   if (passwordInput) passwordInput.required = phaseOneUsingSupabase();
   if (copy) {
@@ -136,7 +140,7 @@ function phaseOneRenderDashboard() {
   const profile = phaseOneProfile();
   const signedIn = Boolean(session?.email);
   const displayName = profile?.name || session?.name || 'Volunteer';
-  const email = profile?.email || session?.email || 'Not signed in';
+  const email = session?.email || 'Not signed in';
   const interest = profile?.interest || 'Not selected';
   const availability = profile?.availability || 'Not added';
 
@@ -166,7 +170,7 @@ function phaseOneRenderDashboard() {
   const form = document.querySelector('[data-profile-form]');
   if (form) {
     form.name.value = profile?.name || session?.name || '';
-    form.email.value = profile?.email || session?.email || '';
+    form.email.value = session?.email || '';
     form.interest.value = profile?.interest || '';
     form.availability.value = profile?.availability || '';
   }
@@ -619,7 +623,7 @@ function phaseOneBind() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const email = String(data.get('email') || '').trim();
-    const name = String(data.get('name') || '').trim();
+    const name = phaseOneUsingSupabase() ? '' : String(data.get('name') || '').trim();
     const password = String(data.get('password') || '');
     const submit = event.currentTarget.querySelector('button[type="submit"]');
     const originalText = submit?.textContent;
@@ -666,9 +670,12 @@ function phaseOneBind() {
   document.querySelector('[data-profile-form]')?.addEventListener('submit', event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const session = phaseOneSession();
+    const email = session?.email || String(data.get('email') || '').trim();
     const profile = {
+      ...(phaseOneProfile() || {}),
       name: String(data.get('name') || '').trim(),
-      email: String(data.get('email') || '').trim(),
+      email,
       interest: String(data.get('interest') || '').trim(),
       availability: String(data.get('availability') || '').trim(),
       updatedAt: new Date().toISOString()
