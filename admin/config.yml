@@ -3,7 +3,7 @@
 backend:
   name: github
   repo: aqideh/mendakivolapp
-  branch: swipe
+  branch: expansion
   # Optional: add base_url for a team OAuth flow on GitHub Pages.
   # base_url: https://YOUR-OAUTH-WORKER.example.workers.dev
 
