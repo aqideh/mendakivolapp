@@ -10,6 +10,14 @@
     return window.VolunteerDataStore?.getSession?.() || null;
   }
 
+  function appState() {
+    try {
+      return typeof state !== 'undefined' ? state : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   function isSupabaseReady() {
     return Boolean(client() && session()?.authUserId);
   }
@@ -125,19 +133,19 @@
   }
 
   function refreshOpportunityViews() {
-    if (typeof window.renderHomeOpportunities === 'function') window.renderHomeOpportunities();
-    if (typeof window.renderOpportunities === 'function') window.renderOpportunities();
-    if (typeof window.phaseTwoRenderDashboardSignups === 'function') window.phaseTwoRenderDashboardSignups();
+    if (typeof renderHomeOpportunities === 'function') renderHomeOpportunities();
+    if (typeof renderOpportunities === 'function') renderOpportunities();
+    if (typeof phaseTwoRenderDashboardSignups === 'function') phaseTwoRenderDashboardSignups();
   }
 
   async function applySupabaseOpportunities() {
+    const currentState = appState();
+    if (!currentState?.data) return { ok: false, count: 0, skipped: true };
     const opportunities = await fetchSupabaseOpportunities();
     if (!opportunities.length) return { ok: false, count: 0 };
-    if (window.state?.data) {
-      window.state.data.opportunities = opportunities;
-      refreshOpportunityViews();
-      window.dispatchEvent(new CustomEvent('volunteer-opportunities-synced'));
-    }
+    currentState.data.opportunities = opportunities;
+    refreshOpportunityViews();
+    window.dispatchEvent(new CustomEvent('volunteer-opportunities-synced'));
     return { ok: true, count: opportunities.length };
   }
 
@@ -214,12 +222,12 @@
 
   function installSignupPersistenceWrappers() {
     if (window.__phaseEightSignupPersistenceInstalled) return;
-    if (typeof window.phaseTwoCreateSignup !== 'function' || typeof window.phaseTwoCancelSignup !== 'function' || typeof window.phaseTwoUpdateSignupStatus !== 'function') return;
+    if (typeof phaseTwoCreateSignup !== 'function' || typeof phaseTwoCancelSignup !== 'function' || typeof phaseTwoUpdateSignupStatus !== 'function') return;
     window.__phaseEightSignupPersistenceInstalled = true;
 
-    const originalCreate = window.phaseTwoCreateSignup;
-    const originalCancel = window.phaseTwoCancelSignup;
-    const originalUpdate = window.phaseTwoUpdateSignupStatus;
+    const originalCreate = phaseTwoCreateSignup;
+    const originalCancel = phaseTwoCancelSignup;
+    const originalUpdate = phaseTwoUpdateSignupStatus;
 
     window.phaseTwoCreateSignup = function phaseEightCreateSignup(oppId) {
       const result = originalCreate(oppId);
@@ -251,9 +259,9 @@
   }
 
   function refreshVisibleSignupViews() {
-    if (typeof window.phaseTwoRenderDashboardSignups === 'function') window.phaseTwoRenderDashboardSignups();
-    if (typeof window.phaseThreeRender === 'function') window.phaseThreeRender();
-    if (typeof window.renderOpportunities === 'function') window.renderOpportunities();
+    if (typeof phaseTwoRenderDashboardSignups === 'function') phaseTwoRenderDashboardSignups();
+    if (typeof phaseThreeRender === 'function') phaseThreeRender();
+    if (typeof renderOpportunities === 'function') renderOpportunities();
   }
 
   async function syncSignupsAndRefresh() {
