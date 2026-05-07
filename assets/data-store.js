@@ -2,6 +2,7 @@ const VolunteerDataStore = (() => {
   const keys = Object.freeze({
     session: 'mendaki.volunteer.session.v1',
     profile: 'mendaki.volunteer.profile.v1',
+    profilePrefix: 'mendaki.volunteer.profile.',
     opportunitySignups: 'mendaki.volunteer.signups.v1',
     attendanceClaims: 'mendaki.volunteer.attendance.v1',
     trainingSignups: 'mendaki.volunteer.trainingSignups.v1'
@@ -58,8 +59,17 @@ const VolunteerDataStore = (() => {
     });
   }
 
+  function normaliseEmail(email) {
+    return String(email || '').trim().toLowerCase();
+  }
+
+  function profileKeyForEmail(email) {
+    const normalized = normaliseEmail(email);
+    return normalized ? `${keys.profilePrefix}${encodeURIComponent(normalized)}.v1` : keys.profile;
+  }
+
   function roleForEmail(email) {
-    const normalized = String(email || '').trim().toLowerCase();
+    const normalized = normaliseEmail(email);
     return normalized.startsWith('admin@') || normalized.includes('+admin@') ? 'admin' : 'volunteer';
   }
 
@@ -125,6 +135,21 @@ const VolunteerDataStore = (() => {
     };
   }
 
+  function saveProfileFromSession(session) {
+    if (!session?.email) return null;
+    const existing = readJson(profileKeyForEmail(session.email), {}) || {};
+    const profile = {
+      ...existing,
+      email: session.email,
+      name: existing.name || session.name || session.email,
+      role: session.role || existing.role || 'volunteer',
+      authUserId: session.authUserId || existing.authUserId || '',
+      appUserId: session.appUserId || existing.appUserId || '',
+      updatedAt: existing.updatedAt || new Date().toISOString()
+    };
+    return writeJson(profileKeyForEmail(session.email), profile);
+  }
+
   async function refreshSupabaseSession() {
     if (!authState.supabase) return getSession();
     const { data, error } = await authState.supabase.auth.getUser();
@@ -136,7 +161,10 @@ const VolunteerDataStore = (() => {
     authState.user = data.user;
     authState.profile = await fetchAppUser(data.user);
     const session = sessionFromAuthUser(data.user, authState.profile);
-    if (session) saveSession(session);
+    if (session) {
+      saveSession(session);
+      saveProfileFromSession(session);
+    }
     return session;
   }
 
@@ -185,7 +213,10 @@ const VolunteerDataStore = (() => {
       authState.user = user;
       authState.profile = await ensureAppUser(user, fullName);
       const session = sessionFromAuthUser(user, authState.profile);
-      if (session) saveSession(session);
+      if (session) {
+        saveSession(session);
+        saveProfileFromSession(session);
+      }
     }
     return { ok: true };
   }
@@ -209,12 +240,17 @@ const VolunteerDataStore = (() => {
     remove(keys.session);
   }
 
-  function getProfile() {
+  function getProfile(email = null) {
+    const session = getSession();
+    const targetEmail = email || session?.email || '';
+    if (targetEmail) return readJson(profileKeyForEmail(targetEmail), null);
     return readJson(keys.profile, null);
   }
 
   function saveProfile(profile) {
-    return writeJson(keys.profile, profile);
+    const session = getSession();
+    const email = profile?.email || session?.email || '';
+    return writeJson(profileKeyForEmail(email), profile);
   }
 
   function getOpportunitySignups() {
