@@ -49,7 +49,8 @@
       relatedId: row.related_id || '',
       isRead: Boolean(row.is_read),
       createdAt: row.created_at || '',
-      readAt: row.read_at || ''
+      readAt: row.read_at || '',
+      clearedAt: row.cleared_at || ''
     };
   }
 
@@ -83,7 +84,10 @@
       <section class="notification-panel" data-notification-panel aria-label="Notifications">
         <div class="notification-panel-header">
           <strong>Notifications</strong>
-          <button type="button" data-notification-mark-read>Mark all read</button>
+          <span class="notification-panel-actions">
+            <button type="button" data-notification-mark-read>Mark all read</button>
+            <button type="button" data-notification-clear-all>Clear all</button>
+          </span>
         </div>
         <div class="notification-list" data-notification-list></div>
       </section>
@@ -115,22 +119,23 @@
     shell.hidden = !signedIn;
     if (!signedIn) return;
 
-    const unread = state.notifications.filter(item => !item.isRead).length;
+    const visibleNotifications = state.notifications.filter(item => !item.clearedAt);
+    const unread = visibleNotifications.filter(item => !item.isRead).length;
     bell.classList.toggle('has-unread', unread > 0);
     count.textContent = unread > 99 ? '99+' : String(unread);
     panel.classList.toggle('open', state.open);
 
-    if (!state.notifications.length) {
+    if (!visibleNotifications.length) {
       list.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
       return;
     }
 
-    list.innerHTML = state.notifications.slice(0, 20).map(item => `
-      <article class="notification-item ${item.isRead ? '' : 'unread'}">
+    list.innerHTML = visibleNotifications.slice(0, 20).map(item => `
+      <button class="notification-item ${item.isRead ? '' : 'unread'}" type="button" data-notification-id="${escapeHtml(item.id)}">
         <strong>${escapeHtml(item.title)}</strong>
         <p>${escapeHtml(item.message)}</p>
         <time>${escapeHtml(formatTime(item.createdAt))}</time>
-      </article>
+      </button>
     `).join('');
   }
 
@@ -146,6 +151,7 @@
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
+      .is('cleared_at', null)
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -177,34 +183,106 @@
     return { ok: true };
   }
 
-  async function markAllRead() {
+  async function updateNotifications(ids, payload) {
     const supabase = client();
-    const email = currentEmail();
-    if (!supabase || !email) return;
+    if (!supabase || !ids?.length) return { ok: false, skipped: true };
+    const { error } = await supabase.from(TABLE).update(payload).in('id', ids);
+    if (error) {
+      console.warn('Could not update notifications.', error);
+      return { ok: false, reason: error.message };
+    }
+    return { ok: true };
+  }
 
-    const unreadIds = state.notifications.filter(item => !item.isRead).map(item => item.id);
+  async function markAllRead() {
+    const unreadIds = state.notifications.filter(item => !item.isRead && !item.clearedAt && item.id && !String(item.id).startsWith('admin-pending-')).map(item => item.id);
     if (!unreadIds.length) {
+      state.notifications = state.notifications.map(item => ({ ...item, isRead: true }));
       state.open = false;
       renderNotifications();
       return;
     }
 
-    const { error } = await supabase
-      .from(TABLE)
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .in('id', unreadIds);
+    const now = new Date().toISOString();
+    const result = await updateNotifications(unreadIds, { is_read: true, read_at: now });
+    if (!result.ok) return;
 
-    if (error) {
-      console.warn('Could not mark notifications read.', error);
-      return;
-    }
-
-    state.notifications = state.notifications.map(item => ({ ...item, isRead: true, readAt: new Date().toISOString() }));
+    state.notifications = state.notifications.map(item => ({ ...item, isRead: true, readAt: item.readAt || now }));
     renderNotifications();
   }
 
-  function adminEmailsFromSignups() {
-    return [];
+  async function markOneRead(notification) {
+    if (!notification || notification.isRead) return;
+    const now = new Date().toISOString();
+    notification.isRead = true;
+    notification.readAt = now;
+    if (!String(notification.id).startsWith('admin-pending-')) {
+      await updateNotifications([notification.id], { is_read: true, read_at: now });
+    }
+    renderNotifications();
+  }
+
+  async function clearAllNotifications() {
+    const visible = state.notifications.filter(item => !item.clearedAt);
+    if (!visible.length) {
+      showToast('No notifications to clear');
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const persistedIds = visible.filter(item => item.id && !String(item.id).startsWith('admin-pending-')).map(item => item.id);
+    if (persistedIds.length) {
+      const result = await updateNotifications(persistedIds, { is_read: true, read_at: now, cleared_at: now });
+      if (!result.ok) return;
+    }
+
+    state.notifications = [];
+    state.open = false;
+    renderNotifications();
+    showToast('Notifications cleared');
+  }
+
+  function goToPage(pageName) {
+    const selector = `[data-page-target="${pageName}"], [data-expansion-page-target="${pageName}"]`;
+    const button = document.querySelector(selector);
+    if (button) button.click();
+    else window.location.hash = pageName;
+  }
+
+  function goToDashboardView(viewName) {
+    goToPage('dashboard');
+    window.setTimeout(() => {
+      const target = document.querySelector(`[data-dashboard-view-target="${viewName}"]`);
+      if (target) target.click();
+    }, 120);
+  }
+
+  function routeNotification(notification) {
+    if (!notification) return;
+    const type = notification.type || '';
+    const table = notification.relatedTable || '';
+
+    if (type === 'admin_task') {
+      goToDashboardView('admin');
+      return;
+    }
+    if (table === 'app_attendance_claims' || type.startsWith('attendance_')) {
+      goToDashboardView(isAdmin() ? 'admin' : 'attendance');
+      return;
+    }
+    if (table === 'app_training_signups' || type.startsWith('training_')) {
+      goToDashboardView(isAdmin() ? 'admin' : 'training');
+      return;
+    }
+    if (table === 'app_opportunity_signups' || type.startsWith('opportunity_')) {
+      goToDashboardView(isAdmin() ? 'admin' : 'opportunities');
+      return;
+    }
+    if (table === 'app_news_items' || type.startsWith('news_')) {
+      goToPage('news');
+      return;
+    }
+    goToDashboardView('home');
   }
 
   function notifyVolunteerForSignup(signup, status) {
@@ -275,6 +353,7 @@
       title: 'Pending sign-up reviews',
       message: `${pendingSignups} opportunity sign-up${pendingSignups === 1 ? '' : 's'} awaiting review.`,
       type: 'admin_task',
+      relatedTable: 'app_opportunity_signups',
       isRead: false,
       createdAt: new Date().toISOString()
     });
@@ -283,6 +362,7 @@
       title: 'Attendance awaiting verification',
       message: `${pendingAttendance} attendance record${pendingAttendance === 1 ? '' : 's'} awaiting verification.`,
       type: 'admin_task',
+      relatedTable: 'app_attendance_claims',
       isRead: false,
       createdAt: new Date().toISOString()
     });
@@ -291,6 +371,7 @@
       title: 'Training completion review',
       message: `${pendingTraining} training sign-up${pendingTraining === 1 ? '' : 's'} may need completion review.`,
       type: 'admin_task',
+      relatedTable: 'app_training_signups',
       isRead: false,
       createdAt: new Date().toISOString()
     });
@@ -312,8 +393,9 @@
     document.addEventListener('click', event => {
       const bell = event.target.closest('[data-notification-bell]');
       if (bell) {
-        const unread = state.notifications.filter(item => !item.isRead).length;
-        if (!unread && !state.notifications.length) {
+        const visible = state.notifications.filter(item => !item.clearedAt);
+        const unread = visible.filter(item => !item.isRead).length;
+        if (!unread && !visible.length) {
           state.open = false;
           renderNotifications();
           showToast('No new notifications');
@@ -324,9 +406,23 @@
         return;
       }
 
+      const itemButton = event.target.closest('[data-notification-id]');
+      if (itemButton) {
+        const notification = state.notifications.find(item => item.id === itemButton.dataset.notificationId);
+        state.open = false;
+        markOneRead(notification).then(() => routeNotification(notification));
+        return;
+      }
+
       const markRead = event.target.closest('[data-notification-mark-read]');
       if (markRead) {
         markAllRead();
+        return;
+      }
+
+      const clearAll = event.target.closest('[data-notification-clear-all]');
+      if (clearAll) {
+        clearAllNotifications();
         return;
       }
 
@@ -392,7 +488,8 @@
   Object.assign(window.VolunteerDataStore || {}, {
     fetchNotifications,
     createNotification,
-    markAllNotificationsRead: markAllRead
+    markAllNotificationsRead: markAllRead,
+    clearAllNotifications
   });
 
   document.addEventListener('DOMContentLoaded', () => {
