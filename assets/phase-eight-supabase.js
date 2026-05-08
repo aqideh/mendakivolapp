@@ -196,14 +196,15 @@
     return signups;
   }
 
-  async function saveSupabaseOpportunitySignup(signup) {
+  async function saveSupabaseOpportunitySignup(signup, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
-    const { data, error } = await supabase
-      .from(SIGNUP_TABLE)
-      .upsert(signupToRow(signup), { onConflict: 'id' })
-      .select('*')
-      .single();
+    const row = signupToRow(signup);
+    const mode = options.mode || 'upsert';
+    const request = mode === 'update'
+      ? supabase.from(SIGNUP_TABLE).update(row).eq('id', signup.id)
+      : supabase.from(SIGNUP_TABLE).upsert(row, { onConflict: 'id' });
+    const { data, error } = await request.select('*').single();
 
     if (error) {
       console.warn('Could not save Supabase opportunity sign-up; local fallback remains active.', error);
@@ -220,6 +221,24 @@
     return { ok: true, signup: saved };
   }
 
+  function signupById(signupId) {
+    return window.VolunteerDataStore.getOpportunitySignups().find(item => item.id === signupId);
+  }
+
+  function signupByOpportunityForCurrentUser(oppId) {
+    const email = window.VolunteerDataStore.currentEmail();
+    return window.VolunteerDataStore.getOpportunitySignups()
+      .find(item => item.email === email && String(item.opportunityId) === String(oppId));
+  }
+
+  function persistSignupChange(signup, options = {}) {
+    if (!signup) return Promise.resolve({ ok: false, reason: 'missing_signup' });
+    return saveSupabaseOpportunitySignup(signup, options).then(result => {
+      if (result?.ok) return fetchSupabaseOpportunitySignups();
+      return result;
+    });
+  }
+
   function installSignupPersistenceWrappers() {
     if (window.__phaseEightSignupPersistenceInstalled) return;
     if (typeof phaseTwoCreateSignup !== 'function' || typeof phaseTwoCancelSignup !== 'function' || typeof phaseTwoUpdateSignupStatus !== 'function') return;
@@ -231,9 +250,7 @@
 
     window.phaseTwoCreateSignup = function phaseEightCreateSignup(oppId) {
       const result = originalCreate(oppId);
-      if (result?.ok && result.signup) {
-        saveSupabaseOpportunitySignup(result.signup).then(() => fetchSupabaseOpportunitySignups());
-      }
+      if (result?.ok && result.signup) persistSignupChange(result.signup, { mode: 'upsert' });
       return result;
     };
 
@@ -243,19 +260,42 @@
       if (result?.ok) {
         const signup = window.VolunteerDataStore.getOpportunitySignups()
           .find(item => item.email === email && String(item.opportunityId) === String(oppId));
-        if (signup) saveSupabaseOpportunitySignup(signup).then(() => fetchSupabaseOpportunitySignups());
+        persistSignupChange(signup, { mode: 'update' });
       }
       return result;
     };
 
     window.phaseTwoUpdateSignupStatus = function phaseEightUpdateSignupStatus(signupId, status) {
       const result = originalUpdate(signupId, status);
-      if (result?.ok) {
-        const signup = window.VolunteerDataStore.getOpportunitySignups().find(item => item.id === signupId);
-        if (signup) saveSupabaseOpportunitySignup(signup).then(() => fetchSupabaseOpportunitySignups());
-      }
+      if (result?.ok) persistSignupChange(signupById(signupId), { mode: 'update' });
       return result;
     };
+  }
+
+  function installClickPersistenceFallback() {
+    if (window.__phaseEightClickPersistenceInstalled) return;
+    window.__phaseEightClickPersistenceInstalled = true;
+
+    document.addEventListener('click', event => {
+      const adminStatus = event.target.closest('[data-admin-signup-status]');
+      if (adminStatus) {
+        window.setTimeout(() => persistSignupChange(signupById(adminStatus.dataset.signupId), { mode: 'update' }), 0);
+        return;
+      }
+
+      const cancelButton = event.target.closest('[data-cancel-signup]');
+      if (cancelButton) {
+        const oppId = cancelButton.dataset.cancelSignup;
+        window.setTimeout(() => persistSignupChange(signupByOpportunityForCurrentUser(oppId), { mode: 'update' }), 0);
+        return;
+      }
+
+      const signupButton = event.target.closest('[data-signup-opportunity]');
+      if (signupButton) {
+        const oppId = signupButton.dataset.signupOpportunity;
+        window.setTimeout(() => persistSignupChange(signupByOpportunityForCurrentUser(oppId), { mode: 'upsert' }), 0);
+      }
+    }, true);
   }
 
   function refreshVisibleSignupViews() {
@@ -278,14 +318,17 @@
     fetchSupabaseOpportunitySignups,
     saveSupabaseOpportunitySignup
   });
+  window.phaseTwoPersistSignupChange = persistSignupChange;
 
   window.addEventListener('volunteer-auth-ready', () => {
     installSignupPersistenceWrappers();
+    installClickPersistenceFallback();
     applySupabaseOpportunities();
     syncSignupsAndRefresh();
   });
   window.addEventListener('volunteer-auth-changed', () => {
     installSignupPersistenceWrappers();
+    installClickPersistenceFallback();
     applySupabaseOpportunities();
     syncSignupsAndRefresh();
   });
@@ -293,6 +336,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     installSignupPersistenceWrappers();
+    installClickPersistenceFallback();
     window.setTimeout(installSignupPersistenceWrappers, 0);
     window.setTimeout(applySupabaseOpportunities, 120);
     window.setTimeout(syncSignupsAndRefresh, 180);
