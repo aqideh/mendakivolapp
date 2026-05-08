@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first nine expansion layers for the MENDAKI Volunteer Hub. It keeps CMS-managed public content intact while moving opportunity sign-up and attendance lifecycle data towards Supabase-backed shared persistence.
+This branch introduces the first ten expansion layers for the MENDAKI Volunteer Hub. It keeps CMS-managed public content intact while moving opportunity, attendance, and training lifecycle data towards Supabase-backed shared persistence.
 
 ## Completed phases
 
@@ -92,6 +92,17 @@ This branch introduces the first nine expansion layers for the MENDAKI Volunteer
 - On sign-in/auth refresh, attendance claims are loaded from Supabase and cached locally so the existing dashboard and attendance UI continues to render.
 - Local browser storage remains as cache/fallback storage if the migration has not been run or Supabase is unavailable.
 
+### Phase 10: Supabase-backed training sign-ups
+
+- Added `db/phase-ten-supabase-training.sql` for shared training-session and training-sign-up persistence.
+- Added `app_training_sessions` as a Supabase-readable training-session table seeded from the current CMS training list.
+- Added `app_training_signups` as the shared training registration and completion table.
+- Added RLS policies so volunteers can read/write their own training registrations while admins and super admins can review all training sign-ups.
+- Added `assets/phase-ten-training-sync.js` as the adapter layer between the existing training UI and Supabase tables.
+- Training sign-up, cancellation, and admin mark-completed actions are now mirrored to Supabase when Supabase is configured.
+- On sign-in/auth refresh, training sign-ups are loaded from Supabase and cached locally so the existing dashboard training UI continues to render.
+- Public training listings can load from Supabase `app_training_sessions`; if the Supabase table is empty or unavailable, the app keeps using CMS JSON content as a fallback.
+
 ## CMS content map
 
 | CMS section | File | Purpose |
@@ -108,6 +119,7 @@ Run these scripts in order:
 1. `db/phase-one-schema.sql`
 2. `db/phase-eight-supabase-signups.sql`
 3. `db/phase-nine-supabase-attendance.sql`
+4. `db/phase-ten-supabase-training.sql`
 
 Then create/map test users in `app_users` and verify RLS policies by signing in as both a volunteer and an admin.
 
@@ -147,7 +159,7 @@ In local demo mode only, an admin view can still be reached by signing in with a
 
 ## Current local demo keys
 
-The following keys remain in `VolunteerDataStore` as cache/fallback storage while training persistence is still local-demo backed:
+The following keys remain in `VolunteerDataStore` as cache/fallback storage:
 
 - `mendaki.volunteer.session.v1`
 - `mendaki.volunteer.profile.v1`
@@ -159,13 +171,6 @@ The following keys remain in `VolunteerDataStore` as cache/fallback storage whil
 These local keys are not secure and should not be treated as durable production data.
 
 ## Development roadmap
-
-### Phase 10: Supabase-backed training sign-ups
-
-- Move training sign-up records from `mendaki.volunteer.trainingSignups.v1` to Supabase.
-- Link training sign-ups to app users.
-- Allow admins to review and mark training completion from shared database records.
-- Preserve local cache only as a development fallback.
 
 ### Phase 11: Notification system
 
@@ -229,11 +234,10 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Recommended next phase
 
-The next highest-priority phase is Phase 10: Supabase-backed training sign-ups.
+The next highest-priority phase is Phase 11: Notification system.
 
 ## Remaining major scopes
 
-- Supabase-backed training sign-up persistence.
 - Notification system.
 - Real attendance-code validation.
 - Transactional attendance verification.
