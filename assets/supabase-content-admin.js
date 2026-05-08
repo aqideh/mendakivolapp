@@ -3,6 +3,18 @@
   const OPPORTUNITY_TABLE = 'app_opportunities';
   const TRAINING_TABLE = 'app_training_sessions';
 
+  const contentState = {
+    type: '',
+    mode: '',
+    editingId: ''
+  };
+
+  const contentLabels = {
+    opportunity: 'opportunities',
+    training: 'training',
+    news: 'news'
+  };
+
   function client() {
     return window.VolunteerDataStore?.authState?.supabase || null;
   }
@@ -28,6 +40,10 @@
       .split('\n')
       .map(line => line.trim())
       .filter(Boolean);
+  }
+
+  function arrayToBodyText(value) {
+    return Array.isArray(value) ? value.join('\n') : '';
   }
 
   function rowToNews(row) {
@@ -123,7 +139,7 @@
     currentState.data.news = news.filter(item => item.status === 'published' || isAdmin());
     if (typeof renderHomeNews === 'function') renderHomeNews();
     if (typeof renderNewsList === 'function') renderNewsList();
-    renderAdminContentLists();
+    renderContentWorkspace();
     window.dispatchEvent(new CustomEvent('volunteer-news-synced'));
     return { ok: true, count: currentState.data.news.length };
   }
@@ -159,7 +175,7 @@
     if (typeof window.VolunteerDataStore?.applySupabaseOpportunities === 'function') {
       await window.VolunteerDataStore.applySupabaseOpportunities();
     }
-    renderAdminContentLists();
+    renderContentWorkspace();
     return { ok: true };
   }
 
@@ -175,7 +191,7 @@
     if (typeof window.VolunteerDataStore?.applySupabaseTrainingSessions === 'function') {
       await window.VolunteerDataStore.applySupabaseTrainingSessions();
     }
-    renderAdminContentLists();
+    renderContentWorkspace();
     return { ok: true };
   }
 
@@ -193,98 +209,195 @@
     card.dataset.adminContentCard = 'true';
     card.dataset.dashboardCardRole = 'admin';
     card.innerHTML = `
-      <div class="section-header">
-        <div>
-          <h2>Admin content management</h2>
-          <p class="dashboard-muted">Create or update Supabase-backed opportunities, training sessions, and news items. CMS JSON remains fallback/static seed content only.</p>
+      <div class="admin-content-page">
+        <div class="section-header admin-content-page-header">
+          <div>
+            <p class="eyebrow dark">Admin</p>
+            <h2>Admin content management</h2>
+            <p class="dashboard-muted">Create or edit Supabase-backed opportunities, training sessions, and news items.</p>
+          </div>
+          <button class="button dashboard-secondary" type="button" data-content-back hidden>Back</button>
         </div>
-      </div>
-      <div class="admin-content-grid">
-        <section class="admin-content-panel">
-          <h3>Volunteering opportunity</h3>
-          <p>Use a stable unique ID. Saving an existing ID updates that opportunity.</p>
-          <form class="admin-content-form" data-content-form="opportunity">
-            <label>ID<input name="id" required placeholder="e.g. map-packing-day-2026"></label>
-            <label>Title<input name="title" required></label>
-            <label>Type<select name="type"><option value="long-term">Long-term</option><option value="ad-hoc">Ad-hoc</option></select></label>
-            <label>Category<select name="category"><option value="befriender">Befriender</option><option value="mentor">Mentor</option><option value="facilitator">Facilitator</option><option value="community-volunteering">Community volunteering</option></select></label>
-            <label>Status<input name="status" value="Open"></label>
-            <label>Time<input name="time" placeholder="Weekends, ~2 hrs/session"></label>
-            <label>Location<input name="location"></label>
-            <label>Commitment<input name="commitment"></label>
-            <label>Description<textarea name="description"></textarea></label>
-            <label>Requirements<textarea name="requirements"></textarea></label>
-            <button class="button button-primary" type="submit">Save opportunity</button>
-            <div class="admin-content-status" data-content-status="opportunity"></div>
-          </form>
-          <div class="admin-content-list" data-content-list="opportunities"></div>
-        </section>
-        <section class="admin-content-panel">
-          <h3>Training session</h3>
-          <p>Use a stable unique slug. Saving an existing ID updates that training.</p>
-          <form class="admin-content-form" data-content-form="training">
-            <label>ID<input name="id" required placeholder="e.g. volunteer-orientation-apr"></label>
-            <label>Title<input name="title" required></label>
-            <label>Date<input name="date" type="date"></label>
-            <label>Time<input name="time" placeholder="10:00 AM - 12:00 PM"></label>
-            <label>Location<input name="location"></label>
-            <label>Trainer<input name="trainer"></label>
-            <label>Capacity<input name="capacity" type="number" min="0" value="0"></label>
-            <label>Status<input name="status" value="Open"></label>
-            <label>Description<textarea name="description"></textarea></label>
-            <button class="button button-primary" type="submit">Save training</button>
-            <div class="admin-content-status" data-content-status="training"></div>
-          </form>
-          <div class="admin-content-list" data-content-list="trainings"></div>
-        </section>
-        <section class="admin-content-panel">
-          <h3>News item</h3>
-          <p>Leave ID blank for a new item. Body paragraphs should be entered one per line.</p>
-          <form class="admin-content-form" data-content-form="news">
-            <label>ID<input name="id" placeholder="auto-generated if blank"></label>
-            <label>Title<input name="title" required></label>
-            <label>Category<select name="category"><option>Announcement</option><option>Programme</option><option>Volunteer</option></select></label>
-            <label>Emoji<input name="emoji" placeholder="Optional"></label>
-            <label>Publication date<input name="date" type="date"></label>
-            <label>Read time<input name="readTime" placeholder="2 min read"></label>
-            <label>Status<select name="status"><option value="published">Published</option><option value="draft">Draft</option></select></label>
-            <label><span><input name="featured" type="checkbox"> Featured on home</span></label>
-            <label>Body<textarea name="body" placeholder="One paragraph per line"></textarea></label>
-            <button class="button button-primary" type="submit">Save news</button>
-            <div class="admin-content-status" data-content-status="news"></div>
-          </form>
-          <div class="admin-content-list" data-content-list="news"></div>
-        </section>
+        <div class="admin-content-workspace" data-content-workspace></div>
       </div>
     `;
 
     layout.append(card);
   }
 
-  function renderAdminContentLists() {
+  function currentItems(type) {
     const currentState = appState();
-    if (!currentState?.data) return;
+    if (!currentState?.data) return [];
+    if (type === 'opportunity') return currentState.data.opportunities || [];
+    if (type === 'training') return currentState.data.trainings || [];
+    if (type === 'news') return currentState.data.news || [];
+    return [];
+  }
 
-    const opportunitiesList = document.querySelector('[data-content-list="opportunities"]');
-    if (opportunitiesList) {
-      opportunitiesList.innerHTML = (currentState.data.opportunities || []).slice(0, 12).map(item => `
-        <div class="admin-content-item"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.id)} · ${escapeHtml(item.status || 'Open')}</span></div>
-      `).join('') || '<div class="admin-content-item"><span>No opportunities loaded.</span></div>';
-    }
+  function findItem(type, id) {
+    return currentItems(type).find(item => String(item.id) === String(id));
+  }
 
-    const trainingsList = document.querySelector('[data-content-list="trainings"]');
-    if (trainingsList) {
-      trainingsList.innerHTML = (currentState.data.trainings || []).slice(0, 12).map(item => `
-        <div class="admin-content-item"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.id)} · ${escapeHtml(item.date || '')}</span></div>
-      `).join('') || '<div class="admin-content-item"><span>No training sessions loaded.</span></div>';
-    }
+  function optionTile(type, label, copy) {
+    return `
+      <button class="admin-content-choice" type="button" data-content-type="${type}">
+        <strong>${label}</strong>
+        <span>${copy}</span>
+      </button>
+    `;
+  }
 
-    const newsList = document.querySelector('[data-content-list="news"]');
-    if (newsList) {
-      newsList.innerHTML = (currentState.data.news || []).slice(0, 12).map(item => `
-        <div class="admin-content-item"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.category)} · ${escapeHtml(item.date || '')}</span></div>
-      `).join('') || '<div class="admin-content-item"><span>No news items loaded.</span></div>';
-    }
+  function actionTile(mode, label, copy) {
+    return `
+      <button class="admin-content-choice" type="button" data-content-mode="${mode}">
+        <strong>${label}</strong>
+        <span>${copy}</span>
+      </button>
+    `;
+  }
+
+  function renderTypePicker() {
+    contentState.type = '';
+    contentState.mode = '';
+    contentState.editingId = '';
+    const workspace = document.querySelector('[data-content-workspace]');
+    if (!workspace) return;
+    workspace.innerHTML = `
+      <section class="admin-content-step">
+        <h3>What would you like to manage?</h3>
+        <p>Choose one content area. Each area opens as its own page inside this module.</p>
+        <div class="admin-content-choice-grid">
+          ${optionTile('opportunity', 'Opportunities', 'Create or edit volunteer opportunity listings.')}
+          ${optionTile('training', 'Training', 'Create or edit volunteer training sessions.')}
+          ${optionTile('news', 'News', 'Create or edit newsfeed items.')}
+        </div>
+      </section>
+    `;
+    updateBackButton();
+  }
+
+  function renderModePicker(type) {
+    contentState.type = type;
+    contentState.mode = '';
+    contentState.editingId = '';
+    const workspace = document.querySelector('[data-content-workspace]');
+    if (!workspace) return;
+    workspace.innerHTML = `
+      <section class="admin-content-step">
+        <p class="eyebrow dark">${escapeHtml(contentLabels[type] || type)}</p>
+        <h3>Create new or edit existing?</h3>
+        <p>Select whether you want a blank form or a list of existing records.</p>
+        <div class="admin-content-choice-grid two">
+          ${actionTile('create', 'Create new', 'Open a blank form.')}
+          ${actionTile('edit', 'Edit existing', 'Choose from current records.')}
+        </div>
+      </section>
+    `;
+    updateBackButton();
+  }
+
+  function renderEditList(type) {
+    contentState.type = type;
+    contentState.mode = 'edit';
+    contentState.editingId = '';
+    const workspace = document.querySelector('[data-content-workspace]');
+    if (!workspace) return;
+    const items = currentItems(type);
+    workspace.innerHTML = `
+      <section class="admin-content-step">
+        <p class="eyebrow dark">Edit ${escapeHtml(contentLabels[type] || type)}</p>
+        <h3>Select an item to edit</h3>
+        <div class="admin-content-list page-list">
+          ${items.length ? items.map(item => renderEditableItem(type, item)).join('') : '<div class="admin-content-item"><span>No records loaded.</span></div>'}
+        </div>
+      </section>
+    `;
+    updateBackButton();
+  }
+
+  function renderEditableItem(type, item) {
+    const meta = type === 'news'
+      ? `${item.category || 'News'} · ${item.date || ''} · ${item.status || 'published'}`
+      : type === 'training'
+        ? `${item.id} · ${item.date || ''} · ${item.status || 'Open'}`
+        : `${item.id} · ${item.type || ''} · ${item.status || 'Open'}`;
+    return `
+      <div class="admin-content-item editable">
+        <span><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(meta)}</span></span>
+        <button class="button dashboard-secondary" type="button" data-content-edit-id="${escapeHtml(item.id)}">Edit</button>
+      </div>
+    `;
+  }
+
+  function renderForm(type, item = null) {
+    contentState.type = type;
+    contentState.mode = item ? 'edit' : 'create';
+    contentState.editingId = item?.id || '';
+    const workspace = document.querySelector('[data-content-workspace]');
+    if (!workspace) return;
+    workspace.innerHTML = `
+      <section class="admin-content-step">
+        <p class="eyebrow dark">${item ? 'Edit' : 'Create'} ${escapeHtml(contentLabels[type] || type)}</p>
+        <h3>${item ? escapeHtml(item.title) : 'New item'}</h3>
+        ${type === 'opportunity' ? opportunityForm(item) : type === 'training' ? trainingForm(item) : newsForm(item)}
+      </section>
+    `;
+    updateBackButton();
+  }
+
+  function opportunityForm(item = {}) {
+    return `
+      <form class="admin-content-form" data-content-form="opportunity">
+        <label>ID<input name="id" required ${item?.id ? 'readonly' : ''} value="${escapeHtml(item?.id || '')}" placeholder="e.g. map-packing-day-2026"></label>
+        <label>Title<input name="title" required value="${escapeHtml(item?.title || '')}"></label>
+        <label>Type<select name="type"><option value="long-term" ${item?.type === 'long-term' ? 'selected' : ''}>Long-term</option><option value="ad-hoc" ${item?.type !== 'long-term' ? 'selected' : ''}>Ad-hoc</option></select></label>
+        <label>Category<select name="category"><option value="befriender" ${item?.category === 'befriender' ? 'selected' : ''}>Befriender</option><option value="mentor" ${item?.category === 'mentor' ? 'selected' : ''}>Mentor</option><option value="facilitator" ${item?.category === 'facilitator' ? 'selected' : ''}>Facilitator</option><option value="community-volunteering" ${!item?.category || item?.category === 'community-volunteering' ? 'selected' : ''}>Community volunteering</option></select></label>
+        <label>Status<input name="status" value="${escapeHtml(item?.status || 'Open')}"></label>
+        <label>Time<input name="time" value="${escapeHtml(item?.time || '')}" placeholder="Weekends, ~2 hrs/session"></label>
+        <label>Location<input name="location" value="${escapeHtml(item?.location || '')}"></label>
+        <label>Commitment<input name="commitment" value="${escapeHtml(item?.commitment || '')}"></label>
+        <label>Description<textarea name="description">${escapeHtml(item?.description || '')}</textarea></label>
+        <label>Requirements<textarea name="requirements">${escapeHtml(item?.requirements || '')}</textarea></label>
+        <button class="button button-primary" type="submit">${item?.id ? 'Save changes' : 'Create opportunity'}</button>
+        <div class="admin-content-status" data-content-status="opportunity"></div>
+      </form>
+    `;
+  }
+
+  function trainingForm(item = {}) {
+    return `
+      <form class="admin-content-form" data-content-form="training">
+        <label>ID<input name="id" required ${item?.id ? 'readonly' : ''} value="${escapeHtml(item?.id || '')}" placeholder="e.g. volunteer-orientation-apr"></label>
+        <label>Title<input name="title" required value="${escapeHtml(item?.title || '')}"></label>
+        <label>Date<input name="date" type="date" value="${escapeHtml(item?.date || '')}"></label>
+        <label>Time<input name="time" value="${escapeHtml(item?.time || '')}" placeholder="10:00 AM - 12:00 PM"></label>
+        <label>Location<input name="location" value="${escapeHtml(item?.location || '')}"></label>
+        <label>Trainer<input name="trainer" value="${escapeHtml(item?.trainer || '')}"></label>
+        <label>Capacity<input name="capacity" type="number" min="0" value="${escapeHtml(item?.capacity || 0)}"></label>
+        <label>Status<input name="status" value="${escapeHtml(item?.status || 'Open')}"></label>
+        <label>Description<textarea name="description">${escapeHtml(item?.description || '')}</textarea></label>
+        <button class="button button-primary" type="submit">${item?.id ? 'Save changes' : 'Create training'}</button>
+        <div class="admin-content-status" data-content-status="training"></div>
+      </form>
+    `;
+  }
+
+  function newsForm(item = {}) {
+    return `
+      <form class="admin-content-form" data-content-form="news">
+        <label>ID<input name="id" ${item?.id ? 'readonly' : ''} value="${escapeHtml(item?.id || '')}" placeholder="auto-generated if blank"></label>
+        <label>Title<input name="title" required value="${escapeHtml(item?.title || '')}"></label>
+        <label>Category<select name="category"><option ${item?.category === 'Announcement' ? 'selected' : ''}>Announcement</option><option ${item?.category === 'Programme' ? 'selected' : ''}>Programme</option><option ${item?.category === 'Volunteer' ? 'selected' : ''}>Volunteer</option></select></label>
+        <label>Emoji<input name="emoji" value="${escapeHtml(item?.emoji || '')}" placeholder="Optional"></label>
+        <label>Publication date<input name="date" type="date" value="${escapeHtml(item?.date || '')}"></label>
+        <label>Read time<input name="readTime" value="${escapeHtml(item?.readTime || '')}" placeholder="2 min read"></label>
+        <label>Status<select name="status"><option value="published" ${item?.status !== 'draft' ? 'selected' : ''}>Published</option><option value="draft" ${item?.status === 'draft' ? 'selected' : ''}>Draft</option></select></label>
+        <label class="admin-content-checkbox"><input name="featured" type="checkbox" ${item?.featured ? 'checked' : ''}> Featured on home</label>
+        <label>Body<textarea name="body" placeholder="One paragraph per line">${escapeHtml(arrayToBodyText(item?.body))}</textarea></label>
+        <button class="button button-primary" type="submit">${item?.id ? 'Save changes' : 'Create news item'}</button>
+        <div class="admin-content-status" data-content-status="news"></div>
+      </form>
+    `;
   }
 
   function setStatus(type, text) {
@@ -292,9 +405,63 @@
     if (node) node.textContent = text || '';
   }
 
+  function updateBackButton() {
+    const back = document.querySelector('[data-content-back]');
+    if (!back) return;
+    back.hidden = !contentState.type;
+  }
+
+  function goBack() {
+    if (contentState.mode === 'create') {
+      renderModePicker(contentState.type);
+      return;
+    }
+    if (contentState.mode === 'edit' && contentState.editingId) {
+      renderEditList(contentState.type);
+      return;
+    }
+    if (contentState.mode === 'edit') {
+      renderModePicker(contentState.type);
+      return;
+    }
+    renderTypePicker();
+  }
+
+  function renderContentWorkspace() {
+    if (!document.querySelector('[data-admin-content-card]')) return;
+    if (!contentState.type) renderTypePicker();
+    else if (!contentState.mode) renderModePicker(contentState.type);
+    else if (contentState.mode === 'edit' && !contentState.editingId) renderEditList(contentState.type);
+  }
+
   function bindAdminContentForms() {
     if (window.__supabaseContentAdminFormsBound) return;
     window.__supabaseContentAdminFormsBound = true;
+
+    document.addEventListener('click', event => {
+      const typeButton = event.target.closest('[data-content-type]');
+      if (typeButton) {
+        renderModePicker(typeButton.dataset.contentType);
+        return;
+      }
+
+      const modeButton = event.target.closest('[data-content-mode]');
+      if (modeButton) {
+        if (modeButton.dataset.contentMode === 'create') renderForm(contentState.type);
+        else renderEditList(contentState.type);
+        return;
+      }
+
+      const editButton = event.target.closest('[data-content-edit-id]');
+      if (editButton) {
+        const item = findItem(contentState.type, editButton.dataset.contentEditId);
+        if (item) renderForm(contentState.type, item);
+        return;
+      }
+
+      const backButton = event.target.closest('[data-content-back]');
+      if (backButton) goBack();
+    });
 
     document.addEventListener('submit', async event => {
       const form = event.target.closest('[data-content-form]');
@@ -347,12 +514,8 @@
 
       if (result?.ok) {
         setStatus(type, 'Saved.');
-        form.reset();
-        if (type === 'opportunity') form.querySelector('[name="status"]').value = 'Open';
-        if (type === 'training') {
-          form.querySelector('[name="status"]').value = 'Open';
-          form.querySelector('[name="capacity"]').value = '0';
-        }
+        contentState.editingId = '';
+        window.setTimeout(() => renderEditList(type), 350);
       } else {
         setStatus(type, `Could not save${result?.reason ? `: ${result.reason}` : '.'}`);
       }
@@ -367,13 +530,13 @@
       await window.VolunteerDataStore.applySupabaseTrainingSessions();
     }
     await applySupabaseNewsItems();
-    renderAdminContentLists();
+    renderContentWorkspace();
   }
 
   function installAdminContent() {
     createAdminContentCard();
-    renderAdminContentLists();
     bindAdminContentForms();
+    renderContentWorkspace();
   }
 
   Object.assign(window.VolunteerDataStore || {}, {
@@ -395,8 +558,11 @@
     installAdminContent();
   });
   window.addEventListener('volunteer-auth-changed', () => {
+    contentState.type = '';
+    contentState.mode = '';
+    contentState.editingId = '';
     syncContent();
     installAdminContent();
   });
-  window.addEventListener('volunteer-news-synced', renderAdminContentLists);
+  window.addEventListener('volunteer-news-synced', renderContentWorkspace);
 })();
