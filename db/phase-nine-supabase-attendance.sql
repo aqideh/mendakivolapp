@@ -5,6 +5,22 @@
 
 create extension if not exists pgcrypto;
 
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'attendance_status') then
+    create type attendance_status as enum (
+      'pending_submission',
+      'checked_in',
+      'submitted',
+      'clarification_requested',
+      'verified',
+      'adjusted',
+      'rejected',
+      'no_show'
+    );
+  end if;
+end $$;
+
 create table if not exists public.app_attendance_claims (
   id uuid primary key default gen_random_uuid(),
   signup_id uuid references public.app_opportunity_signups(id) on delete set null,
