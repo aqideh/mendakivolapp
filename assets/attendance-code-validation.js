@@ -61,8 +61,36 @@
     return { ok: true, id: data };
   }
 
+  async function fetchAttendanceCodes() {
+    const supabase = client();
+    if (!supabase || !hasSession() || !window.VolunteerDataStore?.isAdmin?.()) return {};
+
+    const { data, error } = await supabase
+      .from('app_attendance_codes')
+      .select('opportunity_id, code, label, active, updated_at')
+      .eq('active', true)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.warn('Could not fetch attendance codes.', error);
+      return {};
+    }
+
+    return (data || []).reduce((map, row) => {
+      if (!map[row.opportunity_id]) {
+        map[row.opportunity_id] = {
+          code: row.code || '',
+          label: row.label || 'Facilitator code',
+          updatedAt: row.updated_at || ''
+        };
+      }
+      return map;
+    }, {});
+  }
+
   Object.assign(window.VolunteerDataStore || {}, {
     validateAttendanceCode,
-    upsertAttendanceCode
+    upsertAttendanceCode,
+    fetchAttendanceCodes
   });
 })();
