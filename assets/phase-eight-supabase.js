@@ -196,6 +196,13 @@
     return signups;
   }
 
+  async function notifySavedSignup(saved) {
+    const notifiableStatuses = ['confirmed', 'waitlisted', 'declined', 'completed'];
+    if (!notifiableStatuses.includes(saved?.status)) return;
+    if (typeof window.VolunteerDataStore?.notifyOpportunityStatusChange !== 'function') return;
+    await window.VolunteerDataStore.notifyOpportunityStatusChange(saved, saved.status);
+  }
+
   async function saveSupabaseOpportunitySignup(signup, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
@@ -218,6 +225,7 @@
     else signups.push(saved);
     window.VolunteerDataStore.saveOpportunitySignups(signups);
     window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+    await notifySavedSignup(saved);
     return { ok: true, signup: saved };
   }
 
