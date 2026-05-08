@@ -101,6 +101,38 @@ function phaseThreeNormaliseHours(value) {
   return String(number);
 }
 
+function phaseThreePersistCompletedSignup(signup) {
+  if (!signup) return;
+  const refresh = () => {
+    if (typeof phaseOneRenderDashboard === 'function') phaseOneRenderDashboard();
+    if (typeof phaseThreeRender === 'function') phaseThreeRender();
+    window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+  };
+
+  if (typeof window.phaseTwoPersistSignupChange === 'function') {
+    window.phaseTwoPersistSignupChange(signup, { mode: 'update' }).then(refresh).catch(error => {
+      console.warn('Could not persist completed sign-up after attendance verification.', error);
+      refresh();
+    });
+    return;
+  }
+
+  if (typeof VolunteerDataStore.saveSupabaseOpportunitySignup === 'function') {
+    VolunteerDataStore.saveSupabaseOpportunitySignup(signup, { mode: 'update' }).then(() => {
+      if (typeof VolunteerDataStore.fetchSupabaseOpportunitySignups === 'function') {
+        return VolunteerDataStore.fetchSupabaseOpportunitySignups();
+      }
+      return null;
+    }).then(refresh).catch(error => {
+      console.warn('Could not persist completed sign-up after attendance verification.', error);
+      refresh();
+    });
+    return;
+  }
+
+  refresh();
+}
+
 function phaseThreeEnsureDashboardSections() {
   const layout = document.querySelector('.dashboard-layout');
   if (!layout || document.querySelector('[data-attendance-card]')) return;
@@ -377,6 +409,7 @@ function phaseThreeReviewClaim(form, submitter) {
     signup.completedAt = new Date().toISOString();
     signup.updatedAt = new Date().toISOString();
     phaseThreeWriteSignups(signups);
+    phaseThreePersistCompletedSignup(signup);
   }
 
   phaseThreeRender();
