@@ -67,6 +67,14 @@
     };
   }
 
+  function actionFromClaimStatus(status) {
+    if (status === 'verified') return 'verify';
+    if (status === 'adjusted') return 'adjust';
+    if (status === 'clarification_requested') return 'clarify';
+    if (status === 'rejected') return 'reject';
+    return '';
+  }
+
   async function fetchSupabaseAttendanceClaims() {
     const supabase = client();
     if (!supabase || !session()?.email) return [];
@@ -94,9 +102,46 @@
     await window.VolunteerDataStore.notifyAttendanceReview(saved);
   }
 
+  async function reviewAttendanceClaimTransactionally(claim) {
+    const supabase = client();
+    if (!supabase || !session()?.email || !claim?.id || !window.VolunteerDataStore?.isAdmin?.()) {
+      return { ok: false, skipped: true };
+    }
+
+    const action = actionFromClaimStatus(claim.claimStatus);
+    if (!action) return { ok: false, skipped: true };
+
+    const { error } = await supabase.rpc('review_attendance_claim_transactional', {
+      p_claim_id: claim.id,
+      p_action: action,
+      p_verified_hours: Number(claim.verifiedHours || 0),
+      p_admin_notes: claim.adminNotes || null
+    });
+
+    if (error) {
+      console.warn('Transactional attendance review unavailable or failed; falling back to direct attendance save.', error);
+      return { ok: false, reason: error.message, fallback: true };
+    }
+
+    await fetchSupabaseAttendanceClaims();
+    if (typeof window.VolunteerDataStore?.fetchSupabaseOpportunitySignups === 'function') {
+      await window.VolunteerDataStore.fetchSupabaseOpportunitySignups();
+    }
+    if (typeof window.VolunteerDataStore?.fetchNotifications === 'function') {
+      await window.VolunteerDataStore.fetchNotifications();
+    }
+    return { ok: true, transactional: true };
+  }
+
   async function saveSupabaseAttendanceClaim(claim, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !claim?.id) return { ok: false, skipped: true };
+
+    const isAdminReview = options.review === true || ['verified', 'adjusted', 'clarification_requested', 'rejected'].includes(claim.claimStatus);
+    if (isAdminReview && window.VolunteerDataStore?.isAdmin?.()) {
+      const reviewResult = await reviewAttendanceClaimTransactionally(claim);
+      if (reviewResult.ok) return reviewResult;
+    }
 
     const row = claimToRow(claim);
     const mode = options.mode || 'upsert';
@@ -132,7 +177,7 @@
   function persistClaim(claim, options = {}) {
     if (!claim) return Promise.resolve({ ok: false, reason: 'missing_claim' });
     return saveSupabaseAttendanceClaim(claim, options).then(result => {
-      if (result?.ok) return fetchSupabaseAttendanceClaims();
+      if (result?.ok && !result.transactional) return fetchSupabaseAttendanceClaims();
       return result;
     });
   }
@@ -162,7 +207,7 @@
       const form = event.target.closest('[data-attendance-review]');
       if (!form) return;
       const claimId = form.dataset.attendanceReview;
-      window.setTimeout(() => persistClaim(claimById(claimId), { mode: 'update' }), 0);
+      window.setTimeout(() => persistClaim(claimById(claimId), { mode: 'update', review: true }), 0);
     }, true);
   }
 
@@ -174,7 +219,8 @@
 
   Object.assign(window.VolunteerDataStore, {
     fetchSupabaseAttendanceClaims,
-    saveSupabaseAttendanceClaim
+    saveSupabaseAttendanceClaim,
+    reviewAttendanceClaimTransactionally
   });
 
   window.addEventListener('volunteer-auth-ready', syncAndRender);
