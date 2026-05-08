@@ -145,6 +145,11 @@
   display: none;
 }
 
+.dashboard-paged:not([data-dashboard-view="home"]) .dashboard-profile-card,
+.dashboard-paged:not([data-dashboard-view="home"]) .dashboard-app-home {
+  display: none !important;
+}
+
 .dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card,
 .dashboard-paged[data-dashboard-view="home"] [data-dashboard-card-role="stats"],
 .dashboard-paged[data-dashboard-view="home"] .dashboard-app-home {
