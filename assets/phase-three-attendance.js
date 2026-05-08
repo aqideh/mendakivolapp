@@ -133,6 +133,18 @@ function phaseThreePersistCompletedSignup(signup) {
   refresh();
 }
 
+async function phaseThreeValidateAttendanceCode(signup, code) {
+  if (!PHASE_THREE_CODE_PATTERN.test(code)) {
+    return { ok: false, reason: 'Please enter a valid 4-digit code.' };
+  }
+
+  if (typeof VolunteerDataStore.validateAttendanceCode === 'function') {
+    return VolunteerDataStore.validateAttendanceCode(signup.opportunityId, code);
+  }
+
+  return { ok: true, fallback: true };
+}
+
 function phaseThreeEnsureDashboardSections() {
   const layout = document.querySelector('.dashboard-layout');
   if (!layout || document.querySelector('[data-attendance-card]')) return;
@@ -307,7 +319,7 @@ function phaseThreePromptCode(action) {
   return normalized;
 }
 
-function phaseThreeHandlePunch(signupId, action) {
+async function phaseThreeHandlePunch(signupId, action) {
   const signup = phaseThreeSignups().find(item => item.id === signupId);
   if (!signup) return;
   if (signup.status !== 'confirmed' && signup.status !== 'completed') {
@@ -316,6 +328,15 @@ function phaseThreeHandlePunch(signupId, action) {
   }
   const code = phaseThreePromptCode(action);
   if (!code) return;
+
+  const validation = await phaseThreeValidateAttendanceCode(signup, code);
+  if (!validation.ok) {
+    window.alert(validation.reason || 'Invalid facilitator code. Please check with the facilitator and try again.');
+    return;
+  }
+  if (validation.fallback) {
+    console.warn('Attendance code validation RPC is not available; using local 4-digit format fallback. Run db/phase-thirteen-attendance-code-validation.sql to enforce real validation.');
+  }
 
   const now = new Date().toISOString();
   const claims = phaseThreeClaims();
