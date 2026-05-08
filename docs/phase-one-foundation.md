@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first ten expansion layers for the MENDAKI Volunteer Hub. It keeps CMS-managed public content intact while moving opportunity, attendance, and training lifecycle data towards Supabase-backed shared persistence.
+This branch introduces the first eleven expansion layers for the MENDAKI Volunteer Hub. It keeps static site copy in JSON/CMS fallback files while moving operational listings, sign-ups, attendance, training, and newsfeed content towards Supabase-backed shared persistence.
 
 ## Completed phases
 
@@ -103,14 +103,29 @@ This branch introduces the first ten expansion layers for the MENDAKI Volunteer 
 - On sign-in/auth refresh, training sign-ups are loaded from Supabase and cached locally so the existing dashboard training UI continues to render.
 - Public training listings can load from Supabase `app_training_sessions`; if the Supabase table is empty or unavailable, the app keeps using CMS JSON content as a fallback.
 
-## CMS content map
+### Phase 11: Supabase content consolidation
 
-| CMS section | File | Purpose |
+- Added `db/phase-eleven-supabase-content.sql` to move newsfeed content into Supabase.
+- Added `app_news_items` as a Supabase-readable and admin-manageable newsfeed table.
+- Seeded current CMS news items into `app_news_items`.
+- Added RLS policies so published news is public while draft/unpublished news and write access are restricted to admins and super admins.
+- Added `assets/supabase-content-admin.js` as the content consolidation adapter.
+- Added `assets/content-consolidation.css` for the admin content management UI.
+- The public app now attempts to load opportunities, training sessions, and newsfeed content from Supabase first, with JSON/CMS files as fallback.
+- Added in-dashboard admin forms for creating/updating Supabase-backed opportunities, training sessions, and news items.
+- CMS JSON remains useful as static fallback and seed content, but operational content should now be created in Supabase through the app admin dashboard.
+
+## Content ownership map
+
+| Content/data area | Primary source | Fallback/source-of-seed |
 | --- | --- | --- |
-| Manage Opportunities | `content/opportunities.json` | Public opportunity cards and detail modals. |
-| Manage Training Sessions | `content/trainings.json` | Public training catalogue and training sign-up flow. |
-| News & Updates | `content/news.json` | News listing and home-page news cards. |
-| Site Settings | `content/data.json` | Site title, hero copy, statistics, contact details, about page, pillars, and FAQ. |
+| Volunteering opportunities | `app_opportunities` | `content/opportunities.json` |
+| Training sessions | `app_training_sessions` | `content/trainings.json` |
+| Newsfeed | `app_news_items` | `content/news.json` |
+| Site title, hero copy, contact, about, FAQ | `content/data.json` | none |
+| Sign-ups | `app_opportunity_signups` | local browser cache |
+| Attendance | `app_attendance_claims` | local browser cache |
+| Training registrations | `app_training_signups` | local browser cache |
 
 ## Supabase setup order
 
@@ -120,6 +135,7 @@ Run these scripts in order:
 2. `db/phase-eight-supabase-signups.sql`
 3. `db/phase-nine-supabase-attendance.sql`
 4. `db/phase-ten-supabase-training.sql`
+5. `db/phase-eleven-supabase-content.sql`
 
 Then create/map test users in `app_users` and verify RLS policies by signing in as both a volunteer and an admin.
 
@@ -150,7 +166,7 @@ Do not commit or document the test user's password in repository files. Set it o
 | Role | Purpose |
 | --- | --- |
 | volunteer | Signs up, maintains profile, checks in/out for attendance, signs up for training, requests testimonials. |
-| admin | Manages opportunities, sign-up confirmation, training, attendance validation, testimonials, and reports. |
+| admin | Manages opportunities, sign-up confirmation, training, attendance validation, testimonials, reports, and Supabase-backed content. |
 | super_admin | Manages users, roles, system settings, and full audit access. |
 
 There is no facilitator role in the app. Facilitators only provide the 4-digit attendance code at the physical volunteering opportunity; admins verify and validate submitted attendance records.
@@ -172,7 +188,7 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Development roadmap
 
-### Phase 11: Notification system
+### Phase 12: Notification system
 
 - Add a top-right bell icon to the app header.
 - Show the bell in a grey/inactive state when there are no unread notifications.
@@ -183,49 +199,49 @@ These local keys are not secure and should not be treated as durable production 
 - Store notifications in Supabase so read/unread state persists across devices and sessions.
 - Keep notification generation tied to lifecycle changes rather than hard-coded UI events.
 
-### Phase 12: Real attendance-code validation
+### Phase 13: Real attendance-code validation
 
 - Generate or assign session-specific facilitator codes.
 - Validate check-in/check-out codes against stored session codes instead of only checking for a 4-digit format.
 - Record invalid-code attempts for admin review or audit.
 
-### Phase 13: Transactional attendance verification
+### Phase 14: Transactional attendance verification
 
 - Ensure attendance verification updates the attendance record, related sign-up status, verified hours, and notification records together.
 - Prevent partial updates where attendance is verified but the sign-up remains confirmed.
 - Move this logic into database functions or RPC calls where possible.
 
-### Phase 14: Capacity and waitlist enforcement
+### Phase 15: Capacity and waitlist enforcement
 
 - Add real opportunity/session capacity fields.
 - Automatically place excess sign-ups on waitlist.
 - Promote waitlisted volunteers when confirmed slots become available.
 
-### Phase 15: Structured opportunity sessions
+### Phase 16: Structured opportunity sessions
 
 - Add structured fields such as `startsAt`, `endsAt`, `defaultHours`, capacity, location, and facilitator code.
 - Stop deriving volunteering hours or schedule logic from display copy.
 - Prepare opportunity data for calendar and reporting views.
 
-### Phase 16: Testimonial request workflow
+### Phase 17: Testimonial request workflow
 
 - Allow volunteers to request testimonials based on verified completed opportunities.
 - Let admins review, approve, reject, or request clarification.
 - Generate notification records for testimonial workflow changes.
 
-### Phase 17: Calendar view
+### Phase 18: Calendar view
 
 - Add calendar view of opportunities and training sessions.
 - Use structured session dates instead of text-only schedule fields.
 - Support volunteer-specific views for confirmed opportunities and registered training.
 
-### Phase 18: Admin reporting and audit trail
+### Phase 19: Admin reporting and audit trail
 
 - Add admin reports for sign-ups, attendance, verified hours, training completion, testimonials, and user actions.
 - Add audit logs for lifecycle changes made by admins.
 - Include export-ready views where useful.
 
-### Phase 19: QA and release hardening
+### Phase 20: QA and release hardening
 
 - Add validation coverage for core flows.
 - Add smoke-test checklist for volunteer and admin journeys.
@@ -234,7 +250,7 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Recommended next phase
 
-The next highest-priority phase is Phase 11: Notification system.
+The next highest-priority phase is Phase 12: Notification system.
 
 ## Remaining major scopes
 
