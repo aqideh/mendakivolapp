@@ -1,6 +1,6 @@
 # Volunteer Management Expansion Foundation
 
-This branch introduces the first eight expansion layers for the MENDAKI Volunteer Hub. It keeps CMS-managed public content intact while moving opportunity sign-up lifecycle data towards Supabase-backed shared persistence.
+This branch introduces the first nine expansion layers for the MENDAKI Volunteer Hub. It keeps CMS-managed public content intact while moving opportunity sign-up and attendance lifecycle data towards Supabase-backed shared persistence.
 
 ## Completed phases
 
@@ -81,6 +81,17 @@ This branch introduces the first eight expansion layers for the MENDAKI Voluntee
 - On sign-in/auth refresh, opportunity sign-ups are loaded from Supabase and cached locally so existing dashboard, attendance, and lifecycle UI continues to render.
 - Public opportunity listings can load from Supabase `app_opportunities`; if the Supabase table is empty or unavailable, the app keeps using CMS JSON content as a fallback.
 
+### Phase 9: Supabase-backed attendance
+
+- Added `db/phase-nine-supabase-attendance.sql` for shared attendance claim persistence.
+- Added `app_attendance_claims` to store check-in/check-out timestamps, entered facilitator codes, system-calculated hours, verified hours, admin notes, and review status.
+- Added RLS policies so volunteers can read/write their own attendance claims while admins and super admins can review all attendance claims.
+- Added `assets/phase-nine-attendance-sync.js` as the adapter layer between the existing attendance UI and Supabase.
+- Volunteer check-in and check-out actions are now mirrored to Supabase when Supabase is configured.
+- Admin attendance verification, adjustment, clarification, and rejection actions are now mirrored to Supabase when Supabase is configured.
+- On sign-in/auth refresh, attendance claims are loaded from Supabase and cached locally so the existing dashboard and attendance UI continues to render.
+- Local browser storage remains as cache/fallback storage if the migration has not been run or Supabase is unavailable.
+
 ## CMS content map
 
 | CMS section | File | Purpose |
@@ -96,6 +107,7 @@ Run these scripts in order:
 
 1. `db/phase-one-schema.sql`
 2. `db/phase-eight-supabase-signups.sql`
+3. `db/phase-nine-supabase-attendance.sql`
 
 Then create/map test users in `app_users` and verify RLS policies by signing in as both a volunteer and an admin.
 
@@ -135,7 +147,7 @@ In local demo mode only, an admin view can still be reached by signing in with a
 
 ## Current local demo keys
 
-The following keys remain in `VolunteerDataStore` as cache/fallback storage while attendance and training persistence are still local-demo backed:
+The following keys remain in `VolunteerDataStore` as cache/fallback storage while training persistence is still local-demo backed:
 
 - `mendaki.volunteer.session.v1`
 - `mendaki.volunteer.profile.v1`
@@ -148,16 +160,14 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Recommended next phase
 
-The next highest-priority phase is Phase 9: Supabase-backed attendance.
+The next highest-priority phase is Supabase-backed training sign-up persistence.
 
-1. Move check-in/check-out records from `mendaki.volunteer.attendance.v1` to Supabase.
-2. Link attendance records to Supabase-backed opportunity sign-ups.
-3. Keep attendance verification updates transactional where possible.
-4. Preserve local cache only as a development fallback.
+1. Move training sign-up records from `mendaki.volunteer.trainingSignups.v1` to Supabase.
+2. Link training sign-ups to app users.
+3. Preserve local cache only as a development fallback.
 
 ## Remaining major scopes
 
-- Supabase-backed attendance persistence.
 - Supabase-backed training sign-up persistence.
 - Real attendance-code validation.
 - Transactional attendance verification.
