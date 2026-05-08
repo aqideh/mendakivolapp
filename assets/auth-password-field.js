@@ -86,11 +86,37 @@ function bindProfileSavedFeedback() {
   });
 }
 
+function installProfileFormToggle() {
+  const card = document.querySelector('[aria-labelledby="profile-form-title"]');
+  const form = document.querySelector('[data-profile-form]');
+  const title = document.querySelector('#profile-form-title');
+  if (!card || !form || !title || card.querySelector('[data-profile-edit-toggle]')) return;
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'button dashboard-secondary profile-edit-toggle';
+  toggle.dataset.profileEditToggle = 'true';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.textContent = 'Edit profile details';
+  title.insertAdjacentElement('afterend', toggle);
+
+  form.classList.add('is-collapsed');
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!expanded));
+    toggle.textContent = expanded ? 'Edit profile details' : 'Hide profile form';
+    form.classList.toggle('is-collapsed', expanded);
+    form.classList.toggle('is-expanded', !expanded);
+  });
+}
+
 function installHeaderAndAuthEnhancements() {
   installAuthPasswordField();
   moveDashboardNavToHeaderActions();
   syncDashboardAuthActions();
   bindProfileSavedFeedback();
+  installProfileFormToggle();
 }
 
 if (document.readyState === 'loading') {
@@ -102,8 +128,10 @@ if (document.readyState === 'loading') {
 window.addEventListener('volunteer-auth-ready', () => {
   syncDashboardAuthActions();
   bindProfileSavedFeedback();
+  installProfileFormToggle();
 });
 window.addEventListener('volunteer-auth-changed', () => {
   syncDashboardAuthActions();
   bindProfileSavedFeedback();
+  installProfileFormToggle();
 });
