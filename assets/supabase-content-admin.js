@@ -172,6 +172,12 @@
       .upsert(opportunityToRow(opp), { onConflict: 'id' });
 
     if (error) return { ok: false, reason: error.message };
+
+    if (opp.facilitatorCode && typeof window.VolunteerDataStore?.upsertAttendanceCode === 'function') {
+      const codeResult = await window.VolunteerDataStore.upsertAttendanceCode(opp.id, opp.facilitatorCode, 'Facilitator code');
+      if (!codeResult.ok) return { ok: false, reason: codeResult.reason || 'Could not save facilitator code.' };
+    }
+
     if (typeof window.VolunteerDataStore?.applySupabaseOpportunities === 'function') {
       await window.VolunteerDataStore.applySupabaseOpportunities();
     }
@@ -353,6 +359,7 @@
         <label>Type<select name="type"><option value="long-term" ${item?.type === 'long-term' ? 'selected' : ''}>Long-term</option><option value="ad-hoc" ${item?.type !== 'long-term' ? 'selected' : ''}>Ad-hoc</option></select></label>
         <label>Category<select name="category"><option value="befriender" ${item?.category === 'befriender' ? 'selected' : ''}>Befriender</option><option value="mentor" ${item?.category === 'mentor' ? 'selected' : ''}>Mentor</option><option value="facilitator" ${item?.category === 'facilitator' ? 'selected' : ''}>Facilitator</option><option value="community-volunteering" ${!item?.category || item?.category === 'community-volunteering' ? 'selected' : ''}>Community volunteering</option></select></label>
         <label>Status<input name="status" value="${escapeHtml(item?.status || 'Open')}"></label>
+        <label>Facilitator attendance code<input name="facilitatorCode" inputmode="numeric" maxlength="4" pattern="\\d{4}" placeholder="4-digit code for check-in/out"></label>
         <label>Time<input name="time" value="${escapeHtml(item?.time || '')}" placeholder="Weekends, ~2 hrs/session"></label>
         <label>Location<input name="location" value="${escapeHtml(item?.location || '')}"></label>
         <label>Commitment<input name="commitment" value="${escapeHtml(item?.commitment || '')}"></label>
@@ -479,6 +486,7 @@
           type: formValue(form, 'type'),
           category: formValue(form, 'category'),
           status: formValue(form, 'status') || 'Open',
+          facilitatorCode: formValue(form, 'facilitatorCode'),
           time: formValue(form, 'time'),
           location: formValue(form, 'location'),
           commitment: formValue(form, 'commitment'),
