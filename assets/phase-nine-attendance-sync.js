@@ -87,6 +87,13 @@
     return claims;
   }
 
+  async function notifySavedAttendanceClaim(saved) {
+    const reviewStatuses = ['verified', 'adjusted', 'clarification_requested', 'rejected'];
+    if (!reviewStatuses.includes(saved?.claimStatus)) return;
+    if (typeof window.VolunteerDataStore?.notifyAttendanceReview !== 'function') return;
+    await window.VolunteerDataStore.notifyAttendanceReview(saved);
+  }
+
   async function saveSupabaseAttendanceClaim(claim, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !claim?.id) return { ok: false, skipped: true };
@@ -110,6 +117,7 @@
     else claims.push(saved);
     window.VolunteerDataStore.saveAttendanceClaims(claims);
     window.dispatchEvent(new CustomEvent('volunteer-attendance-synced'));
+    await notifySavedAttendanceClaim(saved);
     return { ok: true, claim: saved };
   }
 
