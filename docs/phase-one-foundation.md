@@ -158,17 +158,83 @@ The following keys remain in `VolunteerDataStore` as cache/fallback storage whil
 
 These local keys are not secure and should not be treated as durable production data.
 
+## Development roadmap
+
+### Phase 10: Supabase-backed training sign-ups
+
+- Move training sign-up records from `mendaki.volunteer.trainingSignups.v1` to Supabase.
+- Link training sign-ups to app users.
+- Allow admins to review and mark training completion from shared database records.
+- Preserve local cache only as a development fallback.
+
+### Phase 11: Notification system
+
+- Add a top-right bell icon to the app header.
+- Show the bell in a grey/inactive state when there are no unread notifications.
+- When the grey bell is tapped, show a small pop-up saying there are no new notifications.
+- Show a red count bubble when there are unread notifications.
+- Notify volunteers about status changes, including confirmations, waitlist decisions, attendance verification, training approvals/completion, rejections, and clarification requests.
+- Notify admins about pending tasks, including sign-ups awaiting review, attendance awaiting verification, training completion awaiting review, and future testimonial requests.
+- Store notifications in Supabase so read/unread state persists across devices and sessions.
+- Keep notification generation tied to lifecycle changes rather than hard-coded UI events.
+
+### Phase 12: Real attendance-code validation
+
+- Generate or assign session-specific facilitator codes.
+- Validate check-in/check-out codes against stored session codes instead of only checking for a 4-digit format.
+- Record invalid-code attempts for admin review or audit.
+
+### Phase 13: Transactional attendance verification
+
+- Ensure attendance verification updates the attendance record, related sign-up status, verified hours, and notification records together.
+- Prevent partial updates where attendance is verified but the sign-up remains confirmed.
+- Move this logic into database functions or RPC calls where possible.
+
+### Phase 14: Capacity and waitlist enforcement
+
+- Add real opportunity/session capacity fields.
+- Automatically place excess sign-ups on waitlist.
+- Promote waitlisted volunteers when confirmed slots become available.
+
+### Phase 15: Structured opportunity sessions
+
+- Add structured fields such as `startsAt`, `endsAt`, `defaultHours`, capacity, location, and facilitator code.
+- Stop deriving volunteering hours or schedule logic from display copy.
+- Prepare opportunity data for calendar and reporting views.
+
+### Phase 16: Testimonial request workflow
+
+- Allow volunteers to request testimonials based on verified completed opportunities.
+- Let admins review, approve, reject, or request clarification.
+- Generate notification records for testimonial workflow changes.
+
+### Phase 17: Calendar view
+
+- Add calendar view of opportunities and training sessions.
+- Use structured session dates instead of text-only schedule fields.
+- Support volunteer-specific views for confirmed opportunities and registered training.
+
+### Phase 18: Admin reporting and audit trail
+
+- Add admin reports for sign-ups, attendance, verified hours, training completion, testimonials, and user actions.
+- Add audit logs for lifecycle changes made by admins.
+- Include export-ready views where useful.
+
+### Phase 19: QA and release hardening
+
+- Add validation coverage for core flows.
+- Add smoke-test checklist for volunteer and admin journeys.
+- Improve error states, loading states, and empty states.
+- Update documentation before wider rollout.
+
 ## Recommended next phase
 
-The next highest-priority phase is Supabase-backed training sign-up persistence.
-
-1. Move training sign-up records from `mendaki.volunteer.trainingSignups.v1` to Supabase.
-2. Link training sign-ups to app users.
-3. Preserve local cache only as a development fallback.
+The next highest-priority phase is Phase 10: Supabase-backed training sign-ups.
 
 ## Remaining major scopes
 
 - Supabase-backed training sign-up persistence.
+- Notification system.
 - Real attendance-code validation.
 - Transactional attendance verification.
 - Capacity and waitlist enforcement.
