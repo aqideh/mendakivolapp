@@ -170,6 +170,12 @@
     return signups;
   }
 
+  async function notifySavedTrainingSignup(saved) {
+    if (saved?.status !== 'completed') return;
+    if (typeof window.VolunteerDataStore?.notifyTrainingCompletion !== 'function') return;
+    await window.VolunteerDataStore.notifyTrainingCompletion(saved);
+  }
+
   async function saveSupabaseTrainingSignup(signup, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
@@ -193,6 +199,7 @@
     else signups.push(saved);
     window.VolunteerDataStore.saveTrainingSignups(signups);
     window.dispatchEvent(new CustomEvent('volunteer-training-signups-synced'));
+    await notifySavedTrainingSignup(saved);
     return { ok: true, signup: saved };
   }
 
