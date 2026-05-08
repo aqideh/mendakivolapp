@@ -196,9 +196,10 @@
     return signups;
   }
 
-  async function notifySavedSignup(saved) {
+  async function notifySavedSignup(saved, previousStatus) {
     const notifiableStatuses = ['confirmed', 'waitlisted', 'declined', 'completed'];
     if (!notifiableStatuses.includes(saved?.status)) return;
+    if (previousStatus === saved.status) return;
     if (typeof window.VolunteerDataStore?.notifyOpportunityStatusChange !== 'function') return;
     await window.VolunteerDataStore.notifyOpportunityStatusChange(saved, saved.status);
   }
@@ -206,6 +207,8 @@
   async function saveSupabaseOpportunitySignup(signup, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
+    const existing = window.VolunteerDataStore.getOpportunitySignups().find(item => item.id === signup.id);
+    const previousStatus = options.previousStatus || existing?.status || '';
     const row = signupToRow(signup);
     const mode = options.mode || 'upsert';
     const request = mode === 'update'
@@ -225,7 +228,7 @@
     else signups.push(saved);
     window.VolunteerDataStore.saveOpportunitySignups(signups);
     window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
-    await notifySavedSignup(saved);
+    await notifySavedSignup(saved, previousStatus);
     return { ok: true, signup: saved };
   }
 
@@ -264,18 +267,21 @@
 
     window.phaseTwoCancelSignup = function phaseEightCancelSignup(oppId) {
       const email = window.VolunteerDataStore.currentEmail();
+      const before = signupByOpportunityForCurrentUser(oppId);
       const result = originalCancel(oppId);
       if (result?.ok) {
         const signup = window.VolunteerDataStore.getOpportunitySignups()
           .find(item => item.email === email && String(item.opportunityId) === String(oppId));
-        persistSignupChange(signup, { mode: 'update' });
+        persistSignupChange(signup, { mode: 'update', previousStatus: before?.status || '' });
       }
       return result;
     };
 
     window.phaseTwoUpdateSignupStatus = function phaseEightUpdateSignupStatus(signupId, status) {
+      const before = signupById(signupId);
+      const previousStatus = before?.status || '';
       const result = originalUpdate(signupId, status);
-      if (result?.ok) persistSignupChange(signupById(signupId), { mode: 'update' });
+      if (result?.ok) persistSignupChange(signupById(signupId), { mode: 'update', previousStatus });
       return result;
     };
   }
@@ -285,16 +291,11 @@
     window.__phaseEightClickPersistenceInstalled = true;
 
     document.addEventListener('click', event => {
-      const adminStatus = event.target.closest('[data-admin-signup-status]');
-      if (adminStatus) {
-        window.setTimeout(() => persistSignupChange(signupById(adminStatus.dataset.signupId), { mode: 'update' }), 0);
-        return;
-      }
-
       const cancelButton = event.target.closest('[data-cancel-signup]');
       if (cancelButton) {
         const oppId = cancelButton.dataset.cancelSignup;
-        window.setTimeout(() => persistSignupChange(signupByOpportunityForCurrentUser(oppId), { mode: 'update' }), 0);
+        const before = signupByOpportunityForCurrentUser(oppId);
+        window.setTimeout(() => persistSignupChange(signupByOpportunityForCurrentUser(oppId), { mode: 'update', previousStatus: before?.status || '' }), 0);
         return;
       }
 
