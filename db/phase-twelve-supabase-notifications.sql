@@ -38,6 +38,36 @@ on public.app_notifications(recipient_email, is_read, created_at desc);
 create index if not exists idx_app_notifications_cleared
 on public.app_notifications(recipient_email, cleared_at, created_at desc);
 
+-- Remove duplicate active lifecycle notifications before enforcing uniqueness.
+-- Keeps the earliest uncleared notification for the same recipient/type/related record.
+with duplicate_notifications as (
+  select
+    id,
+    row_number() over (
+      partition by recipient_email, notification_type, coalesce(related_table, ''), coalesce(related_id, '')
+      order by created_at asc, id asc
+    ) as duplicate_rank
+  from public.app_notifications
+  where cleared_at is null
+    and related_id is not null
+    and notification_type <> 'admin_task'
+)
+delete from public.app_notifications n
+using duplicate_notifications d
+where n.id = d.id
+  and d.duplicate_rank > 1;
+
+create unique index if not exists idx_app_notifications_unique_active_lifecycle
+on public.app_notifications (
+  recipient_email,
+  notification_type,
+  coalesce(related_table, ''),
+  coalesce(related_id, '')
+)
+where cleared_at is null
+  and related_id is not null
+  and notification_type <> 'admin_task';
+
 alter table public.app_notifications enable row level security;
 
 drop policy if exists "Users can read own notifications" on public.app_notifications;
