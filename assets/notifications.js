@@ -166,9 +166,31 @@
     return state.notifications;
   }
 
-  async function createNotification(notification) {
+  async function notificationExists(notification) {
+    const supabase = client();
+    if (!supabase || !notification?.recipientEmail || !notification?.type || !notification?.relatedId) return false;
+
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('id')
+      .eq('recipient_email', notification.recipientEmail)
+      .eq('notification_type', notification.type)
+      .eq('related_table', notification.relatedTable || '')
+      .eq('related_id', String(notification.relatedId))
+      .is('cleared_at', null)
+      .limit(1);
+
+    if (error) {
+      console.warn('Could not check existing notification.', error);
+      return false;
+    }
+    return Array.isArray(data) && data.length > 0;
+  }
+
+  async function createNotification(notification, options = {}) {
     const supabase = client();
     if (!supabase || !notification?.recipientEmail || !notification?.title) return { ok: false, skipped: true };
+    if (options.dedupe !== false && await notificationExists(notification)) return { ok: true, deduped: true };
 
     const { error } = await supabase
       .from(TABLE)
@@ -285,16 +307,16 @@
     goToDashboardView('home');
   }
 
-  function notifyVolunteerForSignup(signup, status) {
+  async function notifyOpportunityStatusChange(signup, status = signup?.status) {
     const labels = {
-      confirmed: ['Opportunity confirmed', `You have been confirmed for ${signup.title}.`],
-      waitlisted: ['Opportunity waitlisted', `You have been waitlisted for ${signup.title}.`],
-      declined: ['Opportunity not selected', `Your sign-up for ${signup.title} was not selected.`],
-      completed: ['Opportunity completed', `Your volunteering hours for ${signup.title} have been verified.`]
+      confirmed: ['Opportunity confirmed', `You have been confirmed for ${signup?.title || 'your opportunity'}.`],
+      waitlisted: ['Opportunity waitlisted', `You have been waitlisted for ${signup?.title || 'your opportunity'}.`],
+      declined: ['Opportunity not selected', `Your sign-up for ${signup?.title || 'your opportunity'} was not selected.`],
+      completed: ['Opportunity completed', `Your volunteering hours for ${signup?.title || 'your opportunity'} have been verified.`]
     };
     const copy = labels[status];
-    if (!copy || !signup?.email) return;
-    createNotification({
+    if (!copy || !signup?.email || !signup?.id) return { ok: false, skipped: true };
+    return createNotification({
       recipientEmail: signup.email,
       recipientRole: 'volunteer',
       title: copy[0],
@@ -305,16 +327,16 @@
     });
   }
 
-  function notifyVolunteerForAttendance(claim) {
+  async function notifyAttendanceReview(claim) {
     const labels = {
-      verified: ['Attendance verified', `Your attendance for ${claim.title} has been verified.`],
-      adjusted: ['Attendance adjusted', `Your attendance hours for ${claim.title} have been adjusted and verified.`],
-      clarification_requested: ['Attendance clarification needed', `Admin requested clarification for your attendance record: ${claim.title}.`],
-      rejected: ['Attendance rejected', `Your attendance record for ${claim.title} was rejected.`]
+      verified: ['Attendance verified', `Your attendance for ${claim?.title || 'your opportunity'} has been verified.`],
+      adjusted: ['Attendance adjusted', `Your attendance hours for ${claim?.title || 'your opportunity'} have been adjusted and verified.`],
+      clarification_requested: ['Attendance clarification needed', `Admin requested clarification for your attendance record: ${claim?.title || 'your opportunity'}.`],
+      rejected: ['Attendance rejected', `Your attendance record for ${claim?.title || 'your opportunity'} was rejected.`]
     };
     const copy = labels[claim?.claimStatus];
-    if (!copy || !claim?.email) return;
-    createNotification({
+    if (!copy || !claim?.email || !claim?.id) return { ok: false, skipped: true };
+    return createNotification({
       recipientEmail: claim.email,
       recipientRole: 'volunteer',
       title: copy[0],
@@ -325,13 +347,13 @@
     });
   }
 
-  function notifyVolunteerForTraining(signup) {
-    if (!signup?.email || signup.status !== 'completed') return;
-    createNotification({
+  async function notifyTrainingCompletion(signup) {
+    if (!signup?.email || signup.status !== 'completed' || !signup?.id) return { ok: false, skipped: true };
+    return createNotification({
       recipientEmail: signup.email,
       recipientRole: 'volunteer',
       title: 'Training completed',
-      message: `Your completion for ${signup.title} has been recorded.`,
+      message: `Your completion for ${signup.title || 'your training'} has been recorded.`,
       type: 'training_completed',
       relatedTable: 'app_training_signups',
       relatedId: signup.id
@@ -434,46 +456,9 @@
     });
   }
 
-  function bindLifecycleNotificationHooks() {
-    if (window.__notificationsLifecycleBound) return;
-    window.__notificationsLifecycleBound = true;
-
-    document.addEventListener('click', event => {
-      const statusButton = event.target.closest('[data-admin-signup-status]');
-      if (statusButton) {
-        const signupId = statusButton.dataset.signupId;
-        const status = statusButton.dataset.adminSignupStatus;
-        window.setTimeout(() => {
-          const signup = window.VolunteerDataStore?.getOpportunitySignups?.().find(item => item.id === signupId);
-          notifyVolunteerForSignup(signup, status);
-          mergeAdminTasks();
-        }, 160);
-        return;
-      }
-
-      const completeTraining = event.target.closest('[data-complete-training]');
-      if (completeTraining) {
-        const signupId = completeTraining.dataset.completeTraining;
-        window.setTimeout(() => {
-          const signup = window.VolunteerDataStore?.getTrainingSignups?.().find(item => item.id === signupId);
-          notifyVolunteerForTraining(signup);
-          mergeAdminTasks();
-        }, 160);
-      }
-    }, true);
-
-    document.addEventListener('submit', event => {
-      const attendanceForm = event.target.closest('[data-attendance-review]');
-      if (attendanceForm) {
-        const claimId = attendanceForm.dataset.attendanceReview;
-        window.setTimeout(() => {
-          const claim = window.VolunteerDataStore?.getAttendanceClaims?.().find(item => item.id === claimId);
-          notifyVolunteerForAttendance(claim);
-          mergeAdminTasks();
-        }, 180);
-      }
-    }, true);
-
+  function bindAdminTaskRefreshHooks() {
+    if (window.__notificationsAdminTaskRefreshBound) return;
+    window.__notificationsAdminTaskRefreshBound = true;
     window.addEventListener('volunteer-signups-synced', mergeAdminTasks);
     window.addEventListener('volunteer-attendance-synced', mergeAdminTasks);
     window.addEventListener('volunteer-training-signups-synced', mergeAdminTasks);
@@ -488,6 +473,9 @@
   Object.assign(window.VolunteerDataStore || {}, {
     fetchNotifications,
     createNotification,
+    notifyOpportunityStatusChange,
+    notifyAttendanceReview,
+    notifyTrainingCompletion,
     markAllNotificationsRead: markAllRead,
     clearAllNotifications
   });
@@ -495,7 +483,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     ensureNotificationShell();
     bindNotificationUi();
-    bindLifecycleNotificationHooks();
+    bindAdminTaskRefreshHooks();
     window.setTimeout(syncNotifications, 500);
   });
 
