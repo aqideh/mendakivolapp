@@ -87,7 +87,7 @@ begin
     if found then
       if v_status in ('verified', 'adjusted') then
         update public.app_opportunity_signups
-        set status = 'completed'::opportunity_signup_status,
+        set status = 'completed'::signup_status,
             verified_hours = v_verified_hours,
             completed_at = coalesce(completed_at, v_now),
             updated_at = v_now
@@ -120,41 +120,48 @@ begin
 
   v_notification_type := 'attendance_' || v_status::text;
 
-  insert into public.app_notifications (
-    recipient_email,
-    recipient_role,
-    title,
-    message,
-    notification_type,
-    related_table,
-    related_id,
-    is_read
-  )
-  values (
-    v_claim.email,
-    'volunteer',
-    v_notification_title,
-    v_notification_message,
-    v_notification_type,
-    'app_attendance_claims',
-    v_claim.id::text,
-    false
-  )
-  on conflict (
-    recipient_email,
-    notification_type,
-    coalesce(related_table, ''),
-    coalesce(related_id, '')
-  ) where cleared_at is null
-    and related_id is not null
-    and notification_type <> 'admin_task'
-  do update set
-    title = excluded.title,
-    message = excluded.message,
-    is_read = false,
-    read_at = null,
-    created_at = now()
-  returning id into v_notification_id;
+  select id into v_notification_id
+  from public.app_notifications
+  where recipient_email = v_claim.email
+    and notification_type = v_notification_type
+    and coalesce(related_table, '') = 'app_attendance_claims'
+    and coalesce(related_id, '') = v_claim.id::text
+    and cleared_at is null
+  order by created_at asc
+  limit 1
+  for update;
+
+  if v_notification_id is null then
+    insert into public.app_notifications (
+      recipient_email,
+      recipient_role,
+      title,
+      message,
+      notification_type,
+      related_table,
+      related_id,
+      is_read
+    )
+    values (
+      v_claim.email,
+      'volunteer',
+      v_notification_title,
+      v_notification_message,
+      v_notification_type,
+      'app_attendance_claims',
+      v_claim.id::text,
+      false
+    )
+    returning id into v_notification_id;
+  else
+    update public.app_notifications
+    set title = v_notification_title,
+        message = v_notification_message,
+        is_read = false,
+        read_at = null,
+        created_at = v_now
+    where id = v_notification_id;
+  end if;
 
   return query
   select
