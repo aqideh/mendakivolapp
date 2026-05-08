@@ -19,8 +19,12 @@ create table if not exists public.app_notifications (
   related_id text,
   is_read boolean not null default false,
   created_at timestamptz not null default now(),
-  read_at timestamptz
+  read_at timestamptz,
+  cleared_at timestamptz
 );
+
+alter table public.app_notifications
+add column if not exists cleared_at timestamptz;
 
 create index if not exists idx_app_notifications_recipient_email
 on public.app_notifications(recipient_email);
@@ -31,6 +35,9 @@ on public.app_notifications(recipient_role);
 create index if not exists idx_app_notifications_unread
 on public.app_notifications(recipient_email, is_read, created_at desc);
 
+create index if not exists idx_app_notifications_cleared
+on public.app_notifications(recipient_email, cleared_at, created_at desc);
+
 alter table public.app_notifications enable row level security;
 
 drop policy if exists "Users can read own notifications" on public.app_notifications;
@@ -38,8 +45,11 @@ create policy "Users can read own notifications"
 on public.app_notifications
 for select
 using (
-  auth.email() = recipient_email
-  or (recipient_role in ('admin', 'super_admin') and public.current_app_role() in ('admin', 'super_admin'))
+  cleared_at is null
+  and (
+    auth.email() = recipient_email
+    or (recipient_role in ('admin', 'super_admin') and public.current_app_role() in ('admin', 'super_admin'))
+  )
 );
 
 drop policy if exists "Users can update own notification read state" on public.app_notifications;
