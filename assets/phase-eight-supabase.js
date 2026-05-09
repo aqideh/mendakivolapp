@@ -93,6 +93,8 @@
       location: row.location || '',
       commitment: row.commitment || '',
       status: row.status || 'Open',
+      capacity: Number(row.capacity || 0),
+      waitlistEnabled: row.waitlist_enabled !== false,
       photo: row.photo || '',
       photoAlt: row.photo_alt || ''
     };
@@ -110,6 +112,8 @@
       location: opp.location || '',
       commitment: opp.commitment || '',
       status: opp.status || 'Open',
+      capacity: Number(opp.capacity || 0),
+      waitlist_enabled: opp.waitlistEnabled !== false,
       photo: opp.photo || null,
       photo_alt: opp.photoAlt || null,
       source: 'app',
@@ -122,7 +126,7 @@
     if (!supabase) return [];
     const { data, error } = await supabase
       .from(OPPORTUNITY_TABLE)
-      .select('id, type, category, title, description, requirements, time, location, commitment, status, photo, photo_alt')
+      .select('id, type, category, title, description, requirements, time, location, commitment, status, capacity, waitlist_enabled, photo, photo_alt')
       .order('title', { ascending: true });
 
     if (error) {
@@ -204,11 +208,75 @@
     await window.VolunteerDataStore.notifyOpportunityStatusChange(saved, saved.status);
   }
 
+  async function createSupabaseSignupWithCapacity(signup) {
+    const supabase = client();
+    if (!supabase || !session()?.email || !signup?.opportunityId) return { ok: false, skipped: true };
+
+    const { data, error } = await supabase.rpc('create_opportunity_signup_with_capacity', {
+      p_signup_id: signup.id || null,
+      p_opportunity_id: String(signup.opportunityId),
+      p_volunteer_name: signup.volunteerName || session()?.name || 'Volunteer'
+    });
+
+    if (error) {
+      console.warn('Capacity-aware sign-up unavailable; falling back to direct sign-up save.', error);
+      return { ok: false, reason: error.message, fallback: true };
+    }
+
+    const saved = rowToSignup(data);
+    const signups = window.VolunteerDataStore.getOpportunitySignups();
+    const index = signups.findIndex(item => item.id === saved.id || (item.email === saved.email && String(item.opportunityId) === String(saved.opportunityId)));
+    if (index >= 0) signups[index] = saved;
+    else signups.push(saved);
+    window.VolunteerDataStore.saveOpportunitySignups(signups);
+    window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+    await notifySavedSignup(saved, '');
+    return { ok: true, signup: saved, capacityAware: true };
+  }
+
+  async function reviewSupabaseSignupWithCapacity(signup, previousStatus) {
+    const supabase = client();
+    if (!supabase || !session()?.email || !signup?.id || !window.VolunteerDataStore?.isAdmin?.()) return { ok: false, skipped: true };
+    if (!['confirmed', 'waitlisted', 'declined', 'pending_review'].includes(signup.status)) return { ok: false, skipped: true };
+
+    const { data, error } = await supabase.rpc('review_opportunity_signup_with_capacity', {
+      p_signup_id: signup.id,
+      p_status: signup.status,
+      p_admin_notes: signup.adminNotes || null
+    });
+
+    if (error) {
+      console.warn('Capacity-aware sign-up review unavailable; falling back to direct sign-up save.', error);
+      return { ok: false, reason: error.message, fallback: true };
+    }
+
+    const saved = rowToSignup(data);
+    const signups = window.VolunteerDataStore.getOpportunitySignups();
+    const index = signups.findIndex(item => item.id === saved.id);
+    if (index >= 0) signups[index] = saved;
+    else signups.push(saved);
+    window.VolunteerDataStore.saveOpportunitySignups(signups);
+    window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+    await notifySavedSignup(saved, previousStatus || '');
+    return { ok: true, signup: saved, capacityAware: true };
+  }
+
   async function saveSupabaseOpportunitySignup(signup, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
     const existing = window.VolunteerDataStore.getOpportunitySignups().find(item => item.id === signup.id);
     const previousStatus = options.previousStatus || existing?.status || '';
+
+    if (options.capacityCreate === true) {
+      const capacityResult = await createSupabaseSignupWithCapacity(signup);
+      if (capacityResult.ok) return capacityResult;
+    }
+
+    if (options.capacityReview === true) {
+      const reviewResult = await reviewSupabaseSignupWithCapacity(signup, previousStatus);
+      if (reviewResult.ok) return reviewResult;
+    }
+
     const row = signupToRow(signup);
     const mode = options.mode || 'upsert';
     const request = mode === 'update'
@@ -261,7 +329,7 @@
 
     window.phaseTwoCreateSignup = function phaseEightCreateSignup(oppId) {
       const result = originalCreate(oppId);
-      if (result?.ok && result.signup) persistSignupChange(result.signup, { mode: 'upsert' });
+      if (result?.ok && result.signup) persistSignupChange(result.signup, { mode: 'upsert', capacityCreate: true });
       return result;
     };
 
@@ -281,7 +349,7 @@
       const before = signupById(signupId);
       const previousStatus = before?.status || '';
       const result = originalUpdate(signupId, status);
-      if (result?.ok) persistSignupChange(signupById(signupId), { mode: 'update', previousStatus });
+      if (result?.ok) persistSignupChange(signupById(signupId), { mode: 'update', previousStatus, capacityReview: true });
       return result;
     };
   }
@@ -302,7 +370,7 @@
       const signupButton = event.target.closest('[data-signup-opportunity]');
       if (signupButton) {
         const oppId = signupButton.dataset.signupOpportunity;
-        window.setTimeout(() => persistSignupChange(signupByOpportunityForCurrentUser(oppId), { mode: 'upsert' }), 0);
+        window.setTimeout(() => persistSignupChange(signupByOpportunityForCurrentUser(oppId), { mode: 'upsert', capacityCreate: true }), 0);
       }
     }, true);
   }
@@ -325,7 +393,9 @@
     syncOpportunityToSupabase,
     syncOpportunitiesToSupabase,
     fetchSupabaseOpportunitySignups,
-    saveSupabaseOpportunitySignup
+    saveSupabaseOpportunitySignup,
+    createSupabaseSignupWithCapacity,
+    reviewSupabaseSignupWithCapacity
   });
   window.phaseTwoPersistSignupChange = persistSignupChange;
 
