@@ -88,6 +88,8 @@
       location: opp.location || '',
       commitment: opp.commitment || '',
       status: opp.status || 'Open',
+      capacity: Number(opp.capacity || 0),
+      waitlist_enabled: opp.waitlistEnabled !== false,
       photo: opp.photo || null,
       photo_alt: opp.photoAlt || null,
       source: 'app',
@@ -326,7 +328,7 @@
       ? `${item.category || 'News'} · ${item.date || ''} · ${item.status || 'published'}`
       : type === 'training'
         ? `${item.id} · ${item.date || ''} · ${item.status || 'Open'}`
-        : `${item.id} · ${item.type || ''} · ${item.status || 'Open'}`;
+        : `${item.id} · ${item.type || ''} · ${item.status || 'Open'} · Capacity ${Number(item.capacity || 0) || 'unlimited'}`;
     return `
       <div class="admin-content-item editable">
         <span><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(meta)}</span></span>
@@ -359,6 +361,8 @@
         <label>Type<select name="type"><option value="long-term" ${item?.type === 'long-term' ? 'selected' : ''}>Long-term</option><option value="ad-hoc" ${item?.type !== 'long-term' ? 'selected' : ''}>Ad-hoc</option></select></label>
         <label>Category<select name="category"><option value="befriender" ${item?.category === 'befriender' ? 'selected' : ''}>Befriender</option><option value="mentor" ${item?.category === 'mentor' ? 'selected' : ''}>Mentor</option><option value="facilitator" ${item?.category === 'facilitator' ? 'selected' : ''}>Facilitator</option><option value="community-volunteering" ${!item?.category || item?.category === 'community-volunteering' ? 'selected' : ''}>Community volunteering</option></select></label>
         <label>Status<input name="status" value="${escapeHtml(item?.status || 'Open')}"></label>
+        <label>Capacity<input name="capacity" type="number" min="0" value="${escapeHtml(item?.capacity || 0)}" placeholder="0 means unlimited"></label>
+        <label class="admin-content-checkbox"><input name="waitlistEnabled" type="checkbox" ${item?.waitlistEnabled === false ? '' : 'checked'}> Enable waitlist when full</label>
         <label>Facilitator attendance code<input name="facilitatorCode" inputmode="numeric" maxlength="4" pattern="\\d{4}" placeholder="4-digit code for check-in/out"></label>
         <label>Time<input name="time" value="${escapeHtml(item?.time || '')}" placeholder="Weekends, ~2 hrs/session"></label>
         <label>Location<input name="location" value="${escapeHtml(item?.location || '')}"></label>
@@ -486,6 +490,8 @@
           type: formValue(form, 'type'),
           category: formValue(form, 'category'),
           status: formValue(form, 'status') || 'Open',
+          capacity: Number(formValue(form, 'capacity') || 0),
+          waitlistEnabled: Boolean(new FormData(form).get('waitlistEnabled')),
           facilitatorCode: formValue(form, 'facilitatorCode'),
           time: formValue(form, 'time'),
           location: formValue(form, 'location'),
