@@ -45,6 +45,10 @@ function phaseThreeIsAdmin() {
   return VolunteerDataStore.isAdmin();
 }
 
+function phaseThreeUsesSupabase() {
+  return Boolean(VolunteerDataStore?.authState?.supabase && VolunteerDataStore?.getSession?.()?.email);
+}
+
 function phaseThreeClaimForSignup(signupId) {
   return phaseThreeClaims().find(claim => claim.signupId === signupId);
 }
@@ -422,9 +426,10 @@ function phaseThreeReviewClaim(form, submitter) {
   claim.updatedAt = new Date().toISOString();
   phaseThreeWriteClaims(claims);
 
+  const shouldUseLocalCompletion = !phaseThreeUsesSupabase();
   const signups = phaseThreeSignups();
   const signup = signups.find(item => item.id === claim.signupId);
-  if (signup && (claim.claimStatus === 'verified' || claim.claimStatus === 'adjusted')) {
+  if (shouldUseLocalCompletion && signup && (claim.claimStatus === 'verified' || claim.claimStatus === 'adjusted')) {
     signup.status = 'completed';
     signup.verifiedHours = claim.verifiedHours;
     signup.completedAt = new Date().toISOString();
