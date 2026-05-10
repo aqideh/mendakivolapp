@@ -95,6 +95,9 @@
       status: row.status || 'Open',
       capacity: Number(row.capacity || 0),
       waitlistEnabled: row.waitlist_enabled !== false,
+      defaultHours: Number(row.default_hours || 0),
+      startsAt: row.starts_at || '',
+      endsAt: row.ends_at || '',
       photo: row.photo || '',
       photoAlt: row.photo_alt || ''
     };
@@ -114,6 +117,9 @@
       status: opp.status || 'Open',
       capacity: Number(opp.capacity || 0),
       waitlist_enabled: opp.waitlistEnabled !== false,
+      default_hours: Number(opp.defaultHours || 0),
+      starts_at: opp.startsAt || null,
+      ends_at: opp.endsAt || null,
       photo: opp.photo || null,
       photo_alt: opp.photoAlt || null,
       source: 'app',
@@ -126,7 +132,7 @@
     if (!supabase) return [];
     const { data, error } = await supabase
       .from(OPPORTUNITY_TABLE)
-      .select('id, type, category, title, description, requirements, time, location, commitment, status, capacity, waitlist_enabled, photo, photo_alt')
+      .select('id, type, category, title, description, requirements, time, location, commitment, status, capacity, waitlist_enabled, default_hours, starts_at, ends_at, photo, photo_alt')
       .order('title', { ascending: true });
 
     if (error) {
