@@ -46,6 +46,21 @@
     return Array.isArray(value) ? value.join('\n') : '';
   }
 
+  function isoToDateTimeLocal(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = input => String(input).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function dateTimeLocalToIso(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString();
+  }
+
   function rowToNews(row) {
     return {
       id: row.id,
@@ -90,6 +105,9 @@
       status: opp.status || 'Open',
       capacity: Number(opp.capacity || 0),
       waitlist_enabled: opp.waitlistEnabled !== false,
+      default_hours: Number(opp.defaultHours || 0),
+      starts_at: opp.startsAt || null,
+      ends_at: opp.endsAt || null,
       photo: opp.photo || null,
       photo_alt: opp.photoAlt || null,
       source: 'app',
@@ -328,7 +346,7 @@
       ? `${item.category || 'News'} · ${item.date || ''} · ${item.status || 'published'}`
       : type === 'training'
         ? `${item.id} · ${item.date || ''} · ${item.status || 'Open'}`
-        : `${item.id} · ${item.type || ''} · ${item.status || 'Open'} · Capacity ${Number(item.capacity || 0) || 'unlimited'}`;
+        : `${item.id} · ${item.type || ''} · ${item.status || 'Open'} · Capacity ${Number(item.capacity || 0) || 'unlimited'} · Hours ${Number(item.defaultHours || 0) || 'unset'}`;
     return `
       <div class="admin-content-item editable">
         <span><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(meta)}</span></span>
@@ -363,10 +381,13 @@
         <label>Status<input name="status" value="${escapeHtml(item?.status || 'Open')}"></label>
         <label>Capacity<input name="capacity" type="number" min="0" value="${escapeHtml(item?.capacity || 0)}" placeholder="0 means unlimited"></label>
         <label class="admin-content-checkbox"><input name="waitlistEnabled" type="checkbox" ${item?.waitlistEnabled === false ? '' : 'checked'}> Enable waitlist when full</label>
+        <label>Default hours<input name="defaultHours" type="number" min="0" max="24" step="0.25" value="${escapeHtml(item?.defaultHours || 0)}" placeholder="e.g. 3"></label>
+        <label>Start date/time<input name="startsAt" type="datetime-local" value="${escapeHtml(isoToDateTimeLocal(item?.startsAt))}"></label>
+        <label>End date/time<input name="endsAt" type="datetime-local" value="${escapeHtml(isoToDateTimeLocal(item?.endsAt))}"></label>
         <label>Facilitator attendance code<input name="facilitatorCode" inputmode="numeric" maxlength="4" pattern="\\d{4}" placeholder="4-digit code for check-in/out"></label>
-        <label>Time<input name="time" value="${escapeHtml(item?.time || '')}" placeholder="Weekends, ~2 hrs/session"></label>
+        <label>Display time<input name="time" value="${escapeHtml(item?.time || '')}" placeholder="Weekends, ~2 hrs/session"></label>
         <label>Location<input name="location" value="${escapeHtml(item?.location || '')}"></label>
-        <label>Commitment<input name="commitment" value="${escapeHtml(item?.commitment || '')}"></label>
+        <label>Display commitment<input name="commitment" value="${escapeHtml(item?.commitment || '')}"></label>
         <label>Description<textarea name="description">${escapeHtml(item?.description || '')}</textarea></label>
         <label>Requirements<textarea name="requirements">${escapeHtml(item?.requirements || '')}</textarea></label>
         <button class="button button-primary" type="submit">${item?.id ? 'Save changes' : 'Create opportunity'}</button>
@@ -492,6 +513,9 @@
           status: formValue(form, 'status') || 'Open',
           capacity: Number(formValue(form, 'capacity') || 0),
           waitlistEnabled: Boolean(new FormData(form).get('waitlistEnabled')),
+          defaultHours: Number(formValue(form, 'defaultHours') || 0),
+          startsAt: dateTimeLocalToIso(formValue(form, 'startsAt')),
+          endsAt: dateTimeLocalToIso(formValue(form, 'endsAt')),
           facilitatorCode: formValue(form, 'facilitatorCode'),
           time: formValue(form, 'time'),
           location: formValue(form, 'location'),
