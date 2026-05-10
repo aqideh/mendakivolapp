@@ -32,6 +32,7 @@
       time: row.time || '',
       location: row.location || '',
       capacity: Number(row.capacity || 0),
+      waitlistEnabled: row.waitlist_enabled !== false,
       status: row.status || 'Open',
       requiredFor: Array.isArray(row.required_for) ? row.required_for : []
     };
@@ -47,6 +48,7 @@
       time: training.time || '',
       location: training.location || '',
       capacity: Number(training.capacity || 0),
+      waitlist_enabled: training.waitlistEnabled !== false,
       status: training.status || 'Open',
       required_for: Array.isArray(training.requiredFor) ? training.requiredFor : [],
       source: 'app',
@@ -109,7 +111,7 @@
 
     const { data, error } = await supabase
       .from(TRAINING_TABLE)
-      .select('id, title, description, trainer, session_date, time, location, capacity, status, required_for')
+      .select('id, title, description, trainer, session_date, time, location, capacity, waitlist_enabled, status, required_for')
       .order('session_date', { ascending: true });
 
     if (error) {
@@ -170,15 +172,82 @@
     return signups;
   }
 
-  async function notifySavedTrainingSignup(saved) {
+  async function notifySavedTrainingSignup(saved, previousStatus = '') {
+    if (previousStatus === saved?.status) return;
     if (saved?.status !== 'completed') return;
     if (typeof window.VolunteerDataStore?.notifyTrainingCompletion !== 'function') return;
     await window.VolunteerDataStore.notifyTrainingCompletion(saved);
   }
 
+  async function createSupabaseTrainingSignupWithCapacity(signup) {
+    const supabase = client();
+    if (!supabase || !session()?.email || !signup?.trainingId) return { ok: false, skipped: true };
+
+    const { data, error } = await supabase.rpc('create_training_signup_with_capacity', {
+      p_signup_id: signup.id || null,
+      p_training_id: String(signup.trainingId),
+      p_volunteer_name: signup.volunteerName || session()?.name || 'Volunteer'
+    });
+
+    if (error) {
+      console.warn('Capacity-aware training signup unavailable; falling back to direct training signup save.', error);
+      return { ok: false, reason: error.message, fallback: true };
+    }
+
+    const saved = rowToSignup(data);
+    const signups = window.VolunteerDataStore.getTrainingSignups();
+    const index = signups.findIndex(item => item.id === saved.id || (item.email === saved.email && String(item.trainingId) === String(saved.trainingId)));
+    if (index >= 0) signups[index] = saved;
+    else signups.push(saved);
+    window.VolunteerDataStore.saveTrainingSignups(signups);
+    window.dispatchEvent(new CustomEvent('volunteer-training-signups-synced'));
+    return { ok: true, signup: saved, lifecycleAware: true };
+  }
+
+  async function reviewSupabaseTrainingSignupLifecycle(signup, previousStatus = '') {
+    const supabase = client();
+    if (!supabase || !session()?.email || !signup?.id || !window.VolunteerDataStore?.isAdmin?.()) return { ok: false, skipped: true };
+    if (!['registered', 'waitlisted', 'completed', 'cancelled', 'declined', 'no_show'].includes(signup.status)) return { ok: false, skipped: true };
+
+    const { data, error } = await supabase.rpc('review_training_signup_lifecycle', {
+      p_signup_id: signup.id,
+      p_status: signup.status,
+      p_admin_notes: signup.adminNotes || null
+    });
+
+    if (error) {
+      console.warn('Training lifecycle review unavailable; falling back to direct training signup save.', error);
+      return { ok: false, reason: error.message, fallback: true };
+    }
+
+    const saved = rowToSignup(data);
+    const signups = window.VolunteerDataStore.getTrainingSignups();
+    const index = signups.findIndex(item => item.id === saved.id);
+    if (index >= 0) signups[index] = saved;
+    else signups.push(saved);
+    window.VolunteerDataStore.saveTrainingSignups(signups);
+    window.dispatchEvent(new CustomEvent('volunteer-training-signups-synced'));
+    if (typeof window.VolunteerDataStore?.fetchNotifications === 'function') await window.VolunteerDataStore.fetchNotifications();
+    await notifySavedTrainingSignup(saved, previousStatus);
+    return { ok: true, signup: saved, lifecycleAware: true };
+  }
+
   async function saveSupabaseTrainingSignup(signup, options = {}) {
     const supabase = client();
     if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
+
+    const existing = window.VolunteerDataStore.getTrainingSignups().find(item => item.id === signup.id);
+    const previousStatus = options.previousStatus || existing?.status || '';
+
+    if (options.capacityCreate === true) {
+      const capacityResult = await createSupabaseTrainingSignupWithCapacity(signup);
+      if (capacityResult.ok) return capacityResult;
+    }
+
+    if (options.lifecycleReview === true) {
+      const reviewResult = await reviewSupabaseTrainingSignupLifecycle(signup, previousStatus);
+      if (reviewResult.ok) return reviewResult;
+    }
 
     const row = signupToRow(signup);
     const mode = options.mode || 'upsert';
@@ -199,7 +268,7 @@
     else signups.push(saved);
     window.VolunteerDataStore.saveTrainingSignups(signups);
     window.dispatchEvent(new CustomEvent('volunteer-training-signups-synced'));
-    await notifySavedTrainingSignup(saved);
+    await notifySavedTrainingSignup(saved, previousStatus);
     return { ok: true, signup: saved };
   }
 
@@ -233,7 +302,7 @@
       const signupButton = event.target.closest('[data-signup-training]');
       if (signupButton) {
         const trainingId = signupButton.dataset.signupTraining;
-        window.setTimeout(() => persistSignup(signupByTrainingForCurrentUser(trainingId), { mode: 'upsert' }), 0);
+        window.setTimeout(() => persistSignup(signupByTrainingForCurrentUser(trainingId), { mode: 'upsert', capacityCreate: true }), 0);
         return;
       }
 
@@ -244,10 +313,17 @@
         return;
       }
 
+      const statusButton = event.target.closest('[data-training-status]');
+      if (statusButton) {
+        const signupId = statusButton.dataset.trainingStatus;
+        window.setTimeout(() => persistSignup(signupById(signupId), { mode: 'update', lifecycleReview: true }), 0);
+        return;
+      }
+
       const completeButton = event.target.closest('[data-complete-training]');
       if (completeButton) {
         const signupId = completeButton.dataset.completeTraining;
-        window.setTimeout(() => persistSignup(signupById(signupId), { mode: 'update' }), 0);
+        window.setTimeout(() => persistSignup(signupById(signupId), { mode: 'update', lifecycleReview: true }), 0);
       }
     }, true);
   }
@@ -264,7 +340,9 @@
     applySupabaseTrainingSessions,
     syncTrainingSessionsToSupabase,
     fetchSupabaseTrainingSignups,
-    saveSupabaseTrainingSignup
+    saveSupabaseTrainingSignup,
+    createSupabaseTrainingSignupWithCapacity,
+    reviewSupabaseTrainingSignupLifecycle
   });
 
   window.addEventListener('volunteer-auth-ready', syncAndRender);
