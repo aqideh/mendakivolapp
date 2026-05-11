@@ -19,19 +19,8 @@
     }).format(date);
   }
 
-  function ensureCard() {
-    if (!isAdmin()) return null;
-    const layout = qs('.dashboard-layout');
-    if (!layout || qs('[data-session-attendance-validation-card]')) return qs('[data-session-attendance-validation-card]');
-    const card = document.createElement('section');
-    card.className = 'dashboard-card session-attendance-validation-card';
-    card.dataset.sessionAttendanceValidationCard = 'true';
-    card.dataset.dashboardCardRole = 'admin';
-    card.innerHTML = renderCardBody();
-    const audit = qs('[data-audit-history-card]');
-    if (audit) audit.insertAdjacentElement('afterend', card);
-    else layout.append(card);
-    return card;
+  function retireStandaloneCard() {
+    qs('[data-session-attendance-validation-card]')?.remove();
   }
 
   function renderWarning(row) {
@@ -48,40 +37,52 @@
     `;
   }
 
-  function renderCardBody() {
+  function renderPanelBody() {
     if (!isAdmin()) return '';
     const missing = warnings.filter(item => item.has_session_code === false || item.has_session_code === 'false');
     return `
-      <div class="section-header">
-        <div>
-          <p class="eyebrow dark">Admin</p>
-          <h2>Session attendance validation</h2>
-          <p class="dashboard-muted">Session-specific facilitator codes are now preferred for attendance check-in/out.</p>
+      <section class="phase36-table-card" data-session-attendance-validation-panel>
+        <div class="phase36-table-head">
+          <div>
+            <h4>Session attendance validation</h4>
+            <p class="dashboard-muted">Session-specific facilitator codes are preferred for attendance check-in/out.</p>
+          </div>
+          <button class="text-button" type="button" data-session-code-warning-refresh>${loading ? 'Loading...' : 'Refresh'}</button>
         </div>
-        <button class="text-button" type="button" data-session-code-warning-refresh>${loading ? 'Loading...' : 'Refresh'}</button>
-      </div>
-      ${lastError ? `<p class="dashboard-muted error">${escapeHtml(lastError)}</p>` : ''}
-      <div class="dashboard-stat-grid">
-        <div class="dashboard-stat"><strong>${escapeHtml(warnings.length)}</strong><span>Open sessions checked</span></div>
-        <div class="dashboard-stat"><strong>${escapeHtml(missing.length)}</strong><span>Missing session code</span></div>
-      </div>
-      <p class="dashboard-muted">Sessions without a facilitator code may fall back to the opportunity-level code only when fallback is allowed.</p>
-      <div class="admin-content-list page-list">
-        ${missing.length ? missing.map(renderWarning).join('') : '<div class="admin-content-item"><span>All loaded open sessions have session facilitator codes.</span></div>'}
-      </div>
+        ${lastError ? `<p class="dashboard-muted error">${escapeHtml(lastError)}</p>` : ''}
+        <div class="dashboard-stat-grid">
+          <div class="dashboard-stat"><strong>${escapeHtml(warnings.length)}</strong><span>Open sessions checked</span></div>
+          <div class="dashboard-stat"><strong>${escapeHtml(missing.length)}</strong><span>Missing session code</span></div>
+        </div>
+        <p class="dashboard-muted">Sessions without a facilitator code may fall back to the opportunity-level code only when fallback is allowed.</p>
+        <div class="admin-content-list page-list">
+          ${missing.length ? missing.map(renderWarning).join('') : '<div class="admin-content-item"><span>All loaded open sessions have session facilitator codes.</span></div>'}
+        </div>
+      </section>
     `;
   }
 
-  function render() {
-    const card = ensureCard();
-    if (card) card.innerHTML = renderCardBody();
+  function renderInto(host) {
+    retireStandaloneCard();
+    if (!host || !isAdmin()) return false;
+    host.insertAdjacentHTML('beforeend', renderPanelBody());
+    return true;
   }
 
-  async function sync() {
-    if (!signedIn() || !isAdmin()) return;
+  function render() {
+    retireStandaloneCard();
+    const panel = qs('[data-session-attendance-validation-panel]');
+    if (panel) panel.outerHTML = renderPanelBody();
+  }
+
+  async function sync(options = {}) {
+    if (!signedIn() || !isAdmin()) {
+      retireStandaloneCard();
+      return [];
+    }
     loading = true;
     lastError = '';
-    render();
+    if (options.render !== false) render();
     try {
       warnings = await store()?.fetchSessionCodeWarnings?.() || [];
     } catch (error) {
@@ -89,8 +90,9 @@
       warnings = [];
     } finally {
       loading = false;
-      render();
+      if (options.render !== false) render();
     }
+    return warnings.slice();
   }
 
   function bind() {
@@ -101,13 +103,19 @@
     }, true);
   }
 
-  window.MENDAKISessionAttendanceValidation = { sync, render };
+  window.MENDAKISessionAttendanceValidation = {
+    sync,
+    render,
+    renderInto,
+    getWarnings: () => warnings.slice()
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     bind();
-    window.setTimeout(sync, 2000);
+    retireStandaloneCard();
+    window.setTimeout(() => sync({ render: false }), 2000);
   });
-  window.addEventListener('volunteer-auth-ready', sync);
-  window.addEventListener('volunteer-auth-changed', sync);
-  window.addEventListener('volunteer-opportunity-sessions-synced', sync);
+  window.addEventListener('volunteer-auth-ready', () => sync({ render: false }));
+  window.addEventListener('volunteer-auth-changed', () => sync({ render: false }));
+  window.addEventListener('volunteer-opportunity-sessions-synced', () => sync({ render: false }));
 })();
