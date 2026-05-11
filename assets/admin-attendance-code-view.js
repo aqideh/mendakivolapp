@@ -10,6 +10,15 @@
     return String(value || '').replace(/[&<>\"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
   }
 
+  function loadUrgentPrePhaseFixes() {
+    if (window.__prePhaseUrgentFixesLoaderInstalled) return;
+    window.__prePhaseUrgentFixesLoaderInstalled = true;
+    const script = document.createElement('script');
+    script.src = 'assets/pre-phase-urgent-fixes.js';
+    script.defer = true;
+    document.head.append(script);
+  }
+
   async function refreshAttendanceCodes() {
     if (!isAdmin() || typeof window.VolunteerDataStore?.fetchAttendanceCodes !== 'function') return;
     if (fetchInProgress) return;
@@ -100,6 +109,8 @@
 
     window.addEventListener('volunteer-opportunities-synced', () => refreshAttendanceCodes().then(scheduleApply));
   }
+
+  loadUrgentPrePhaseFixes();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindUiObserver();
