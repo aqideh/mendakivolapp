@@ -1,13 +1,13 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 38 drawer review action migration.
+Last updated: after Phase 39 drawer action completion and admin notes.
 
 ## Current status
 
 The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now:
 
 ```text
-Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → drawer review actions + fallback tools where needed
+Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → drawer review actions with notes/hours + fallback tools where needed
 ```
 
 The current app includes:
@@ -19,6 +19,7 @@ The current app includes:
 - Phase 36 table queues and detail drawers for key admin workflows.
 - Phase 37 visible legacy admin surface retirement from the main dashboard.
 - Phase 38 drawer review actions for opportunity sign-ups, attendance claims, and training sign-ups.
+- Phase 39 drawer admin notes, attendance verified-hours input, and inline action feedback.
 - Phase 31 admin workspace support retained for compatibility but retired as a primary visible surface.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
@@ -233,26 +234,7 @@ index.html
 
 ### Phase 38 — Drawer Review Action Migration
 
-Implemented the first safe set of row-level drawer actions:
-
-- Added external drawer action hook to Phase 36 tables.
-- Added drawer review actions for opportunity sign-ups:
-  - Confirm;
-  - Waitlist;
-  - Decline;
-  - Reset pending.
-- Added drawer review actions for attendance claims:
-  - Verify;
-  - Request clarification;
-  - Reject.
-- Added drawer review actions for training sign-ups:
-  - Mark completed;
-  - Mark no-show;
-  - Cancel;
-  - Reset registered.
-- Reused existing authoritative review/save functions rather than adding new direct write paths.
-- Added confirmation prompts, saving states, refresh hooks, drawer close, and shell remount after review actions.
-- Kept fallback tools available until manual QA confirms drawer actions are reliable.
+Implemented the first safe set of row-level drawer actions.
 
 Primary files:
 
@@ -268,41 +250,64 @@ assets/phase-thirty-six-admin-tables.js
 index.html
 ```
 
+### Phase 39 — Drawer Action Completion and Admin Notes
+
+Implemented drawer action completion for the current migrated review flows:
+
+- Added admin notes textarea to drawer review actions.
+- Added attendance verified-hours input.
+- Prefills notes and verified hours from existing record data where available.
+- Passes `adminNotes` into existing opportunity sign-up, attendance, and training review functions.
+- Allows attendance verified-hours override before verification.
+- Adds inline success/error notice area inside the drawer.
+- Shows a brief success notice before closing the drawer and remounting the active admin page.
+- Preserves existing confirmation prompts and authoritative review/save functions.
+
+Primary documentation:
+
+```text
+docs/phase-thirty-nine-drawer-action-completion.md
+```
+
+Related change:
+
+```text
+assets/phase-thirty-eight-drawer-review-actions.js
+assets/phase-thirty-six-admin-tables.css
+```
+
 Known limitations:
 
-- Drawer actions do not yet expose custom admin notes.
-- Attendance verified-hours adjustment is basic and uses existing/claimed hours.
 - Referral status workflow actions are not yet migrated.
 - Points adjustment workflow is not yet implemented and should remain policy-gated.
 - Audit remains dependent on the existing audit card for full search/export details.
-- Fallback legacy tools should stay until Phase 38 actions pass manual QA.
+- Fallback legacy tools should stay until drawer actions pass manual QA.
 
 ## Current consolidation roadmap
 
 The next work should continue the single-admin-interface track carefully:
 
 ```text
-Phase 39 — Drawer Action Completion and Admin Notes
+Phase 40 — Referral and Points Admin Workflows
 ```
 
-## Phase 39 — Drawer Action Completion and Admin Notes
+## Phase 40 — Referral and Points Admin Workflows
 
-Purpose: complete drawer-based admin actions so fallback legacy tools can eventually be removed.
+Purpose: complete the remaining admin workflows that were not part of the sign-up/attendance/training review drawer migration.
 
 Recommended scope:
 
-- Add admin notes input to drawer actions.
-- Add verified-hours adjustment for attendance verification.
-- Add referral status workflow actions.
-- Add points adjustment workflow only if policy-approved.
-- Improve audit drawer data if audit rows are exposed to the shared table layer.
-- Add stronger per-action success/error notices.
-- Update QA checklist for drawer actions.
+- Referral status workflow.
+- Referral conversion handling.
+- Referral admin notes, if schema/functions support them.
+- Policy-gated points adjustment workflow.
+- Strong audit metadata around manual points adjustments.
+- QA checklist expansion for referrals and points.
 
 Safety rule:
 
 ```text
-Do not delete fallback action tools until drawer actions are manually QA-tested with separate admin and volunteer accounts.
+Do not add unrestricted points adjustment unless policy-approved and audited.
 ```
 
 ## Production/manual requirements still pending
