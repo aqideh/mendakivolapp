@@ -164,16 +164,33 @@
     statsCard.dataset.mergedIntoProfile = 'true';
   }
 
+  function removeProfileDetailRows(card) {
+    const summary = qs('[data-profile-summary]', card) || qs('.profile-summary', card);
+    if (summary) {
+      summary.replaceChildren();
+      summary.hidden = true;
+      summary.setAttribute('aria-hidden', 'true');
+      summary.dataset.profileSummaryRemoved = 'true';
+      summary.style.setProperty('display', 'none', 'important');
+    }
+    qsa('.profile-pill', card).forEach(node => {
+      node.remove();
+    });
+  }
+
   function decorateProfileCard() {
     const card = qs('.dashboard-profile-card');
     if (!card) return;
     card.querySelector('[data-ui-profile-welcome]')?.remove();
     card.querySelector('[data-ui-value-empty]')?.remove();
     buildVolunteerProfileHero();
-    const legacyHeader = qs(':scope > div:not([data-volunteer-profile-hero]):not([data-profile-stats])', card);
-    if (legacyHeader) legacyHeader.hidden = true;
-    const summary = qs('[data-profile-summary]', card);
-    if (summary) summary.hidden = true;
+    const legacyHeader = qs(':scope > div:not([data-volunteer-profile-hero]):not([data-profile-stats]):not(.dashboard-actions)', card);
+    if (legacyHeader) {
+      legacyHeader.hidden = true;
+      legacyHeader.setAttribute('aria-hidden', 'true');
+      legacyHeader.style.setProperty('display', 'none', 'important');
+    }
+    removeProfileDetailRows(card);
     syncProfileActions();
     mergeStatsIntoProfileCard();
   }
