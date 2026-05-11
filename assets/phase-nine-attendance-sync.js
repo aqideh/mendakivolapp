@@ -35,6 +35,8 @@
       reviewed_by_email: claim.reviewedBy || null,
       reviewed_at: claim.reviewedAt || null,
       admin_notes: claim.adminNotes || null,
+      clarification_response: claim.clarificationResponse || null,
+      clarification_responded_at: claim.clarificationRespondedAt || null,
       created_at: claim.createdAt || new Date().toISOString(),
       updated_at: claim.updatedAt || new Date().toISOString()
     };
@@ -62,6 +64,8 @@
       reviewedBy: row.reviewed_by_email || '',
       reviewedAt: row.reviewed_at || '',
       adminNotes: row.admin_notes || '',
+      clarificationResponse: row.clarification_response || '',
+      clarificationRespondedAt: row.clarification_responded_at || '',
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
     };
@@ -137,8 +141,9 @@
     const supabase = client();
     if (!supabase || !session()?.email || !claim?.id) return { ok: false, skipped: true };
 
+    const isVolunteerClarification = options.clarificationResponse === true;
     const isAdminReview = options.review === true || ['verified', 'adjusted', 'clarification_requested', 'rejected'].includes(claim.claimStatus);
-    if (isAdminReview && window.VolunteerDataStore?.isAdmin?.()) {
+    if (!isVolunteerClarification && isAdminReview && window.VolunteerDataStore?.isAdmin?.()) {
       const reviewResult = await reviewAttendanceClaimTransactionally(claim);
       if (reviewResult.ok) return reviewResult;
     }
@@ -162,7 +167,7 @@
     else claims.push(saved);
     window.VolunteerDataStore.saveAttendanceClaims(claims);
     window.dispatchEvent(new CustomEvent('volunteer-attendance-synced'));
-    await notifySavedAttendanceClaim(saved);
+    if (!isVolunteerClarification) await notifySavedAttendanceClaim(saved);
     return { ok: true, claim: saved };
   }
 
@@ -204,6 +209,8 @@
     window.__phaseNineAttendanceSubmitPersistenceInstalled = true;
 
     document.addEventListener('submit', event => {
+      const clarificationForm = event.target.closest('[data-attendance-clarification-response]');
+      if (clarificationForm) return;
       const form = event.target.closest('[data-attendance-review]');
       if (!form) return;
       const claimId = form.dataset.attendanceReview;
