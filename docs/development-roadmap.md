@@ -1,6 +1,6 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 32 QA/smoke-test baseline implementation; Phase 33 is the accepted next development phase.
+Last updated: after Phase 33 production-readiness groundwork implementation.
 
 ## Current status
 
@@ -16,6 +16,7 @@ The current app includes:
 - Dashboard and admin tools.
 - Phase 31 admin workspace tabs and filtering.
 - Phase 32 QA smoke-check panel and verification SQL.
+- Phase 33 production-readiness verification SQL and runbook.
 - Hierarchical opportunity/session editing.
 - Session-specific opportunity signups.
 - Session-aware attendance validation foundation.
@@ -31,7 +32,7 @@ The current app includes:
 - Admin operations/warning cards.
 - Deprecated Sveltia CMS path.
 
-The app remains pilot/beta and is not production-complete.
+The app remains pilot/beta until manual QA, Auth console settings, and production policy decisions are completed.
 
 ## Recently completed phases
 
@@ -264,76 +265,67 @@ Live verification results:
 - `invalid_opportunity_signup_session_refs`: pass, 0.
 - `invalid_attendance_claim_session_refs`: pass, 0.
 
-Context counts at verification time:
+### Phase 33 — Production Readiness
+
+Implemented production-readiness groundwork:
+
+- Ran security and performance advisor reviews.
+- Added low-risk production hardening migration.
+- Fixed mutable search-path warnings for `report_date_in_range`, `make_referral_code`, and `notification_category_for_type`.
+- Revoked anonymous direct execution from `current_app_role`, `current_app_user_id`, and `current_app_user_is_admin`.
+- Added live app-table foreign-key indexes flagged by performance advisor.
+- Removed clear duplicate audit-log indexes.
+- Added production-readiness verification SQL.
+- Added Auth/deployment/backup/export/data-retention/remaining-advisor runbook.
+- Live Phase 33 verification SQL passed all added checks.
+
+Primary files:
 
 ```text
-opportunities: 7
-opportunity_sessions: 7
-opportunity_signups: 4
-attendance_claims: 2
-training_rows: 3
-training_signups: 0
-referrals: 0
-points_ledger: 0
-notifications: 3
-audit_logs: 0
+supabase/migrations/202605110010_phase_thirty_three_low_risk_production_hardening.sql
+supabase/verification/phase33_production_readiness_checks.sql
+docs/phase-thirty-three-production-readiness.md
 ```
 
-Known limitations:
+Live Phase 33 verification results:
 
-- Volunteer-vs-admin role-permission testing still requires manual sign-in with separate accounts.
-- The in-app QA panel is read-only and does not create test records.
-- Browser compatibility still needs human testing.
-- Supabase advisor warnings may still include known Phase 33 items.
+- `phase29_5_anon_rpc_grants`: pass, 0.
+- `role_helpers_anon_executable`: pass, 0.
+- `mutable_search_path_helpers`: pass, 0.
+- `phase33_live_fk_indexes_missing`: pass, 0.
+- `duplicate_audit_indexes_remaining`: pass, 0.
+- `phase32_reference_integrity`: pass, 0.
 
-## Accepted roadmap order
+Remaining manual / policy items:
 
-Use this order in future sessions unless a new production blocker appears:
+- Enable leaked-password protection in Supabase Auth console.
+- Confirm Auth redirect URLs and email templates in Supabase console.
+- Manually QA volunteer/admin flows with separate accounts.
+- Classify remaining authenticated `SECURITY DEFINER` RPCs as keep/convert/revoke/backend-only.
+- Decide whether to drop or archive legacy non-`app_*` tables.
+- Review/drop/recreate `volunteer_verified_hour_totals` security-definer view.
+- Clean RLS initplan and multiple-permissive-policy performance warnings after role model stabilises.
+- Re-evaluate unused indexes after realistic usage data.
+- Delete legacy Sveltia files only after manual QA and rollback decision.
 
-```text
-Phase 33 — Production Readiness
-```
+## Current recommended next work
 
-## Phase 33 — Production Readiness
+Do not start another feature phase until manual QA and console settings are complete.
 
-Status: accepted immediate next phase.
+Recommended next steps:
 
-Purpose: prepare the pilot/beta for safer production use.
-
-Recommended scope:
-
-- Verify Supabase Auth redirects and email templates.
-- RLS/security review across all app tables and RPCs.
-- Review function `SECURITY DEFINER` search paths and grants.
-- Decide whether signed-in `SECURITY DEFINER` RPC warnings are acceptable, should become `SECURITY INVOKER`, or should be hidden behind stricter backend paths.
-- Review and, if safe, revoke anonymous execute from helper role functions such as `current_app_role`, `current_app_user_id`, and `current_app_user_is_admin` without breaking RLS policy evaluation.
-- Fix mutable `search_path` warnings for helper/report functions such as `report_date_in_range`, `make_referral_code`, and `notification_category_for_type`.
-- Resolve or retire legacy non-`app_*` tables with RLS enabled and no policies.
-- Review the `volunteer_verified_hour_totals` security-definer view and convert/remove it if not required.
-- Enable leaked password protection when Auth settings are ready.
-- Environment/config documentation.
-- Backup/restore guidance.
-- Deployment checklist.
-- Referral link domain/redirect verification.
-- Invite abuse review.
-- Scheduled/server-side points backfill instead of frontend-triggered award runs.
-- Export pagination/size limits.
-- Data-retention policy.
-- Duplicate/unused index cleanup after checking real usage.
-- RLS performance lint cleanup using `(select auth.uid())`-style initplans.
-- Remove obsolete demo/local fallback paths where appropriate.
-- Delete legacy Sveltia files after QA:
-  - `admin/index.html`;
-  - `admin/config.yml`.
-
-Dependencies:
-
-- Phase 32 QA baseline.
-- Confirmed production Supabase settings.
+1. Run the Phase 32 manual QA checklist with separate volunteer and admin accounts.
+2. Enable leaked-password protection in Supabase Auth console.
+3. Verify production Auth redirect URLs and email templates.
+4. Run the in-app QA panel as admin.
+5. Re-run Phase 32 and Phase 33 SQL verification.
+6. Decide on legacy Sveltia deletion after QA.
+7. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
+8. Decide whether legacy non-`app_*` tables and `volunteer_verified_hour_totals` can be removed.
 
 ## Later follow-up items
 
-Keep these visible but do not let them block Phase 33 unless they become operational blockers:
+Keep these visible but do not let them override manual QA / production settings:
 
 - Public referral landing page.
 - Referral conversion workflow.
@@ -347,23 +339,3 @@ Keep these visible but do not let them block Phase 33 unless they become operati
 - Scheduled report emails.
 - Exact-record notification deep links.
 - Automated migration test suite.
-
-## Recommended next task
-
-Start with **Phase 33 — Production Readiness**.
-
-Reasoning:
-
-- Phases 24–32 have added the major pilot features and a QA baseline.
-- The next bottleneck is safe production operation rather than additional feature expansion.
-- Phase 33 should focus on security posture, deployment configuration, cleanup, and operational guidance.
-
-Minimum Phase 33 implementation should include:
-
-1. Supabase advisor review and triage.
-2. Auth redirect/email template verification notes.
-3. RLS and RPC grant review.
-4. Environment/config documentation.
-5. Backup/restore and deployment checklist.
-6. Export/data-retention notes.
-7. Legacy Sveltia cleanup plan or deletion after manual QA confirmation.
