@@ -21,10 +21,6 @@ function phaseThreeProfile() {
   return VolunteerDataStore.getProfile() || {};
 }
 
-function phaseThreeSession() {
-  return VolunteerDataStore.normaliseSessionRole() || {};
-}
-
 function phaseThreeSignups() {
   return VolunteerDataStore.getOpportunitySignups();
 }
@@ -33,16 +29,8 @@ function phaseThreeWriteSignups(signups) {
   return VolunteerDataStore.saveOpportunitySignups(signups);
 }
 
-function phaseThreeEmail() {
-  return VolunteerDataStore.currentEmail();
-}
-
 function phaseThreeIsSignedIn() {
   return VolunteerDataStore.isSignedIn();
-}
-
-function phaseThreeIsAdmin() {
-  return VolunteerDataStore.isAdmin();
 }
 
 function phaseThreeUsesSupabase() {
@@ -51,32 +39,6 @@ function phaseThreeUsesSupabase() {
 
 function phaseThreeClaimForSignup(signupId) {
   return phaseThreeClaims().find(claim => claim.signupId === signupId);
-}
-
-function phaseThreeClaimStatusLabel(status) {
-  const labels = {
-    pending_submission: 'Not checked in',
-    checked_in: 'Checked in',
-    submitted: 'Checked out',
-    clarification_requested: 'Clarification requested',
-    verified: 'Verified',
-    adjusted: 'Adjusted',
-    rejected: 'Rejected',
-    no_show: 'No-show'
-  };
-  return labels[status] || status || 'Not checked in';
-}
-
-function phaseThreeStatusClass(status) {
-  if (status === 'verified' || status === 'adjusted') return 'badge-open';
-  if (status === 'rejected' || status === 'no_show') return 'badge-ad-hoc';
-  if (status === 'submitted') return 'badge-programme';
-  if (status === 'checked_in') return 'badge-long-term';
-  return 'badge-volunteer';
-}
-
-function phaseThreeEscape(value) {
-  return String(value || '').replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
 }
 
 function phaseThreeFormatTimestamp(value) {
@@ -194,7 +156,7 @@ function phaseThreeRenderVolunteerAttendance() {
   const list = document.querySelector('[data-attendance-list]');
   if (!list) return;
 
-  const email = phaseThreeEmail();
+  const email = VolunteerDataStore.$.email();
   const allSignups = phaseThreeSignups().filter(signup => signup.email === email && signup.status !== 'cancelled');
   const confirmedSignups = allSignups.filter(signup => signup.status === 'confirmed' || signup.status === 'completed');
   list.replaceChildren();
@@ -218,6 +180,7 @@ function phaseThreeRenderVolunteerAttendance() {
 }
 
 function phaseThreeVolunteerRow(signup) {
+  const escapeHtml = VolunteerDataStore.utils.escapeHtml;
   const claim = phaseThreeClaimForSignup(signup.id);
   const status = claim?.claimStatus || 'pending_submission';
   const isLocked = ['submitted', 'verified', 'adjusted'].includes(status);
@@ -227,14 +190,14 @@ function phaseThreeVolunteerRow(signup) {
   row.className = 'attendance-row';
   row.innerHTML = `
     <div>
-      <strong>${phaseThreeEscape(signup.title)}</strong>
-      <p>${phaseThreeEscape(signup.time || 'Time to be confirmed')} · ${phaseThreeEscape(signup.location || 'Location to be confirmed')}</p>
-      ${claim?.checkInAt ? `<p class="attendance-note">Checked in: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkInAt))}</p>` : ''}
-      ${claim?.checkOutAt ? `<p class="attendance-note">Checked out: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>` : ''}
-      ${claim?.claimedHours ? `<p class="attendance-note">Logged hours: ${phaseThreeEscape(claim.claimedHours)}h pending admin verification</p>` : ''}
-      ${claim?.adminNotes ? `<p class="attendance-note">Admin note: ${phaseThreeEscape(claim.adminNotes)}</p>` : ''}
+      <strong>${escapeHtml(signup.title)}</strong>
+      <p>${escapeHtml(signup.time || 'Time to be confirmed')} · ${escapeHtml(signup.location || 'Location to be confirmed')}</p>
+      ${claim?.checkInAt ? `<p class="attendance-note">Checked in: ${escapeHtml(phaseThreeFormatTimestamp(claim.checkInAt))}</p>` : ''}
+      ${claim?.checkOutAt ? `<p class="attendance-note">Checked out: ${escapeHtml(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>` : ''}
+      ${claim?.claimedHours ? `<p class="attendance-note">Logged hours: ${escapeHtml(claim.claimedHours)}h pending admin verification</p>` : ''}
+      ${claim?.adminNotes ? `<p class="attendance-note">Admin note: ${escapeHtml(claim.adminNotes)}</p>` : ''}
     </div>
-    <span class="badge ${phaseThreeStatusClass(status)}">${phaseThreeEscape(phaseThreeClaimStatusLabel(status))}</span>
+    <span class="badge ${VolunteerDataStore.statusBadges.getStatusBadgeClass(status, 'attendance')}">${escapeHtml(VolunteerDataStore.statusLabels.getStatusLabel(status, 'attendance'))}</span>
   `;
 
   if (!isLocked || isRejectedOrClarify) {
@@ -255,7 +218,7 @@ function phaseThreeRenderAdminQueue() {
   const list = document.querySelector('[data-admin-attendance-list]');
   if (!card || !list) return;
 
-  const isAdmin = phaseThreeIsAdmin();
+  const isAdmin = VolunteerDataStore.$.isAdmin();
   card.hidden = !isAdmin;
   if (!isAdmin) return;
 
@@ -269,20 +232,21 @@ function phaseThreeRenderAdminQueue() {
 }
 
 function phaseThreeAdminRow(claim) {
+  const escapeHtml = VolunteerDataStore.utils.escapeHtml;
   const systemHours = phaseThreeNormaliseHours(claim.claimedHours || 0);
   const row = document.createElement('div');
   row.className = 'attendance-row admin-attendance-row';
   row.innerHTML = `
     <div>
-      <strong>${phaseThreeEscape(claim.title)}</strong>
-      <p>${phaseThreeEscape(claim.volunteerName)} · ${phaseThreeEscape(claim.email)}</p>
-      <p>Check in: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkInAt))}</p>
-      <p>Check out: ${phaseThreeEscape(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>
-      <p>System-calculated hours: ${phaseThreeEscape(systemHours)}h</p>
-      <p class="attendance-note">Check-in code entered: ${phaseThreeEscape(claim.checkInCode || 'n/a')} · Check-out code entered: ${phaseThreeEscape(claim.checkOutCode || 'n/a')}</p>
+      <strong>${escapeHtml(claim.title)}</strong>
+      <p>${escapeHtml(claim.volunteerName)} · ${escapeHtml(claim.email)}</p>
+      <p>Check in: ${escapeHtml(phaseThreeFormatTimestamp(claim.checkInAt))}</p>
+      <p>Check out: ${escapeHtml(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>
+      <p>System-calculated hours: ${escapeHtml(systemHours)}h</p>
+      <p class="attendance-note">Check-in code entered: ${escapeHtml(claim.checkInCode || 'n/a')} · Check-out code entered: ${escapeHtml(claim.checkOutCode || 'n/a')}</p>
     </div>
-    <form class="attendance-review-form" data-attendance-review="${phaseThreeEscape(claim.id)}">
-      <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" value="${phaseThreeEscape(systemHours)}" data-system-hours="${phaseThreeEscape(systemHours)}"></label>
+    <form class="attendance-review-form" data-attendance-review="${escapeHtml(claim.id)}">
+      <label>Verified hours<input name="verifiedHours" type="number" min="0" max="24" step="0.25" value="${escapeHtml(systemHours)}" data-system-hours="${escapeHtml(systemHours)}"></label>
       <label>Admin notes<input name="adminNotes" placeholder="Optional note"></label>
       <div class="attendance-actions">
         <button class="button button-primary" type="submit" name="action" value="verify" data-smart-review-action>Verify</button>
@@ -352,6 +316,7 @@ async function phaseThreeHandlePunch(signupId, action) {
         id: crypto.randomUUID(),
         signupId,
         opportunityId: signup.opportunityId,
+        sessionId: signup.sessionId || '',
         email: signup.email,
         volunteerName: signup.volunteerName,
         title: signup.title,
@@ -361,6 +326,7 @@ async function phaseThreeHandlePunch(signupId, action) {
     }
 
     Object.assign(claim, {
+      sessionId: claim.sessionId || signup.sessionId || '',
       claimStatus: 'checked_in',
       checkInAt: now,
       checkInCode: code,
@@ -384,6 +350,7 @@ async function phaseThreeHandlePunch(signupId, action) {
     }
     const hours = phaseThreeHoursBetween(claim.checkInAt, now);
     Object.assign(claim, {
+      sessionId: claim.sessionId || signup.sessionId || '',
       claimStatus: 'submitted',
       checkOutAt: now,
       checkOutCode: code,
@@ -421,7 +388,7 @@ function phaseThreeReviewClaim(form, submitter) {
     ? 0
     : Number(enteredHours || claim.claimedHours || 0);
   claim.adminNotes = String(data.get('adminNotes') || '').trim();
-  claim.reviewedBy = phaseThreeEmail() || 'admin';
+  claim.reviewedBy = VolunteerDataStore.$.email() || 'admin';
   claim.reviewedAt = new Date().toISOString();
   claim.updatedAt = new Date().toISOString();
   phaseThreeWriteClaims(claims);
@@ -443,7 +410,7 @@ function phaseThreeReviewClaim(form, submitter) {
 }
 
 function phaseThreeUpdateStats() {
-  const email = phaseThreeEmail();
+  const email = VolunteerDataStore.$.email();
   const claims = phaseThreeClaims().filter(claim => claim.email === email);
   const verifiedClaims = claims.filter(claim => claim.claimStatus === 'verified' || claim.claimStatus === 'adjusted');
   const verifiedHours = verifiedClaims.reduce((total, claim) => total + Number(claim.verifiedHours || 0), 0);
