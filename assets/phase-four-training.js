@@ -8,24 +8,12 @@ function phaseFourWriteJson(key, value) {
   return VolunteerDataStore.writeJson(key, value);
 }
 
-function phaseFourSession() {
-  return VolunteerDataStore.normaliseSessionRole() || {};
-}
-
 function phaseFourProfile() {
   return VolunteerDataStore.getProfile() || {};
 }
 
-function phaseFourEmail() {
-  return VolunteerDataStore.currentEmail();
-}
-
 function phaseFourIsSignedIn() {
   return VolunteerDataStore.isSignedIn();
-}
-
-function phaseFourIsAdmin() {
-  return VolunteerDataStore.isAdmin();
 }
 
 function phaseFourTrainingSignups() {
@@ -52,10 +40,6 @@ function phaseFourFindTraining(id) {
   return phaseFourTrainings().find(training => String(training.id) === String(id));
 }
 
-function phaseFourEscape(value) {
-  return String(value || '').replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
-}
-
 function phaseFourFormatDate(value) {
   if (!value) return 'Date to be confirmed';
   const date = new Date(`${value}T00:00:00`);
@@ -63,26 +47,8 @@ function phaseFourFormatDate(value) {
   return new Intl.DateTimeFormat('en-SG', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
-function phaseFourStatusLabel(status) {
-  const labels = {
-    registered: 'Registered',
-    waitlisted: 'Waitlisted',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-    declined: 'Declined',
-    no_show: 'No-show'
-  };
-  return labels[status] || status || 'Registered';
-}
-
-function phaseFourStatusBadge(status) {
-  if (status === 'completed' || status === 'registered') return 'badge-open';
-  if (status === 'waitlisted') return 'badge-programme';
-  return 'badge-ad-hoc';
-}
-
 function phaseFourUserTrainingSignups() {
-  const email = phaseFourEmail();
+  const email = VolunteerDataStore.$.email();
   return email ? phaseFourTrainingSignups().filter(item => item.email === email) : [];
 }
 
@@ -95,9 +61,9 @@ function phaseFourSignupForTraining(trainingId) {
   const training = phaseFourFindTraining(trainingId);
   if (!training) return { ok: false, reason: 'not_found' };
 
-  const email = phaseFourEmail();
+  const email = VolunteerDataStore.$.email();
   const profile = phaseFourProfile();
-  const session = phaseFourSession();
+  const session = VolunteerDataStore.$.session();
   const signups = phaseFourTrainingSignups();
   const existing = signups.find(item => item.email === email && item.trainingId === trainingId);
   const record = {
@@ -124,7 +90,7 @@ function phaseFourSignupForTraining(trainingId) {
 }
 
 function phaseFourCancelTraining(trainingId) {
-  const email = phaseFourEmail();
+  const email = VolunteerDataStore.$.email();
   const signups = phaseFourTrainingSignups();
   const existing = signups.find(item => item.email === email && item.trainingId === trainingId && ['registered', 'waitlisted'].includes(item.status));
   if (!existing) return { ok: false };
@@ -142,7 +108,7 @@ function phaseFourUpdateTrainingStatus(signupId, status, adminNotes = '') {
   if (!signup) return;
   signup.status = status;
   signup.adminNotes = adminNotes;
-  signup.reviewedBy = phaseFourEmail() || 'admin';
+  signup.reviewedBy = VolunteerDataStore.$.email() || 'admin';
   signup.reviewedAt = new Date().toISOString();
   if (status === 'completed') signup.completedAt = signup.completedAt || new Date().toISOString();
   if (['cancelled', 'declined', 'no_show'].includes(status)) signup.cancelledAt = signup.cancelledAt || new Date().toISOString();
@@ -156,7 +122,8 @@ function phaseFourCompleteTraining(signupId) {
 }
 
 function phaseFourMakeCard(training) {
-  const email = phaseFourEmail();
+  const escapeHtml = VolunteerDataStore.utils.escapeHtml;
+  const email = VolunteerDataStore.$.email();
   const signup = phaseFourTrainingSignups().find(item => item.email === email && item.trainingId === training.id && item.status !== 'cancelled');
   const isRegistered = signup?.status === 'registered';
   const isWaitlisted = signup?.status === 'waitlisted';
@@ -167,18 +134,18 @@ function phaseFourMakeCard(training) {
   card.innerHTML = `
     <div class="training-card-top">
       <span class="badge badge-programme">Training</span>
-      <span class="badge ${training.status === 'Open' ? 'badge-open' : 'badge-ad-hoc'}">${phaseFourEscape(training.status || 'Open')}</span>
-      ${Number(training.capacity || 0) ? `<span class="badge badge-category">Capacity ${phaseFourEscape(training.capacity)}</span>` : ''}
+      <span class="badge ${training.status === 'Open' ? 'badge-open' : 'badge-ad-hoc'}">${escapeHtml(training.status || 'Open')}</span>
+      ${Number(training.capacity || 0) ? `<span class="badge badge-category">Capacity ${escapeHtml(training.capacity)}</span>` : ''}
     </div>
-    <h2>${phaseFourEscape(training.title)}</h2>
-    <p>${phaseFourEscape(training.description)}</p>
+    <h2>${escapeHtml(training.title)}</h2>
+    <p>${escapeHtml(training.description)}</p>
     <div class="training-meta">
-      <span>${phaseFourEscape(phaseFourFormatDate(training.date))}</span>
-      <span>${phaseFourEscape(training.time || 'Time to be confirmed')}</span>
-      <span>${phaseFourEscape(training.location || 'Location to be confirmed')}</span>
-      <span>${phaseFourEscape(training.trainer || 'Trainer to be confirmed')}</span>
+      <span>${escapeHtml(phaseFourFormatDate(training.date))}</span>
+      <span>${escapeHtml(training.time || 'Time to be confirmed')}</span>
+      <span>${escapeHtml(training.location || 'Location to be confirmed')}</span>
+      <span>${escapeHtml(training.trainer || 'Trainer to be confirmed')}</span>
     </div>
-    <div class="training-required">Recommended for: ${(training.requiredFor || []).map(item => `<span>${phaseFourEscape(item)}</span>`).join('')}</div>
+    <div class="training-required">Recommended for: ${(training.requiredFor || []).map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>
     <div class="training-actions"></div>
   `;
   const actions = card.querySelector('.training-actions');
@@ -274,7 +241,7 @@ function phaseFourRenderDashboard() {
   const adminCard = document.querySelector('[data-training-dashboard-card="admin"]');
   const adminList = document.querySelector('[data-admin-training-list]');
   if (adminCard && adminList) {
-    const isAdmin = phaseFourIsAdmin();
+    const isAdmin = VolunteerDataStore.$.isAdmin();
     adminCard.hidden = !isAdmin;
     adminList.replaceChildren();
     if (isAdmin) {
@@ -286,16 +253,17 @@ function phaseFourRenderDashboard() {
 }
 
 function phaseFourTrainingRow(signup, adminMode) {
+  const escapeHtml = VolunteerDataStore.utils.escapeHtml;
   const row = document.createElement('div');
   row.className = 'training-dashboard-row';
   row.innerHTML = `
     <div>
-      <strong>${phaseFourEscape(signup.title)}</strong>
-      <p>${phaseFourEscape(phaseFourFormatDate(signup.date))} · ${phaseFourEscape(signup.time || '')} · ${phaseFourEscape(signup.location || '')}</p>
-      ${adminMode ? `<p>${phaseFourEscape(signup.volunteerName)} · ${phaseFourEscape(signup.email)}</p>` : ''}
-      ${signup.adminNotes ? `<p class="dashboard-muted">Admin note: ${phaseFourEscape(signup.adminNotes)}</p>` : ''}
+      <strong>${escapeHtml(signup.title)}</strong>
+      <p>${escapeHtml(phaseFourFormatDate(signup.date))} · ${escapeHtml(signup.time || '')} · ${escapeHtml(signup.location || '')}</p>
+      ${adminMode ? `<p>${escapeHtml(signup.volunteerName)} · ${escapeHtml(signup.email)}</p>` : ''}
+      ${signup.adminNotes ? `<p class="dashboard-muted">Admin note: ${escapeHtml(signup.adminNotes)}</p>` : ''}
     </div>
-    <span class="badge ${phaseFourStatusBadge(signup.status)}">${phaseFourEscape(phaseFourStatusLabel(signup.status))}</span>
+    <span class="badge ${VolunteerDataStore.statusBadges.getStatusBadgeClass(signup.status, 'training')}">${escapeHtml(VolunteerDataStore.statusLabels.getStatusLabel(signup.status, 'training'))}</span>
   `;
   if (adminMode) {
     const actions = document.createElement('div');
