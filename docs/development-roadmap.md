@@ -1,25 +1,27 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 30 training session parity implementation; Phase 31 is the accepted next development phase.
+Last updated: after Phase 31 admin UX refinement implementation; Phase 32 is the accepted next development phase.
 
 ## Current status
 
 The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is:
 
 ```text
-Signed-in app dashboard → Admin tools / Admin content management
+Signed-in app dashboard → Admin workspace / Admin content management
 ```
 
 The current app includes:
 
 - Supabase Auth.
 - Dashboard and admin tools.
+- Phase 31 admin workspace tabs and filtering.
 - Hierarchical opportunity/session editing.
 - Session-specific opportunity signups.
 - Session-aware attendance validation foundation.
 - Phase 29.5 attendance session guard.
 - Attendance review.
 - Training lifecycle with Phase 30 training session parity foundation.
+- Phase 31 training parent/session management UI.
 - Referrals / invite friends.
 - Points and achievements.
 - Reports and browser CSV exports.
@@ -209,54 +211,46 @@ assets/phase-thirty-training-session-parity.js
 docs/phase-thirty-training-session-parity.md
 ```
 
+### Phase 31 — Admin UX Refinement
+
+Implemented an additive admin workspace layer:
+
+- Admin workspace card with tabbed work areas.
+- Work areas for home, content, sign-ups, attendance, training, referrals, points, reports, audit, and notifications.
+- Summary tiles for active sign-ups, attendance queue, training sign-ups, and training sessions.
+- Text and status filters over visible admin cards.
+- Existing admin cards are classified into areas rather than removed.
+- Training parent/session management UI for Phase 30 training rows.
+- Training child session create/edit/delete controls.
+- Confirmation prompt before deleting child training sessions.
+
+Primary files:
+
+```text
+assets/phase-thirty-one-admin-ux.css
+assets/phase-thirty-one-admin-ux.js
+docs/phase-thirty-one-admin-ux-refinement.md
+```
+
 Known limitations:
 
-- Admin UI for creating/editing child training session rows is not yet polished.
-- Training attendance is still represented by lifecycle completion, not check-in/check-out.
-- Full automated regression coverage remains Phase 32.
+- The admin workspace is still a dashboard-tab layer, not a fully routed admin app.
+- Search/status filters are text-based over visible cards, not server-side table filters.
+- Training session deletion does not yet show a deep dependency preview.
+- Full regression and role-permission tests remain Phase 32.
 
 ## Accepted roadmap order
 
 Use this order in future sessions unless a new production blocker appears:
 
 ```text
-Phase 31 — Admin UX Refinement
 Phase 32 — QA / Smoke Tests / Hardening
 Phase 33 — Production Readiness
 ```
 
-## Phase 31 — Admin UX Refinement
+## Phase 32 — QA / Smoke Tests / Hardening
 
 Status: accepted immediate next phase.
-
-Purpose: reduce dashboard density and clarify admin work queues.
-
-Recommended scope:
-
-- Admin home page.
-- Separate admin pages/tabs:
-  - opportunities;
-  - sessions;
-  - sign-ups;
-  - attendance;
-  - training;
-  - referrals;
-  - points/achievements;
-  - reports;
-  - audit logs;
-  - notifications/settings.
-- Search/filter/sort in each admin area.
-- Confirmation prompts for destructive or high-impact actions.
-- Dedicated referral status workflow.
-- Dedicated points adjustment workflow.
-- Session-code warnings inside the session editor.
-- Training session management UI for parent training rows and child training session instances.
-
-Dependencies:
-
-- Phase 30 training session parity.
-
-## Phase 32 — QA / Smoke Tests / Hardening
 
 Purpose: create a repeatable regression safety net.
 
@@ -277,6 +271,8 @@ Recommended scope:
 - CSV/report export tests.
 - Notification preference/grouping tests.
 - Audit filtering/export tests.
+- Phase 31 admin workspace tab/filter tests.
+- Phase 31 training session manager create/edit/delete tests.
 - Re-run `get_phase_29_5_rpc_grant_audit()` and confirm targeted RPCs still have no anonymous execute grants.
 - Confirm volunteer users cannot access admin report/audit/review/code-management RPC results.
 
@@ -321,7 +317,7 @@ Dependencies:
 
 ## Later follow-up items
 
-Keep these visible but do not let them block Phase 31 unless they become operational blockers:
+Keep these visible but do not let them block Phase 32 unless they become operational blockers:
 
 - Public referral landing page.
 - Referral conversion workflow.
@@ -338,19 +334,21 @@ Keep these visible but do not let them block Phase 31 unless they become operati
 
 ## Recommended next task
 
-Start with **Phase 31 — Admin UX Refinement**.
+Start with **Phase 32 — QA / Smoke Tests / Hardening**.
 
 Reasoning:
 
-- Phase 30 added training session parity at the data/RPC/frontend-compatibility level.
-- The next bottleneck is admin usability: creating, editing, filtering, and operating these increasingly dense workflows needs clearer pages/tabs.
-- Phase 31 should include the first proper training session management UI for parent training rows and child session instances.
+- Phases 24–31 added many features and admin surfaces.
+- The next bottleneck is regression risk, not another feature area.
+- Phase 32 should establish repeatable manual and lightweight automated checks before production-readiness work.
 
-Minimum Phase 31 implementation should include:
+Minimum Phase 32 implementation should include:
 
-1. Admin landing/home structure.
-2. Split admin pages or tabs for major work queues.
-3. Search/filter/sort for signups, attendance, training, referrals, points, reports, audit, and notifications.
-4. Training parent/session management UI.
-5. Confirmation prompts for high-impact actions.
-6. Documentation and focused QA notes.
+1. Manual QA checklist.
+2. Lightweight smoke-test script or browser-console checklist.
+3. Migration verification queries.
+4. Role-permission checks.
+5. Capacity/waitlist checks.
+6. Session-aware opportunity attendance checks.
+7. Training session-selection checks.
+8. Referral, points, reports, audit, notification, and admin workspace checks.
