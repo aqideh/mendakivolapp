@@ -12,7 +12,11 @@
   function store() { return window.VolunteerDataStore; }
   function client() { return store()?.authState?.supabase || null; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
-  function workspace() { return qs('[data-content-workspace]'); }
+  function workspace() {
+    return qs('[data-phase34-shell]:not([hidden]) [data-phase34-active-area="opportunities"] [data-content-workspace]')
+      || qs('[data-opportunity-admin-canonical-workspace]')
+      || qs('[data-content-workspace]');
+  }
   function appData() {
     try { return typeof state !== 'undefined' ? state.data : null; }
     catch (error) { return null; }
@@ -359,7 +363,7 @@
     });
     if (result?.ok) {
       if (status) status.textContent = 'Saved.';
-      window.setTimeout(renderOpportunityHierarchy, 350);
+      await syncAndRenderOpportunityList(350);
     } else if (status) {
       status.textContent = `Could not save${result?.reason ? `: ${result.reason}` : '.'}`;
     }
@@ -389,9 +393,10 @@
     }
   }
 
-  async function syncAndRenderOpportunityList() {
+  async function syncAndRenderOpportunityList(delay = 0) {
     const host = workspace();
     if (host) host.innerHTML = '<section class="admin-content-step"><h3>Loading opportunities...</h3></section>';
+    if (delay) await new Promise(resolve => window.setTimeout(resolve, delay));
     if (typeof store()?.applySupabaseOpportunities === 'function') await store().applySupabaseOpportunities().catch(() => null);
     await refreshSessions();
     renderOpportunityHierarchy();
@@ -402,7 +407,7 @@
     window.__adminOpportunityHierarchyBound = true;
 
     document.addEventListener('click', async event => {
-      const opportunityType = event.target.closest('[data-content-type="opportunity"]');
+      const opportunityType = event.target.closest('[data-content-type="opportunity"], [data-opportunity-admin-open]');
       if (opportunityType) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -504,6 +509,13 @@
       }
     }, true);
   }
+
+  window.MENDAKIAdminOpportunityHierarchy = {
+    renderOpportunityHierarchy,
+    syncAndRenderOpportunityList,
+    renderOpportunityDetailsForm,
+    renderOpportunitySessionsEditor
+  };
 
   document.addEventListener('DOMContentLoaded', bind);
   window.addEventListener('volunteer-auth-ready', bind);
