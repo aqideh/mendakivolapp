@@ -1,6 +1,6 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 29.5 security/session hardening; Phase 30 is the accepted next development phase.
+Last updated: after Phase 30 training session parity implementation; Phase 31 is the accepted next development phase.
 
 ## Current status
 
@@ -19,7 +19,7 @@ The current app includes:
 - Session-aware attendance validation foundation.
 - Phase 29.5 attendance session guard.
 - Attendance review.
-- Training lifecycle.
+- Training lifecycle with Phase 30 training session parity foundation.
 - Referrals / invite friends.
 - Points and achievements.
 - Reports and browser CSV exports.
@@ -187,40 +187,47 @@ where anon_can_execute = true;
 
 Expected/current result: zero rows for the targeted Phase 29.5 RPC set.
 
+### Phase 30 — Training Session Parity
+
+Implemented a compatibility-safe training session foundation:
+
+- Added parent/session fields to `app_training_sessions`.
+- Added `training_session_id`, `session_title`, and `completed_session_at` to `app_training_signups`.
+- Added session-aware training signup RPCs and helper functions.
+- Updated legacy `create_training_signup_with_capacity(...)` to delegate to the session-aware path.
+- Updated admin lifecycle review and completion point metadata to carry training session context.
+- Replaced parent-level signup uniqueness with session-level uniqueness.
+- Added a frontend session selector and session-aware training signup layer.
+- Preserved current visible training cards for existing pilot data.
+
+Primary files:
+
+```text
+supabase/migrations/202605110008_phase_thirty_training_session_parity.sql
+supabase/migrations/202605110009_phase_thirty_training_session_unique_constraint_fix.sql
+assets/phase-thirty-training-session-parity.js
+docs/phase-thirty-training-session-parity.md
+```
+
+Known limitations:
+
+- Admin UI for creating/editing child training session rows is not yet polished.
+- Training attendance is still represented by lifecycle completion, not check-in/check-out.
+- Full automated regression coverage remains Phase 32.
+
 ## Accepted roadmap order
 
 Use this order in future sessions unless a new production blocker appears:
 
 ```text
-Phase 30 — Training Session Parity
 Phase 31 — Admin UX Refinement
 Phase 32 — QA / Smoke Tests / Hardening
 Phase 33 — Production Readiness
 ```
 
-## Phase 30 — Training Session Parity
+## Phase 31 — Admin UX Refinement
 
 Status: accepted immediate next phase.
-
-Purpose: give training the same true session model as opportunities.
-
-Recommended scope:
-
-- True training session instances.
-- Multi-date training support.
-- Session-specific training capacity.
-- Selected training session in signup.
-- Training attendance/completion per session.
-- Training points awarded from session-completion records.
-
-Dependencies:
-
-- Phase 29.5 security and session contract hardening.
-- Current training lifecycle.
-- Phase 25 training completion points.
-- Phase 29 session-aware attendance validation pattern.
-
-## Phase 31 — Admin UX Refinement
 
 Purpose: reduce dashboard density and clarify admin work queues.
 
@@ -243,10 +250,11 @@ Recommended scope:
 - Dedicated referral status workflow.
 - Dedicated points adjustment workflow.
 - Session-code warnings inside the session editor.
+- Training session management UI for parent training rows and child training session instances.
 
 Dependencies:
 
-- Phase 30 training session parity, unless admin UX density becomes a blocker sooner.
+- Phase 30 training session parity.
 
 ## Phase 32 — QA / Smoke Tests / Hardening
 
@@ -313,7 +321,7 @@ Dependencies:
 
 ## Later follow-up items
 
-Keep these visible but do not let them block Phase 30 unless they become operational blockers:
+Keep these visible but do not let them block Phase 31 unless they become operational blockers:
 
 - Public referral landing page.
 - Referral conversion workflow.
@@ -330,19 +338,19 @@ Keep these visible but do not let them block Phase 30 unless they become operati
 
 ## Recommended next task
 
-Start with **Phase 30 — Training Session Parity**.
+Start with **Phase 31 — Admin UX Refinement**.
 
 Reasoning:
 
-- Phase 29.5 closed the immediate anonymous sensitive-RPC exposure for the targeted RPC set.
-- The next model gap is training, which still lacks true session parity with opportunities.
-- Remaining advisor findings are documented for Phase 32/33 and should not block Phase 30 unless they begin breaking pilot flows.
+- Phase 30 added training session parity at the data/RPC/frontend-compatibility level.
+- The next bottleneck is admin usability: creating, editing, filtering, and operating these increasingly dense workflows needs clearer pages/tabs.
+- Phase 31 should include the first proper training session management UI for parent training rows and child session instances.
 
-Minimum Phase 30 implementation should include:
+Minimum Phase 31 implementation should include:
 
-1. Training session table/RPC support.
-2. Session-specific training signup selection.
-3. Training signup rows carrying `session_id` and session metadata.
-4. Training capacity/waitlist based on session, not only parent training.
-5. Training completion/points attribution that can reference the selected session.
+1. Admin landing/home structure.
+2. Split admin pages or tabs for major work queues.
+3. Search/filter/sort for signups, attendance, training, referrals, points, reports, audit, and notifications.
+4. Training parent/session management UI.
+5. Confirmation prompts for high-impact actions.
 6. Documentation and focused QA notes.
