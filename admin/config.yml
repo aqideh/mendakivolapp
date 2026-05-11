@@ -1,3 +1,9 @@
+# DEPRECATED: Sveltia CMS is no longer the authoritative admin surface.
+#
+# Production/admin edits should be made through the signed-in app dashboard,
+# which writes to Supabase tables and RPCs. This config is retained only as
+# historical reference for the old GitHub JSON content workflow.
+#
 # yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
 
 backend:
