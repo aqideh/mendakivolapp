@@ -102,22 +102,23 @@
   }
 
   function renderOpportunities(host, ctx) {
-    const rows = opportunities().slice(0, 10).map(opp => {
-      const oppSessions = sessions().filter(s => String(s.opportunityId || s.opportunity_id) === String(opp.id));
-      return `<tr><td><strong>${escapeHtml(opp.title || opp.name || opp.id)}</strong><br><span class="dashboard-muted">${escapeHtml(opp.commitment || opp.type || '')}</span></td><td>${escapeHtml(oppSessions.length)}</td><td>${escapeHtml(opp.location || '-')}</td><td>${badge(opp.status || 'Open')}</td></tr>`;
-    });
     host.innerHTML = `
-      <div class="phase35-page">
+      <div class="phase35-page" data-opportunity-admin-canonical-page>
         <div class="phase35-summary-grid">
           ${tile('Parent opportunities', opportunities().length)}
           ${tile('Session rows', sessions().length)}
           ${tile('Active sign-ups', countBy(signups(), s => !['cancelled', 'declined'].includes(statusOf(s))))}
         </div>
-        ${table('Opportunity catalogue preview', ['Opportunity', 'Sessions', 'Location', 'Status'], rows)}
         <div class="phase35-page-note">Canonical owner: parent listings, opportunity sessions, capacity, waitlist, and facilitator code configuration.</div>
+        <div class="admin-content-workspace" data-content-workspace data-opportunity-admin-canonical-workspace></div>
       </div>
     `;
-    legacy(host.querySelector('.phase35-page'), ctx);
+    const workspace = host.querySelector('[data-opportunity-admin-canonical-workspace]');
+    if (window.MENDAKIAdminOpportunityHierarchy?.renderOpportunityHierarchy) {
+      window.MENDAKIAdminOpportunityHierarchy.renderOpportunityHierarchy();
+    } else if (workspace) {
+      workspace.innerHTML = '<section class="admin-content-step"><h3>Opportunity editor is still loading.</h3><p class="dashboard-muted">Refresh if this message does not clear.</p></section>';
+    }
     return true;
   }
 
