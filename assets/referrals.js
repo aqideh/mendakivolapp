@@ -232,6 +232,7 @@
     } finally {
       loading = false;
       render();
+      window.dispatchEvent(new CustomEvent('mendaki-referrals-synced', { detail: { myReferrals, adminReferrals } }));
     }
   }
 
@@ -270,7 +271,13 @@
     }, true);
   }
 
-  window.MENDAKIReferrals = { sync, render, captureReferralFromUrl };
+  window.MENDAKIReferrals = {
+    sync,
+    render,
+    captureReferralFromUrl,
+    getMyReferrals: () => myReferrals.slice(),
+    getAdminReferrals: () => adminReferrals.slice()
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     bind();
