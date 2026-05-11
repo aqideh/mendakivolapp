@@ -111,14 +111,22 @@ If the migration is not applied, the frontend will fail safely and log warnings,
 3. Confirm the Referral tracking card appears.
 4. Confirm referral rows show referrer, referred user, status, code, and accepted date.
 
-## Current limitations
+## Current limitations carried into roadmap
 
-- Referral points are not awarded yet. This phase prepares data for Phase 25 gamification.
-- There is no public invite landing page yet; links currently route into the existing app/dashboard flow.
-- Referral notifications are not implemented yet.
-- Admins can view referrals but cannot edit status from the UI yet.
-- Attribution happens after sign-in/app-user creation; abandoned referral visits are not tracked.
+Phase 25 now awards points for accepted referrals, so the earlier “referral points are not awarded yet” limitation is resolved by the gamification backend phase once its migration is applied.
 
-## Next recommended phase
+Remaining referral limitations to track in the development roadmap:
 
-Proceed to Phase 25 — Gamification Backend after Phase 24 browser QA and Supabase migration verification.
+- Build a public invite landing page instead of routing referral links directly into the dashboard/app flow.
+- Add referral notifications after a referral is accepted or converted.
+- Add admin status controls for referrals, including conversion/cancellation handling.
+- Track abandoned invite visits or pre-signup invite starts if campaign analytics are needed.
+- Add clearer anti-abuse rules beyond one referral per referred user, such as email/domain checks or admin review queues if required for production.
+
+## Roadmap impact
+
+- Phase 25 — Gamification Backend should include referral point awards from server-side RPCs.
+- Phase 28 — Notification Polish should include referral acceptance/conversion notifications.
+- Phase 31 — Admin UX Refinement should include a dedicated referral admin page/status workflow.
+- Phase 32 — QA / Smoke Tests should include referral attribution, duplicate prevention, and referral points tests.
+- Phase 33 — Production Readiness should include referral link domain/redirect verification and invite abuse review.
