@@ -8,14 +8,15 @@
   function store() { return window.VolunteerDataStore; }
   function appState() { try { return typeof state !== 'undefined' ? state : null; } catch (_) { return null; } }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
-  function opportunities() { return appState()?.data?.opportunities || []; }
-  function sessions() { return appState()?.data?.sessions || []; }
-  function trainings() { return appState()?.data?.trainings || []; }
-  function signups() { return store()?.getOpportunitySignups?.() || []; }
-  function attendanceClaims() { return store()?.getAttendanceClaims?.() || []; }
-  function trainingSignups() { return store()?.getTrainingSignups?.() || []; }
-  function referrals() { return store()?.getReferrals?.() || store()?.getReferralRecords?.() || []; }
-  function points() { return store()?.getPointsLedger?.() || []; }
+  function asArray(value) { return Array.isArray(value) ? value : []; }
+  function opportunities() { return asArray(appState()?.data?.opportunities); }
+  function sessions() { return asArray(appState()?.data?.sessions); }
+  function trainings() { return asArray(appState()?.data?.trainings); }
+  function signups() { return asArray(store()?.getOpportunitySignups?.()); }
+  function attendanceClaims() { return asArray(store()?.getAttendanceClaims?.()); }
+  function trainingSignups() { return asArray(store()?.getTrainingSignups?.()); }
+  function referrals() { return asArray(store()?.getReferrals?.() || store()?.getReferralRecords?.()); }
+  function points() { return asArray(store()?.getPointsLedger?.()); }
 
   function fmt(value) {
     if (!value) return '-';
@@ -24,7 +25,7 @@
     return new Intl.DateTimeFormat('en-SG', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
   }
 
-  function statusOf(item) { return String(item.status || item.claimStatus || item.claim_status || item.referralStatus || item.type || ''); }
+  function statusOf(item) { return String(item?.status || item?.claimStatus || item?.claim_status || item?.referralStatus || item?.type || ''); }
   function valueOf(item, keys, fallback = '-') {
     for (const key of keys) {
       const value = item?.[key];
@@ -35,9 +36,9 @@
 
   function statusBadge(status) {
     const s = String(status || 'unknown');
-    const good = ['confirmed', 'registered', 'completed', 'verified', 'accepted', 'Open', 'open'].includes(s);
+    const good = ['confirmed', 'registered', 'completed', 'verified', 'accepted', 'converted', 'Open', 'open'].includes(s);
     const warn = ['pending_review', 'waitlisted', 'checked_in', 'submitted', 'clarification_requested', 'pending'].includes(s);
-    const bad = ['declined', 'cancelled', 'rejected', 'no_show'].includes(s);
+    const bad = ['declined', 'cancelled', 'rejected', 'no_show', 'duplicate'].includes(s);
     return `<span class="phase36-status ${good ? 'good' : warn ? 'warn' : bad ? 'bad' : ''}">${escapeHtml(s)}</span>`;
   }
 
@@ -46,11 +47,14 @@
     return tableState.get(id);
   }
 
-  function textFor(row) { return JSON.stringify(row).toLowerCase(); }
+  function textFor(row) {
+    try { return JSON.stringify(row).toLowerCase(); }
+    catch (_) { return String(row?.__id || '').toLowerCase(); }
+  }
 
   function applyFilters(id, rows) {
     const state = getState(id);
-    let filtered = rows.slice();
+    let filtered = asArray(rows).slice();
     if (state.search) {
       const q = state.search.toLowerCase();
       filtered = filtered.filter(row => textFor(row).includes(q));
@@ -64,7 +68,7 @@
   }
 
   function statuses(rows) {
-    return [...new Set(rows.map(statusOf).filter(Boolean))].sort();
+    return [...new Set(asArray(rows).map(statusOf).filter(Boolean))].sort();
   }
 
   function toolbar(id, rows) {
@@ -79,14 +83,19 @@
   }
 
   function table(id, title, headers, rows, cells) {
-    const filtered = applyFilters(id, rows);
+    const safeRows = asArray(rows);
+    const filtered = applyFilters(id, safeRows);
     return `
-      ${toolbar(id, rows)}
+      ${toolbar(id, safeRows)}
       <section class="phase36-table-card">
-        <div class="phase36-table-head"><h4>${escapeHtml(title)}</h4><span class="dashboard-muted">${filtered.length} of ${rows.length}</span></div>
+        <div class="phase36-table-head"><h4>${escapeHtml(title)}</h4><span class="dashboard-muted">${filtered.length} of ${safeRows.length}</span></div>
         ${filtered.length ? `<table class="phase36-table"><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${filtered.map(row => `<tr data-phase36-row="${escapeHtml(id)}" data-phase36-row-id="${escapeHtml(row.__id)}">${cells(row).join('')}</tr>`).join('')}</tbody></table>` : `<div class="phase36-empty">No matching records.</div>`}
       </section>
     `;
+  }
+
+  function attachFallback(host, ctx) {
+    if (host && typeof ctx?.fallbackLegacyMarkup === 'function') ctx.fallbackLegacyMarkup(host, ctx.matchingCards || []);
   }
 
   function normaliseSignup(row, i) {
@@ -136,13 +145,14 @@
   }
 
   function normaliseReferral(row, i) {
+    const currentStatus = statusOf(row) || (valueOf(row, ['accepted_at']) !== '-' ? 'accepted' : 'pending');
     return {
-      __id: row.id || row.code || `referral-${i}`,
+      __id: row.id || row.code || row.referral_code || `referral-${i}`,
       __type: 'Referral',
-      referrer: valueOf(row, ['referrerEmail', 'referrer_email', 'email']),
-      referred: valueOf(row, ['referredEmail', 'referred_email', 'accepted_by_email']),
+      referrer: valueOf(row, ['referrerName', 'referrer_name', 'referrerEmail', 'referrer_email', 'email']),
+      referred: valueOf(row, ['referredName', 'referred_name', 'referredEmail', 'referred_email', 'accepted_by_email']),
       code: valueOf(row, ['code', 'referralCode', 'referral_code']),
-      status: statusOf(row) || valueOf(row, ['accepted_at']) !== '-' ? 'accepted' : 'pending',
+      status: currentStatus,
       createdAt: valueOf(row, ['createdAt', 'created_at', 'accepted_at']),
       updatedAt: valueOf(row, ['updatedAt', 'updated_at']),
       raw: row
@@ -166,7 +176,7 @@
   function renderSignups(host, ctx) {
     const rows = signups().map(normaliseSignup);
     host.innerHTML = `<div class="phase36-page">${table('Opportunity sign-up review table', ['Volunteer', 'Opportunity', 'Session', 'Status', 'Submitted'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
-    ctx?.fallbackLegacyMarkup?.(host.querySelector('.phase36-page'), ctx.matchingCards || []);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('signups', rows);
     return true;
   }
@@ -174,7 +184,7 @@
   function renderAttendance(host, ctx) {
     const rows = attendanceClaims().map(normaliseAttendance);
     host.innerHTML = `<div class="phase36-page">${table('Attendance review table', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${escapeHtml(row.hours)}</td>`, `<td>${statusBadge(row.status)}</td>`])}</div>`;
-    ctx?.fallbackLegacyMarkup?.(host.querySelector('.phase36-page'), ctx.matchingCards || []);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('attendance', rows);
     return true;
   }
@@ -183,7 +193,7 @@
     const rows = trainingSignups().map(normaliseTraining);
     const trainingRows = rows.length ? rows : trainings().map((t, i) => ({ __id: t.id || `training-${i}`, __type: 'Training programme/session', volunteer: '-', email: '', title: valueOf(t, ['title', 'id']), session: valueOf(t, ['sessionTitle', 'id']), status: valueOf(t, ['status'], 'Open'), createdAt: valueOf(t, ['startsAt', 'date']), updatedAt: valueOf(t, ['updatedAt', 'updated_at']), raw: t }));
     host.innerHTML = `<div class="phase36-page">${table('Training sign-up and session table', ['Volunteer', 'Training', 'Session', 'Status', 'Date'], trainingRows, row => [`<td>${escapeHtml(row.volunteer)}</td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
-    ctx?.fallbackLegacyMarkup?.(host.querySelector('.phase36-page'), ctx.matchingCards || []);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('training', trainingRows);
     return true;
   }
@@ -191,7 +201,7 @@
   function renderReferrals(host, ctx) {
     const rows = referrals().map(normaliseReferral);
     host.innerHTML = `<div class="phase36-page">${table('Referral queue table', ['Code', 'Referrer', 'Referred', 'Status', 'Created'], rows, row => [`<td><code>${escapeHtml(row.code)}</code></td>`, `<td>${escapeHtml(row.referrer)}</td>`, `<td>${escapeHtml(row.referred)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
-    ctx?.fallbackLegacyMarkup?.(host.querySelector('.phase36-page'), ctx.matchingCards || []);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('referrals', rows);
     return true;
   }
@@ -199,7 +209,7 @@
   function renderPoints(host, ctx) {
     const rows = points().map(normalisePoints);
     host.innerHTML = `<div class="phase36-page">${table('Points ledger table', ['User', 'Reason/source', 'Points', 'Type', 'Awarded'], rows, row => [`<td>${escapeHtml(row.user)}</td>`, `<td>${escapeHtml(row.reason)}</td>`, `<td>${escapeHtml(row.points)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
-    ctx?.fallbackLegacyMarkup?.(host.querySelector('.phase36-page'), ctx.matchingCards || []);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('points', rows);
     return true;
   }
@@ -207,7 +217,7 @@
   function renderAudit(host, ctx) {
     const rows = [];
     host.innerHTML = `<div class="phase36-page"><div class="phase36-empty">Audit table refinement will use the existing audit RPC-backed card until the audit module exposes rows to the shared table layer.</div></div>`;
-    ctx?.fallbackLegacyMarkup?.(host.querySelector('.phase36-page'), ctx.matchingCards || []);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('audit', rows);
     return true;
   }
@@ -215,12 +225,25 @@
   const registry = { signups: renderSignups, attendance: renderAttendance, training: renderTraining, referrals: renderReferrals, points: renderPoints, audit: renderAudit };
   const rowCache = new Map();
 
-  function rememberRows(id, rows) { rowCache.set(id, rows); }
+  function rememberRows(id, rows) { rowCache.set(id, asArray(rows)); }
+
+  function renderError(area, host, error) {
+    console.error(`Phase 36 ${area} render failed`, error);
+    host.innerHTML = `<div class="phase36-page"><div class="phase36-empty">${escapeHtml(area)} queue could not render. ${escapeHtml(error?.message || 'Unknown render error.')}</div></div>`;
+    rememberRows(area, []);
+    return true;
+  }
 
   function render(area, host, ctx) {
     const fn = registry[area];
-    if (!fn) return false;
-    return fn(host, ctx);
+    if (!fn || !host) return false;
+    try {
+      const result = fn(host, ctx || {});
+      if (!host.children.length) host.innerHTML = `<div class="phase36-page"><div class="phase36-empty">${escapeHtml(area)} queue rendered no content.</div></div>`;
+      return result;
+    } catch (error) {
+      return renderError(area, host, error);
+    }
   }
 
   function ensureDrawer() {
