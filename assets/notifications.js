@@ -21,10 +21,6 @@
     return window.VolunteerDataStore?.currentEmail?.() || session()?.email || '';
   }
 
-  function escapeHtml(value) {
-    return String(value || '').replace(/[&<>\"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
-  }
-
   function formatTime(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -114,6 +110,7 @@
     const panel = document.querySelector('[data-notification-panel]');
     const list = document.querySelector('[data-notification-list]');
     const signedIn = Boolean(currentEmail());
+    const escapeHtml = window.VolunteerDataStore.utils.escapeHtml;
 
     if (!shell || !bell || !count || !panel || !list) return;
     shell.hidden = !signedIn;
