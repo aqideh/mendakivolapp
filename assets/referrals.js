@@ -14,6 +14,15 @@
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
   function signedIn() { return Boolean(client() && session()?.email); }
 
+  function exposeStoreHelpers() {
+    const dataStore = store();
+    if (!dataStore || dataStore.__phase40ReferralHelpersInstalled) return;
+    dataStore.__phase40ReferralHelpersInstalled = true;
+    dataStore.getReferrals = () => (isAdmin() ? adminReferrals : myReferrals).slice();
+    dataStore.getAdminReferrals = () => adminReferrals.slice();
+    dataStore.getMyReferrals = () => myReferrals.slice();
+  }
+
   function captureReferralFromUrl() {
     const params = new URLSearchParams(window.location.search || '');
     const hashParams = new URLSearchParams(String(window.location.hash || '').split('?')[1] || '');
@@ -89,6 +98,13 @@
   }
 
   function formatDate(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return '';
+  }
+
+  function displayDate(value) {
     if (!value) return '';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
@@ -172,7 +188,7 @@
       <div class="admin-content-item">
         <span>
           <strong>${escapeHtml(item.referred_name || item.referred_email || 'Referred volunteer')}</strong>
-          <span>${escapeHtml(statusLabel(item.status))}${item.accepted_at ? ` · ${escapeHtml(formatDate(item.accepted_at))}` : ''}</span>
+          <span>${escapeHtml(statusLabel(item.status))}${item.accepted_at ? ` · ${escapeHtml(displayDate(item.accepted_at))}` : ''}</span>
         </span>
       </div>
     `;
@@ -197,7 +213,7 @@
   function renderAdminReferral(item) {
     const referrer = item.referrer_name || item.referrer_email || 'Unknown referrer';
     const referred = item.referred_name || item.referred_email || 'Unknown referred user';
-    const meta = `${statusLabel(item.status)} · ${item.referral_code || ''}${item.accepted_at ? ` · ${formatDate(item.accepted_at)}` : ''}`;
+    const meta = `${statusLabel(item.status)} · ${item.referral_code || ''}${item.accepted_at ? ` · ${displayDate(item.accepted_at)}` : ''}`;
     return `
       <div class="admin-content-item">
         <span>
@@ -209,6 +225,7 @@
   }
 
   function render() {
+    exposeStoreHelpers();
     const volunteerCard = ensureVolunteerCard();
     if (volunteerCard) volunteerCard.innerHTML = renderVolunteerCardBody();
     const adminCard = ensureAdminCard();
@@ -216,6 +233,7 @@
   }
 
   async function sync() {
+    exposeStoreHelpers();
     if (!client()) {
       render();
       return;
@@ -281,6 +299,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     bind();
+    exposeStoreHelpers();
     window.setTimeout(sync, 900);
   });
   window.addEventListener('volunteer-auth-ready', sync);
