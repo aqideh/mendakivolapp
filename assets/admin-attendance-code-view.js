@@ -31,6 +31,10 @@
     loadDeferredScript('assets/gamification.js', '__phaseTwentyFiveGamificationLoaderInstalled');
   }
 
+  function loadPhaseTwentySixReports() {
+    loadDeferredScript('assets/reports.js', '__phaseTwentySixReportsLoaderInstalled');
+  }
+
   async function refreshAttendanceCodes() {
     if (!isAdmin() || typeof window.VolunteerDataStore?.fetchAttendanceCodes !== 'function') return;
     if (fetchInProgress) return;
@@ -125,6 +129,7 @@
   loadUrgentPrePhaseFixes();
   loadPhaseTwentyFourReferrals();
   loadPhaseTwentyFiveGamification();
+  loadPhaseTwentySixReports();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindUiObserver();
