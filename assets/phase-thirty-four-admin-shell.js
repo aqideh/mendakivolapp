@@ -74,10 +74,14 @@
   function ensureEntry() {
     if (!isAdmin()) return null;
     let entry = document.querySelector('[data-phase34-entry]');
-    if (entry) return entry;
+    if (entry) {
+      entry.dataset.dashboardCardRole = 'admin';
+      return entry;
+    }
     entry = document.createElement('section');
     entry.className = 'dashboard-card phase34-admin-entry';
     entry.dataset.phase34Entry = 'true';
+    entry.dataset.dashboardCardRole = 'admin';
     entry.innerHTML = entryMarkup();
     const firstAdmin = document.querySelector('[data-phase31-admin-hub], [data-admin-content-card], .admin-attendance-card, .admin-training-card');
     if (firstAdmin) firstAdmin.insertAdjacentElement('beforebegin', entry);
@@ -113,6 +117,7 @@
     shell = document.createElement('section');
     shell.className = 'phase34-admin-shell';
     shell.dataset.phase34Shell = 'true';
+    shell.dataset.dashboardCardRole = 'admin';
     shell.hidden = !state34.open;
     shell.innerHTML = shellMarkup();
     const entry = ensureEntry();
@@ -156,10 +161,16 @@
   }
 
   function markAdminCards() {
+    const entry = document.querySelector('[data-phase34-entry]');
+    if (entry) entry.dataset.dashboardCardRole = 'admin';
+    const shell = document.querySelector('[data-phase34-shell]');
+    if (shell) shell.dataset.dashboardCardRole = 'admin';
+
     adminCards().forEach(card => {
       const area = getAreaForLegacyCard(card);
       if (!area) return;
       card.dataset.adminOwned = 'true';
+      card.dataset.dashboardCardRole = 'admin';
       card.dataset.phase34Area = area === 'audit' && card.matches('[data-phase32-qa-card]') ? 'system' : area;
     });
   }
