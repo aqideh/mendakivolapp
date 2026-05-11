@@ -43,6 +43,10 @@
     loadDeferredScript('assets/notification-polish.js', '__phaseTwentyEightNotificationPolishLoaderInstalled');
   }
 
+  function loadPhaseTwentyNineSessionAttendanceValidation() {
+    loadDeferredScript('assets/session-attendance-validation.js', '__phaseTwentyNineSessionAttendanceValidationLoaderInstalled');
+  }
+
   async function refreshAttendanceCodes() {
     if (!isAdmin() || typeof window.VolunteerDataStore?.fetchAttendanceCodes !== 'function') return;
     if (fetchInProgress) return;
@@ -140,6 +144,7 @@
   loadPhaseTwentySixReports();
   loadPhaseTwentySevenAuditHistory();
   loadPhaseTwentyEightNotificationPolish();
+  loadPhaseTwentyNineSessionAttendanceValidation();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindUiObserver();
