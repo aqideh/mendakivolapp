@@ -125,6 +125,7 @@
       time: training.time || '',
       location: training.location || '',
       capacity: Number(training.capacity || 0),
+      waitlist_enabled: training.waitlistEnabled !== false,
       status: training.status || 'Open',
       required_for: Array.isArray(training.requiredFor) ? training.requiredFor : [],
       source: 'app',
@@ -345,7 +346,7 @@
     const meta = type === 'news'
       ? `${item.category || 'News'} · ${item.date || ''} · ${item.status || 'published'}`
       : type === 'training'
-        ? `${item.id} · ${item.date || ''} · ${item.status || 'Open'}`
+        ? `${item.id} · ${item.date || ''} · ${item.status || 'Open'} · Capacity ${Number(item.capacity || 0) || 'unlimited'}`
         : `${item.id} · ${item.type || ''} · ${item.status || 'Open'} · Capacity ${Number(item.capacity || 0) || 'unlimited'} · Hours ${Number(item.defaultHours || 0) || 'unset'}`;
     return `
       <div class="admin-content-item editable">
@@ -406,6 +407,7 @@
         <label>Location<input name="location" value="${escapeHtml(item?.location || '')}"></label>
         <label>Trainer<input name="trainer" value="${escapeHtml(item?.trainer || '')}"></label>
         <label>Capacity<input name="capacity" type="number" min="0" value="${escapeHtml(item?.capacity || 0)}"></label>
+        <label class="admin-content-checkbox"><input name="waitlistEnabled" type="checkbox" ${item?.waitlistEnabled === false ? '' : 'checked'}> Enable waitlist when full</label>
         <label>Status<input name="status" value="${escapeHtml(item?.status || 'Open')}"></label>
         <label>Description<textarea name="description">${escapeHtml(item?.description || '')}</textarea></label>
         <button class="button button-primary" type="submit">${item?.id ? 'Save changes' : 'Create training'}</button>
@@ -532,6 +534,7 @@
           location: formValue(form, 'location'),
           trainer: formValue(form, 'trainer'),
           capacity: Number(formValue(form, 'capacity') || 0),
+          waitlistEnabled: Boolean(new FormData(form).get('waitlistEnabled')),
           status: formValue(form, 'status') || 'Open',
           description: formValue(form, 'description'),
           requiredFor: []
