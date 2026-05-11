@@ -125,6 +125,7 @@
     try {
       const rows = await fetchTrainingSessions();
       applyTrainingCatalog(rows);
+      await refreshTrainingSignups().catch(() => null);
       decorateTrainingCards();
       if (typeof phaseFourRender === 'function') phaseFourRender();
       decorateTrainingCards();
@@ -265,6 +266,12 @@
     createSessionSignup(trainingId, selectedSessionId(trainingId), signupButton);
   }, true);
 
+  function installOverrides() {
+    if (!store()) return;
+    store().fetchSupabaseTrainingSignups = refreshTrainingSignups;
+    store().refreshPhaseThirtyTrainingSignups = refreshTrainingSignups;
+  }
+
   Object.assign(window.VolunteerDataStore || {}, {
     fetchPhaseThirtyTrainingSessions: fetchTrainingSessions,
     syncPhaseThirtyTrainingSessions: syncTrainingSessions,
@@ -273,11 +280,12 @@
   });
 
   document.addEventListener('DOMContentLoaded', () => {
+    installOverrides();
     window.setTimeout(syncTrainingSessions, 400);
     window.setTimeout(decorateTrainingCards, 700);
   });
-  window.addEventListener('volunteer-auth-ready', syncTrainingSessions);
-  window.addEventListener('volunteer-auth-changed', syncTrainingSessions);
+  window.addEventListener('volunteer-auth-ready', () => { installOverrides(); syncTrainingSessions(); });
+  window.addEventListener('volunteer-auth-changed', () => { installOverrides(); syncTrainingSessions(); });
   window.addEventListener('volunteer-training-sessions-synced', decorateTrainingCards);
   window.addEventListener('volunteer-training-signups-synced', decorateTrainingCards);
 })();
