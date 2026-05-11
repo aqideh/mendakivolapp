@@ -1,20 +1,21 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 33 production-readiness groundwork implementation.
+Last updated: after Phase 34 admin shell consolidation phase 1.
 
 ## Current status
 
-The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is:
+The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now moving toward:
 
 ```text
-Signed-in app dashboard → Admin workspace / Admin content management
+Signed-in app dashboard → Admin workspace entry → Single admin shell
 ```
 
 The current app includes:
 
 - Supabase Auth.
 - Dashboard and admin tools.
-- Phase 31 admin workspace tabs and filtering.
+- Phase 34 single admin shell entry point and admin navigation.
+- Phase 31 admin workspace tabs and filtering retained for compatibility.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
 - Hierarchical opportunity/session editing.
@@ -38,15 +39,7 @@ The app remains pilot/beta until manual QA, Auth console settings, and productio
 
 ### Phase 24 — Referral / Invite Friends
 
-Implemented Supabase-backed referrals:
-
-- Referral code generation.
-- Referral links using `?ref=CODE`.
-- Pending referral capture before sign-in.
-- Referral acceptance after sign-in.
-- Volunteer referral history.
-- Admin referral tracking card.
-- Duplicate/self-referral prevention at database level.
+Implemented Supabase-backed referrals.
 
 Primary files:
 
@@ -58,17 +51,7 @@ docs/phase-twenty-four-referrals.md
 
 ### Phase 25 — Gamification Backend
 
-Implemented backend-first points and achievements:
-
-- `app_points_ledger`.
-- `app_achievements`.
-- `app_user_achievements`.
-- Points for verified attendance.
-- Points for completed training.
-- Points for accepted referrals.
-- Default achievements.
-- Volunteer points card.
-- Admin points summary card.
+Implemented backend-first points and achievements.
 
 Primary files:
 
@@ -80,14 +63,7 @@ docs/phase-twenty-five-gamification.md
 
 ### Phase 26 — Reporting and CSV Exports
 
-Implemented admin reports and browser CSV export:
-
-- Volunteer hours.
-- Attendance verification.
-- Opportunity/session participation.
-- Training completion.
-- Referrals.
-- Points and achievements.
+Implemented admin reports and browser CSV export.
 
 Primary files:
 
@@ -99,17 +75,7 @@ docs/phase-twenty-six-reporting.md
 
 ### Phase 27 — Audit History UI
 
-Implemented admin audit history viewer:
-
-- Canonical `app_audit_logs`.
-- `record_app_audit_log(...)`.
-- Admin audit search RPC.
-- Filter options RPC.
-- Dashboard audit history card.
-- Filters by date, action, entity, actor, and target.
-- Details drawer.
-- Metadata JSON viewer.
-- CSV export.
+Implemented admin audit history viewer.
 
 Primary files:
 
@@ -121,16 +87,7 @@ docs/phase-twenty-seven-audit-history.md
 
 ### Phase 28 — Notification Polish
 
-Implemented notification preferences, history, grouping, and improved routing:
-
-- Persistent notification preferences.
-- Notification history card.
-- Mark one/all read.
-- Clear one/all active notifications.
-- Notification grouping via `group_key`.
-- `create_app_notification(...)` RPC.
-- Preference-aware in-app notification creation.
-- Routing for referrals, points, and achievements.
+Implemented notification preferences, history, grouping, and improved routing.
 
 Primary files:
 
@@ -143,14 +100,7 @@ docs/phase-twenty-eight-notification-polish.md
 
 ### Phase 29 — Session-Aware Attendance Validation
 
-Implemented session-level facilitator-code validation:
-
-- `validate_session_attendance_code(...)`.
-- `get_admin_session_code_warnings()`.
-- Session facilitator-code validation.
-- Opportunity-level fallback only when allowed.
-- Frontend inference of `sessionId` from signup cache.
-- Admin warning card for sessions missing facilitator codes.
+Implemented session-level facilitator-code validation.
 
 Primary files:
 
@@ -163,15 +113,7 @@ docs/phase-twenty-nine-session-attendance-validation.md
 
 ### Phase 29.5 — Security and Session Contract Hardening
 
-Implemented a focused hardening pass:
-
-- Revoked anonymous execute access from sensitive RPC families.
-- Kept authenticated execute access where current app flows require it.
-- Preserved database-side admin checks for admin-only RPCs.
-- Hardened `validate_session_attendance_code(...)` to require authentication.
-- Added `get_phase_29_5_rpc_grant_audit()` for future grant verification.
-- Added an attendance check-in/out guard that requires explicit session resolution before saving attendance.
-- Documented smoke checks and remaining limitations.
+Implemented a focused hardening pass and attendance session guard.
 
 Primary files:
 
@@ -181,28 +123,9 @@ assets/phase-twenty-nine-five-hardening.js
 docs/phase-twenty-nine-five-security-session-hardening.md
 ```
 
-Verification performed:
-
-```sql
-select *
-from public.get_phase_29_5_rpc_grant_audit()
-where anon_can_execute = true;
-```
-
-Expected/current result: zero rows for the targeted Phase 29.5 RPC set.
-
 ### Phase 30 — Training Session Parity
 
-Implemented a compatibility-safe training session foundation:
-
-- Added parent/session fields to `app_training_sessions`.
-- Added `training_session_id`, `session_title`, and `completed_session_at` to `app_training_signups`.
-- Added session-aware training signup RPCs and helper functions.
-- Updated legacy `create_training_signup_with_capacity(...)` to delegate to the session-aware path.
-- Updated admin lifecycle review and completion point metadata to carry training session context.
-- Replaced parent-level signup uniqueness with session-level uniqueness.
-- Added a frontend session selector and session-aware training signup layer.
-- Preserved current visible training cards for existing pilot data.
+Implemented compatibility-safe training session foundation.
 
 Primary files:
 
@@ -215,16 +138,7 @@ docs/phase-thirty-training-session-parity.md
 
 ### Phase 31 — Admin UX Refinement
 
-Implemented an additive admin workspace layer:
-
-- Admin workspace card with tabbed work areas.
-- Work areas for home, content, sign-ups, attendance, training, referrals, points, reports, audit, and notifications.
-- Summary tiles for active sign-ups, attendance queue, training sign-ups, and training sessions.
-- Text and status filters over visible admin cards.
-- Existing admin cards are classified into areas rather than removed.
-- Training parent/session management UI for Phase 30 training rows.
-- Training child session create/edit/delete controls.
-- Confirmation prompt before deleting child training sessions.
+Implemented an additive admin workspace layer.
 
 Primary files:
 
@@ -236,13 +150,7 @@ docs/phase-thirty-one-admin-ux-refinement.md
 
 ### Phase 32 — QA / Smoke Tests / Hardening
 
-Implemented a repeatable QA baseline:
-
-- Manual QA checklist covering auth, profile, opportunities, attendance, training, referrals, points, reports, audit, notifications, and admin workspace.
-- Consolidated Supabase verification SQL that returns one result set.
-- Admin-only in-app QA smoke-check panel.
-- Read-only checks for required tables, Phase 30 columns/functions, Phase 29.5 anonymous grant audit, session reference integrity, admin report/audit RPC access, and operational counts.
-- Live Supabase verification run passed all consolidated SQL checks.
+Implemented a repeatable QA baseline.
 
 Primary files:
 
@@ -253,31 +161,9 @@ assets/phase-thirty-two-qa-tools.css
 assets/phase-thirty-two-qa-tools.js
 ```
 
-Live verification results:
-
-- `phase29_5_anon_rpc_grants`: pass, 0.
-- `required_tables_missing`: pass, 0.
-- `phase30_training_columns_missing`: pass, 0.
-- `phase30_functions_missing`: pass, 0.
-- `phase30_training_session_unique_index_missing`: pass, 0.
-- `invalid_training_signup_session_refs`: pass, 0.
-- `invalid_training_parent_refs`: pass, 0.
-- `invalid_opportunity_signup_session_refs`: pass, 0.
-- `invalid_attendance_claim_session_refs`: pass, 0.
-
 ### Phase 33 — Production Readiness
 
-Implemented production-readiness groundwork:
-
-- Ran security and performance advisor reviews.
-- Added low-risk production hardening migration.
-- Fixed mutable search-path warnings for `report_date_in_range`, `make_referral_code`, and `notification_category_for_type`.
-- Revoked anonymous direct execution from `current_app_role`, `current_app_user_id`, and `current_app_user_is_admin`.
-- Added live app-table foreign-key indexes flagged by performance advisor.
-- Removed clear duplicate audit-log indexes.
-- Added production-readiness verification SQL.
-- Added Auth/deployment/backup/export/data-retention/remaining-advisor runbook.
-- Live Phase 33 verification SQL passed all added checks.
+Implemented production-readiness groundwork.
 
 Primary files:
 
@@ -287,41 +173,100 @@ supabase/verification/phase33_production_readiness_checks.sql
 docs/phase-thirty-three-production-readiness.md
 ```
 
-Live Phase 33 verification results:
+### Phase 34 — Admin Shell Consolidation
 
-- `phase29_5_anon_rpc_grants`: pass, 0.
-- `role_helpers_anon_executable`: pass, 0.
-- `mutable_search_path_helpers`: pass, 0.
-- `phase33_live_fk_indexes_missing`: pass, 0.
-- `duplicate_audit_indexes_remaining`: pass, 0.
-- `phase32_reference_integrity`: pass, 0.
+Implemented the first phase of moving toward a single admin interface:
 
-Remaining manual / policy items:
+- Added one main dashboard Admin workspace entry card.
+- Added a single admin shell with left/admin navigation.
+- Added pages for Home, Content, Opportunities, Sign-ups, Attendance, Training, Referrals, Points, Reports, Audit, Notifications, and System / QA.
+- Mounted existing legacy admin tools into assigned shell pages.
+- Hid legacy admin-card sprawl from the main dashboard while the shell is active.
+- Kept legacy tools and Phase 31 compatibility layer available until purpose-built admin pages replace them.
 
-- Enable leaked-password protection in Supabase Auth console.
-- Confirm Auth redirect URLs and email templates in Supabase console.
-- Manually QA volunteer/admin flows with separate accounts.
-- Classify remaining authenticated `SECURITY DEFINER` RPCs as keep/convert/revoke/backend-only.
-- Decide whether to drop or archive legacy non-`app_*` tables.
-- Review/drop/recreate `volunteer_verified_hour_totals` security-definer view.
-- Clean RLS initplan and multiple-permissive-policy performance warnings after role model stabilises.
-- Re-evaluate unused indexes after realistic usage data.
-- Delete legacy Sveltia files only after manual QA and rollback decision.
+Primary files:
 
-## Current recommended next work
+```text
+assets/phase-thirty-four-admin-shell.css
+assets/phase-thirty-four-admin-shell.js
+docs/phase-thirty-four-admin-shell-consolidation.md
+```
 
-Do not start another feature phase until manual QA and console settings are complete.
+Known limitations:
 
-Recommended next steps:
+- Existing tools are mounted into shell pages; they are not yet rewritten as clean page components.
+- Some pages may be empty until legacy cards are classified or new page components are built.
+- Phase 31 tab/filter layer still exists for compatibility.
+- Queue pages still need tables and drawers.
+- Legacy admin cards should not be deleted until manual QA confirms shell coverage.
+
+## Current consolidation roadmap
+
+The next work should continue the single-admin-interface track:
+
+```text
+Phase 35 — Canonical Admin Pages
+Phase 36 — Table Queues and Detail Drawers
+Phase 37 — Legacy Admin Surface Removal
+```
+
+## Phase 35 — Canonical Admin Pages
+
+Purpose: replace mounted legacy cards with purpose-built admin page components. Each workflow should have one canonical owner page.
+
+Recommended scope:
+
+- Content page: static content/news/about/FAQ only.
+- Opportunities page: parent opportunity listings, opportunity sessions, capacity, facilitator codes.
+- Sign-ups page: opportunity signup review queue.
+- Attendance page: attendance claim review queue and session-code operations.
+- Training page: parent training rows, child training sessions, signups, completion review.
+- Referrals page: referral code/status workflow.
+- Points page: points ledger, achievements, adjustment/backfill status.
+- Reports page: report runner and CSV export.
+- Audit page: audit search/table/details.
+- Notifications page: notification history/preferences.
+- System / QA page: QA smoke checks, readiness SQL references, advisor follow-ups.
+
+## Phase 36 — Table Queues and Detail Drawers
+
+Purpose: replace dense cards and inline forms with scalable tables and detail drawers.
+
+Recommended scope:
+
+- Sign-up review table.
+- Attendance review table.
+- Training signup/completion table.
+- Referral queue table.
+- Points ledger table.
+- Audit table refinements.
+- Reusable detail drawer/action pattern.
+
+## Phase 37 — Legacy Admin Surface Removal
+
+Purpose: remove duplicated legacy admin surfaces after the shell and canonical pages pass QA.
+
+Recommended scope:
+
+- Retire old dashboard-level admin card rendering.
+- Retire Phase 31 tab/filter layer if Phase 34+ shell fully covers it.
+- Demote generic admin content management to static content only.
+- Remove duplicate training/session editing routes.
+- Delete legacy Sveltia files only after manual QA and rollback decision:
+  - `admin/index.html`;
+  - `admin/config.yml`.
+
+## Production/manual requirements still pending
+
+Do not treat the app as production-complete until these are done:
 
 1. Run the Phase 32 manual QA checklist with separate volunteer and admin accounts.
 2. Enable leaked-password protection in Supabase Auth console.
 3. Verify production Auth redirect URLs and email templates.
 4. Run the in-app QA panel as admin.
 5. Re-run Phase 32 and Phase 33 SQL verification.
-6. Decide on legacy Sveltia deletion after QA.
-7. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
-8. Decide whether legacy non-`app_*` tables and `volunteer_verified_hour_totals` can be removed.
+6. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
+7. Decide whether legacy non-`app_*` tables and `volunteer_verified_hour_totals` can be removed.
 
 ## Later follow-up items
 
