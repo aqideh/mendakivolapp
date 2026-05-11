@@ -317,8 +317,12 @@ body.dark-mode .auth-modal {
 }
 
 .dashboard-profile-card > div[hidden],
-.dashboard-profile-card [data-profile-summary][hidden] {
+.dashboard-profile-card [data-profile-summary],
+.dashboard-profile-card .profile-summary,
+.dashboard-profile-card .profile-pill,
+.dashboard-profile-card [data-profile-summary-removed="true"] {
   display: none !important;
+  visibility: hidden !important;
 }
 
 .dashboard-profile-card .dashboard-actions {
