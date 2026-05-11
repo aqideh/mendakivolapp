@@ -34,8 +34,7 @@
 
   const state34 = {
     activeArea: 'home',
-    open: false,
-    installed: false
+    open: false
   };
 
   function store() { return window.VolunteerDataStore; }
@@ -129,7 +128,7 @@
         <div>
           <p class="eyebrow dark">Admin workspace</p>
           <h2>Single admin interface</h2>
-          <p class="dashboard-muted">One workspace, one page per workflow. Legacy tools are mounted inside their assigned pages until fully replaced.</p>
+          <p class="dashboard-muted">One workspace, one page per workflow. Legacy tools remain available only as fallback sections while canonical pages are built.</p>
         </div>
         <button class="button dashboard-secondary" type="button" data-phase34-close-admin>Back to dashboard</button>
       </header>
@@ -180,30 +179,50 @@
     `;
   }
 
+  function fallbackLegacyMarkup(host, matchingCards) {
+    if (!matchingCards.length) {
+      host.insertAdjacentHTML('beforeend', `<div class="phase34-empty">No legacy tools have been assigned to ${escapeHtml((AREA_COPY[state34.activeArea] || [state34.activeArea])[0])}.</div>`);
+      return;
+    }
+    const details = document.createElement('details');
+    details.className = 'phase35-legacy-tools';
+    details.innerHTML = `<summary>Show existing tools (${matchingCards.length})</summary><div class="phase35-legacy-tool-list"></div>`;
+    const list = details.querySelector('.phase35-legacy-tool-list');
+    matchingCards.forEach(card => {
+      card.classList.remove('admin-ux-hidden');
+      list.appendChild(card);
+    });
+    host.appendChild(details);
+  }
+
   function mountArea() {
     const shell = ensureShell();
     if (!shell) return;
-    const cardsHost = shell.querySelector('[data-phase34-page-cards]');
-    if (!cardsHost) return;
     markAdminCards();
     shell.innerHTML = shellMarkup();
     const nextHost = shell.querySelector('[data-phase34-page-cards]');
     if (!nextHost) return;
+
+    const matchingCards = state34.activeArea === 'home'
+      ? []
+      : adminCards().filter(card => card.dataset.phase34Area === state34.activeArea);
+
+    const canonicalHandled = window.MENDAKIPhase35CanonicalAdminPages?.render?.(state34.activeArea, nextHost, {
+      matchingCards,
+      fallbackLegacyMarkup,
+      homeMarkup,
+      openShell,
+      escapeHtml
+    });
+
+    if (canonicalHandled) return;
 
     if (state34.activeArea === 'home') {
       nextHost.innerHTML = homeMarkup();
       return;
     }
 
-    const matchingCards = adminCards().filter(card => card.dataset.phase34Area === state34.activeArea);
-    matchingCards.forEach(card => {
-      card.classList.remove('admin-ux-hidden');
-      nextHost.appendChild(card);
-    });
-
-    if (!matchingCards.length) {
-      nextHost.innerHTML = `<div class="phase34-empty">No tools have been assigned to ${escapeHtml((AREA_COPY[state34.activeArea] || [state34.activeArea])[0])} yet.</div>`;
-    }
+    fallbackLegacyMarkup(nextHost, matchingCards);
   }
 
   function openShell(area = state34.activeArea || 'home') {
@@ -259,8 +278,7 @@
       const area = event.target.closest('[data-phase34-area]');
       if (area && isAdmin()) {
         event.preventDefault();
-        state34.activeArea = area.dataset.phase34Area || area.dataset.phase34Area || area.getAttribute('data-phase34-area') || 'home';
-        openShell(state34.activeArea);
+        openShell(area.getAttribute('data-phase34-area') || 'home');
       }
     }, true);
   }
