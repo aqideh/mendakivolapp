@@ -43,6 +43,9 @@
       type: row.notification_type || 'general',
       relatedTable: row.related_table || '',
       relatedId: row.related_id || '',
+      groupKey: row.group_key || '',
+      actionUrl: row.action_url || '',
+      metadata: row.metadata || {},
       isRead: Boolean(row.is_read),
       createdAt: row.created_at || '',
       readAt: row.read_at || '',
@@ -59,6 +62,9 @@
       notification_type: notification.type || 'general',
       related_table: notification.relatedTable || null,
       related_id: notification.relatedId || null,
+      group_key: notification.groupKey || null,
+      action_url: notification.actionUrl || null,
+      metadata: notification.metadata || {},
       is_read: Boolean(notification.isRead || false)
     };
   }
@@ -184,9 +190,37 @@
     return Array.isArray(data) && data.length > 0;
   }
 
+  async function createNotificationViaRpc(notification) {
+    const supabase = client();
+    if (!supabase) return { ok: false, skipped: true };
+    const groupKey = notification.groupKey || [notification.recipientEmail, notification.type, notification.relatedTable, notification.relatedId].filter(Boolean).join(':') || null;
+    const { data, error } = await supabase.rpc('create_app_notification', {
+      p_recipient_email: notification.recipientEmail || null,
+      p_recipient_role: notification.recipientRole || 'volunteer',
+      p_title: notification.title,
+      p_message: notification.message || '',
+      p_notification_type: notification.type || 'general',
+      p_related_table: notification.relatedTable || null,
+      p_related_id: notification.relatedId ? String(notification.relatedId) : null,
+      p_group_key: groupKey,
+      p_action_url: notification.actionUrl || null,
+      p_metadata: notification.metadata || {}
+    });
+    if (error) return { ok: false, reason: error.message, fallback: true };
+    return data?.ok === false ? { ok: false, reason: data.reason } : { ok: true, data };
+  }
+
   async function createNotification(notification, options = {}) {
     const supabase = client();
     if (!supabase || !notification?.recipientEmail || !notification?.title) return { ok: false, skipped: true };
+
+    const rpcResult = await createNotificationViaRpc(notification);
+    if (rpcResult.ok || rpcResult.reason === 'preference_disabled') {
+      await fetchNotifications();
+      if (window.MENDAKINotificationPolish?.sync) window.MENDAKINotificationPolish.sync();
+      return rpcResult;
+    }
+
     if (options.dedupe !== false && await notificationExists(notification)) return { ok: true, deduped: true };
 
     const { error } = await supabase
@@ -199,6 +233,7 @@
     }
 
     await fetchNotifications();
+    if (window.MENDAKINotificationPolish?.sync) window.MENDAKINotificationPolish.sync();
     return { ok: true };
   }
 
@@ -210,6 +245,7 @@
       console.warn('Could not update notifications.', error);
       return { ok: false, reason: error.message };
     }
+    if (window.MENDAKINotificationPolish?.sync) window.MENDAKINotificationPolish.sync();
     return { ok: true };
   }
 
@@ -281,6 +317,10 @@
     const type = notification.type || '';
     const table = notification.relatedTable || '';
 
+    if (notification.actionUrl) {
+      window.location.href = notification.actionUrl;
+      return;
+    }
     if (type === 'admin_task') {
       goToDashboardView('admin');
       return;
@@ -295,6 +335,14 @@
     }
     if (table === 'app_opportunity_signups' || type.startsWith('opportunity_')) {
       goToDashboardView(isAdmin() ? 'admin' : 'opportunities');
+      return;
+    }
+    if (table === 'app_referrals' || type.startsWith('referral_')) {
+      goToDashboardView('opportunities');
+      return;
+    }
+    if (table === 'app_points_ledger' || type.startsWith('points_') || type.startsWith('achievement_')) {
+      goToDashboardView('opportunities');
       return;
     }
     if (table === 'app_news_items' || type.startsWith('news_')) {
@@ -320,7 +368,8 @@
       message: copy[1],
       type: `opportunity_${status}`,
       relatedTable: 'app_opportunity_signups',
-      relatedId: signup.id
+      relatedId: signup.id,
+      groupKey: `opportunity:${signup.id}:${status}`
     });
   }
 
@@ -340,7 +389,8 @@
       message: copy[1],
       type: `attendance_${claim.claimStatus}`,
       relatedTable: 'app_attendance_claims',
-      relatedId: claim.id
+      relatedId: claim.id,
+      groupKey: `attendance:${claim.id}:${claim.claimStatus}`
     });
   }
 
@@ -353,7 +403,56 @@
       message: `Your completion for ${signup.title || 'your training'} has been recorded.`,
       type: 'training_completed',
       relatedTable: 'app_training_signups',
-      relatedId: signup.id
+      relatedId: signup.id,
+      groupKey: `training:${signup.id}:completed`
+    });
+  }
+
+  async function notifyReferralAccepted(referral) {
+    if (!referral?.referrer_email && !referral?.referrerEmail) return { ok: false, skipped: true };
+    const email = referral.referrer_email || referral.referrerEmail;
+    const name = referral.referred_name || referral.referredName || referral.referred_email || referral.referredEmail || 'A referred volunteer';
+    return createNotification({
+      recipientEmail: email,
+      recipientRole: 'volunteer',
+      title: 'Referral accepted',
+      message: `${name} accepted your volunteer referral.`,
+      type: 'referral_accepted',
+      relatedTable: 'app_referrals',
+      relatedId: referral.id || referral.referral_id || '',
+      groupKey: `referral:${referral.id || referral.referral_id || email}`
+    });
+  }
+
+  async function notifyPointsAwarded(entry) {
+    if (!entry?.volunteer_email && !entry?.email) return { ok: false, skipped: true };
+    const email = entry.volunteer_email || entry.email;
+    const points = Number(entry.points || 0);
+    return createNotification({
+      recipientEmail: email,
+      recipientRole: 'volunteer',
+      title: 'Points awarded',
+      message: `${points > 0 ? '+' : ''}${points} volunteer points were added to your profile.`,
+      type: 'points_awarded',
+      relatedTable: 'app_points_ledger',
+      relatedId: entry.ledger_id || entry.id || '',
+      groupKey: `points:${entry.ledger_id || entry.id || email}`,
+      metadata: { reason: entry.points_reason || entry.reason || '' }
+    });
+  }
+
+  async function notifyAchievementUnlocked(userEmail, achievement) {
+    if (!userEmail || !achievement?.id) return { ok: false, skipped: true };
+    return createNotification({
+      recipientEmail: userEmail,
+      recipientRole: 'volunteer',
+      title: 'Achievement unlocked',
+      message: `You unlocked ${achievement.title || achievement.badge_label || 'a new achievement'}.`,
+      type: 'achievement_unlocked',
+      relatedTable: 'app_user_achievements',
+      relatedId: achievement.id,
+      groupKey: `achievement:${userEmail}:${achievement.id}`,
+      metadata: achievement
     });
   }
 
@@ -473,6 +572,9 @@
     notifyOpportunityStatusChange,
     notifyAttendanceReview,
     notifyTrainingCompletion,
+    notifyReferralAccepted,
+    notifyPointsAwarded,
+    notifyAchievementUnlocked,
     markAllNotificationsRead: markAllRead,
     clearAllNotifications
   });
