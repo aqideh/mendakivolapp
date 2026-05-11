@@ -32,10 +32,7 @@
     system: ['System / QA', 'Run smoke checks and review production-readiness tools.']
   };
 
-  const state34 = {
-    activeArea: 'home',
-    open: false
-  };
+  const state34 = { activeArea: 'home', open: false };
 
   function store() { return window.VolunteerDataStore; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
@@ -50,27 +47,6 @@
     return items.filter(item => set.has(String(item.status || item.claimStatus || ''))).length;
   }
 
-  function getAreaForLegacyCard(card) {
-    if (!card || card.dataset.phase34Entry === 'true' || card.dataset.phase34Shell === 'true') return '';
-    if (card.matches('[data-admin-content-card]')) return 'content';
-    if (card.matches('.admin-attendance-card')) return 'attendance';
-    if (card.matches('.admin-training-card, [data-phase31-training-manager]')) return 'training';
-    if (card.matches('[data-reports-card]')) return 'reports';
-    if (card.matches('[data-audit-history-card], .audit-history-card')) return 'audit';
-    if (card.matches('[data-admin-referrals-card], .admin-referrals-card')) return 'referrals';
-    if (card.matches('[data-admin-points-card], .admin-points-card')) return 'points';
-    if (card.matches('[data-notification-history-card], .notification-history-card, [data-notification-settings-card]')) return 'notifications';
-    if (card.matches('[data-phase32-qa-card]')) return 'system';
-    if (card.matches('[data-signup-dashboard-card="admin"], .admin-signup-card')) return 'signups';
-    if (card.matches('[data-phase31-admin-hub]')) return 'system';
-    if (card.dataset.adminUxArea === 'content') return 'content';
-    if (card.dataset.adminUxArea === 'training') return 'training';
-    if (card.dataset.adminUxArea === 'audit') return card.matches('[data-phase32-qa-card]') ? 'system' : 'audit';
-    if (card.dataset.adminUxArea) return card.dataset.adminUxArea;
-    if (card.dataset.dashboardCardRole === 'admin') return 'content';
-    return '';
-  }
-
   function ensureEntry() {
     if (!isAdmin()) return null;
     let entry = document.querySelector('[data-phase34-entry]');
@@ -83,9 +59,7 @@
     entry.dataset.phase34Entry = 'true';
     entry.dataset.dashboardCardRole = 'admin';
     entry.innerHTML = entryMarkup();
-    const firstAdmin = document.querySelector('[data-phase31-admin-hub], [data-admin-content-card], .admin-attendance-card, .admin-training-card');
-    if (firstAdmin) firstAdmin.insertAdjacentElement('beforebegin', entry);
-    else layout()?.append(entry);
+    layout()?.append(entry);
     return entry;
   }
 
@@ -98,7 +72,7 @@
         <div>
           <p class="eyebrow dark">Admin</p>
           <h2>Admin workspace</h2>
-          <p class="dashboard-muted">Open the single admin interface for content, queues, reports, audit, and system checks.</p>
+          <p class="dashboard-muted">Open the single admin interface. Legacy dashboard cards are no longer mounted into this shell.</p>
         </div>
         <button class="button button-primary" type="button" data-phase34-open-admin>Open admin workspace</button>
       </div>
@@ -133,7 +107,7 @@
         <div>
           <p class="eyebrow dark">Admin workspace</p>
           <h2>Single admin interface</h2>
-          <p class="dashboard-muted">One workspace, one page per workflow. Legacy tools remain available only as fallback sections while canonical pages are built.</p>
+          <p class="dashboard-muted">Canonical admin pages now own the workflows. Hidden legacy cards are not moved into this shell.</p>
         </div>
         <button class="button dashboard-secondary" type="button" data-phase34-close-admin>Back to dashboard</button>
       </header>
@@ -155,23 +129,31 @@
     `;
   }
 
-  function adminCards() {
-    return Array.from(document.querySelectorAll('.dashboard-layout > .dashboard-card, .dashboard-layout > .phase34-admin-shell .dashboard-card'))
-      .filter(card => card.dataset.phase34Entry !== 'true' && card.dataset.phase34Shell !== 'true');
-  }
-
-  function markAdminCards() {
-    const entry = document.querySelector('[data-phase34-entry]');
-    if (entry) entry.dataset.dashboardCardRole = 'admin';
-    const shell = document.querySelector('[data-phase34-shell]');
-    if (shell) shell.dataset.dashboardCardRole = 'admin';
-
-    adminCards().forEach(card => {
-      const area = getAreaForLegacyCard(card);
-      if (!area) return;
+  function markHiddenLegacyAdminCards() {
+    document.querySelectorAll([
+      '[data-admin-content-card]',
+      '.admin-attendance-card',
+      '.admin-training-card',
+      '[data-reports-card]',
+      '[data-audit-history-card]',
+      '.audit-history-card',
+      '[data-admin-referrals-card]',
+      '.admin-referrals-card',
+      '[data-admin-points-card]',
+      '.admin-points-card',
+      '[data-notification-history-card]',
+      '.notification-history-card',
+      '[data-notification-settings-card]',
+      '[data-phase32-qa-card]',
+      '[data-signup-dashboard-card="admin"]',
+      '.admin-signup-card',
+      '[data-phase31-training-manager]',
+      '[data-phase31-admin-hub]'
+    ].join(',')).forEach(card => {
+      if (card.dataset.phase34Entry === 'true' || card.dataset.phase34Shell === 'true') return;
       card.dataset.adminOwned = 'true';
       card.dataset.dashboardCardRole = 'admin';
-      card.dataset.phase34Area = area === 'audit' && card.matches('[data-phase32-qa-card]') ? 'system' : area;
+      card.dataset.phase34LegacyRetired = 'true';
     });
   }
 
@@ -181,46 +163,30 @@
     const trainingQueue = countStatus(trainingSignups(), ['registered', 'waitlisted']);
     return `
       <div class="phase34-admin-home-grid">
+        <button class="phase34-admin-home-card" type="button" data-phase34-area="opportunities"><strong>Content</strong><span>Edit opportunity listings and sessions</span></button>
         <button class="phase34-admin-home-card" type="button" data-phase34-area="signups"><strong>${pendingSignups}</strong><span>Sign-ups needing review</span></button>
         <button class="phase34-admin-home-card" type="button" data-phase34-area="attendance"><strong>${attendanceQueue}</strong><span>Attendance items</span></button>
         <button class="phase34-admin-home-card" type="button" data-phase34-area="training"><strong>${trainingQueue}</strong><span>Training queue</span></button>
-        <button class="phase34-admin-home-card" type="button" data-phase34-area="system"><strong>QA</strong><span>Smoke checks and readiness</span></button>
       </div>
-      <div class="phase34-empty">Use the left navigation to open a focused admin workflow. This home page intentionally avoids duplicating forms.</div>
+      <div class="phase34-empty">Use the left navigation to open a focused admin workflow. Legacy fallback tools have been retired from this shell.</div>
     `;
   }
 
-  function fallbackLegacyMarkup(host, matchingCards) {
-    if (!matchingCards.length) {
-      host.insertAdjacentHTML('beforeend', `<div class="phase34-empty">No legacy tools have been assigned to ${escapeHtml((AREA_COPY[state34.activeArea] || [state34.activeArea])[0])}.</div>`);
-      return;
-    }
-    const details = document.createElement('details');
-    details.className = 'phase35-legacy-tools';
-    details.innerHTML = `<summary>Show existing tools (${matchingCards.length})</summary><div class="phase35-legacy-tool-list"></div>`;
-    const list = details.querySelector('.phase35-legacy-tool-list');
-    matchingCards.forEach(card => {
-      card.classList.remove('admin-ux-hidden');
-      list.appendChild(card);
-    });
-    host.appendChild(details);
+  function retiredLegacyMarkup(host) {
+    host.insertAdjacentHTML('beforeend', '<div class="phase34-empty">Legacy fallback tools are retired from this admin shell. Use the canonical tools on this page.</div>');
   }
 
   function mountArea() {
     const shell = ensureShell();
     if (!shell) return;
-    markAdminCards();
+    markHiddenLegacyAdminCards();
     shell.innerHTML = shellMarkup();
     const nextHost = shell.querySelector('[data-phase34-page-cards]');
     if (!nextHost) return;
 
-    const matchingCards = state34.activeArea === 'home'
-      ? []
-      : adminCards().filter(card => card.dataset.phase34Area === state34.activeArea);
-
     const canonicalHandled = window.MENDAKIPhase35CanonicalAdminPages?.render?.(state34.activeArea, nextHost, {
-      matchingCards,
-      fallbackLegacyMarkup,
+      matchingCards: [],
+      fallbackLegacyMarkup: retiredLegacyMarkup,
       homeMarkup,
       openShell,
       escapeHtml
@@ -233,7 +199,7 @@
       return;
     }
 
-    fallbackLegacyMarkup(nextHost, matchingCards);
+    retiredLegacyMarkup(nextHost);
   }
 
   function openShell(area = state34.activeArea || 'home') {
@@ -265,7 +231,7 @@
     if (!isAdmin()) return;
     ensureEntry();
     ensureShell();
-    markAdminCards();
+    markHiddenLegacyAdminCards();
     refreshEntry();
     if (state34.open) mountArea();
   }
