@@ -1,13 +1,13 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 34 admin shell consolidation phase 1.
+Last updated: after Phase 35 canonical admin pages.
 
 ## Current status
 
 The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now moving toward:
 
 ```text
-Signed-in app dashboard → Admin workspace entry → Single admin shell
+Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages
 ```
 
 The current app includes:
@@ -15,6 +15,7 @@ The current app includes:
 - Supabase Auth.
 - Dashboard and admin tools.
 - Phase 34 single admin shell entry point and admin navigation.
+- Phase 35 canonical admin pages with collapsed legacy fallback tools.
 - Phase 31 admin workspace tabs and filtering retained for compatibility.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
@@ -192,51 +193,50 @@ assets/phase-thirty-four-admin-shell.js
 docs/phase-thirty-four-admin-shell-consolidation.md
 ```
 
+### Phase 35 — Canonical Admin Pages
+
+Implemented the second phase of the single-admin-interface consolidation track:
+
+- Added canonical page renderer hook to the Phase 34 shell.
+- Added canonical page layouts for Home, Content, Opportunities, Sign-ups, Attendance, Training, Referrals, Points, Reports, Audit, Notifications, and System / QA.
+- Added summary tiles and preview tables for the main operational pages.
+- Moved existing legacy tools behind collapsed `Show existing tools` sections.
+- Formalised the rule: one workflow = one canonical owner page.
+
+Primary files:
+
+```text
+assets/phase-thirty-five-canonical-admin-pages.css
+assets/phase-thirty-five-canonical-admin-pages.js
+docs/phase-thirty-five-canonical-admin-pages.md
+```
+
 Known limitations:
 
-- Existing tools are mounted into shell pages; they are not yet rewritten as clean page components.
-- Some pages may be empty until legacy cards are classified or new page components are built.
-- Phase 31 tab/filter layer still exists for compatibility.
-- Queue pages still need tables and drawers.
-- Legacy admin cards should not be deleted until manual QA confirms shell coverage.
+- Queue previews are read-only summaries, not full action tables.
+- Existing legacy tools still perform many actions.
+- Detail drawers are not implemented yet.
+- Table-level search/filter/sort remains Phase 36.
+- Some canonical pages are action-card placeholders until their legacy cards are rewritten.
 
 ## Current consolidation roadmap
 
 The next work should continue the single-admin-interface track:
 
 ```text
-Phase 35 — Canonical Admin Pages
 Phase 36 — Table Queues and Detail Drawers
 Phase 37 — Legacy Admin Surface Removal
 ```
 
-## Phase 35 — Canonical Admin Pages
-
-Purpose: replace mounted legacy cards with purpose-built admin page components. Each workflow should have one canonical owner page.
-
-Recommended scope:
-
-- Content page: static content/news/about/FAQ only.
-- Opportunities page: parent opportunity listings, opportunity sessions, capacity, facilitator codes.
-- Sign-ups page: opportunity signup review queue.
-- Attendance page: attendance claim review queue and session-code operations.
-- Training page: parent training rows, child training sessions, signups, completion review.
-- Referrals page: referral code/status workflow.
-- Points page: points ledger, achievements, adjustment/backfill status.
-- Reports page: report runner and CSV export.
-- Audit page: audit search/table/details.
-- Notifications page: notification history/preferences.
-- System / QA page: QA smoke checks, readiness SQL references, advisor follow-ups.
-
 ## Phase 36 — Table Queues and Detail Drawers
 
-Purpose: replace dense cards and inline forms with scalable tables and detail drawers.
+Purpose: replace dense cards and inline forms with scalable tables, search/filter/sort, and detail drawers.
 
 Recommended scope:
 
-- Sign-up review table.
-- Attendance review table.
-- Training signup/completion table.
+- Sign-up review table with row detail drawer and review actions.
+- Attendance review table with row detail drawer and verification actions.
+- Training signup/completion table with row detail drawer.
 - Referral queue table.
 - Points ledger table.
 - Audit table refinements.
@@ -244,7 +244,7 @@ Recommended scope:
 
 ## Phase 37 — Legacy Admin Surface Removal
 
-Purpose: remove duplicated legacy admin surfaces after the shell and canonical pages pass QA.
+Purpose: remove duplicated legacy admin surfaces after the shell, canonical pages, and table queues pass QA.
 
 Recommended scope:
 
