@@ -178,6 +178,130 @@
   font-weight: 700;
 }
 
+[data-opportunity-sessions-editor] {
+  width: 100%;
+  min-width: 0;
+}
+
+[data-opportunity-sessions-editor] .session-admin-grid {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.25fr);
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-opportunity-sessions-editor] .session-form {
+  align-content: start;
+  background: #fff;
+  border: 1px solid rgba(55, 58, 54, 0.1);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(55, 58, 54, 0.05);
+  display: grid;
+  gap: 0.75rem;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1rem;
+}
+
+[data-opportunity-sessions-editor] .session-form-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-opportunity-sessions-editor] .session-form label,
+[data-opportunity-sessions-editor] .session-toggle-row {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  width: 100%;
+}
+
+[data-opportunity-sessions-editor] .session-form input,
+[data-opportunity-sessions-editor] .session-form select,
+[data-opportunity-sessions-editor] .session-form textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+[data-opportunity-sessions-editor] .session-toggle-row {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+}
+
+[data-opportunity-sessions-editor] .session-toggle-row input {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+[data-opportunity-sessions-editor] .session-admin-actions,
+[data-opportunity-sessions-editor] .session-card-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+[data-opportunity-sessions-editor] .session-list {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-opportunity-sessions-editor] .session-card,
+[data-opportunity-sessions-editor] .session-empty {
+  background: #fff;
+  border: 1px solid rgba(55, 58, 54, 0.1);
+  border-radius: 18px;
+  display: grid;
+  gap: 0.65rem;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+[data-opportunity-sessions-editor] .session-card-header {
+  align-items: start;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+[data-opportunity-sessions-editor] .session-card-header h3,
+[data-opportunity-sessions-editor] .session-card-header p {
+  overflow-wrap: anywhere;
+}
+
+[data-opportunity-sessions-editor] .session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+[data-opportunity-sessions-editor] .session-meta span {
+  background: rgba(55, 58, 54, 0.06);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.25rem 0.55rem;
+}
+
+@media (max-width: 1180px) {
+  [data-opportunity-sessions-editor] .session-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .admin-content-choice-grid,
   .admin-content-choice-grid.two {
@@ -186,6 +310,13 @@
 
   .admin-content-choice {
     min-height: 132px;
+  }
+}
+
+@media (max-width: 640px) {
+  [data-opportunity-sessions-editor] .session-form-row,
+  [data-opportunity-sessions-editor] .session-card-header {
+    grid-template-columns: 1fr;
   }
 }
 
