@@ -133,12 +133,48 @@
   padding: 1rem;
 }
 
-.phase34-admin-shell-active .dashboard-layout > .dashboard-card[data-admin-owned="true"],
-.phase34-admin-shell-active .dashboard-layout > .dashboard-card[data-phase31-admin-hub="true"] {
+/* Phase 37: legacy admin surfaces should not appear as independent dashboard cards.
+   They remain available after being mounted inside the single admin shell fallback sections. */
+.dashboard-layout > .dashboard-card[data-admin-owned="true"],
+.dashboard-layout > .dashboard-card[data-phase31-admin-hub="true"],
+.dashboard-layout > [data-admin-content-card],
+.dashboard-layout > .admin-attendance-card,
+.dashboard-layout > .admin-training-card,
+.dashboard-layout > [data-reports-card],
+.dashboard-layout > [data-audit-history-card],
+.dashboard-layout > .audit-history-card,
+.dashboard-layout > [data-admin-referrals-card],
+.dashboard-layout > .admin-referrals-card,
+.dashboard-layout > [data-admin-points-card],
+.dashboard-layout > .admin-points-card,
+.dashboard-layout > [data-notification-history-card],
+.dashboard-layout > .notification-history-card,
+.dashboard-layout > [data-notification-settings-card],
+.dashboard-layout > [data-phase32-qa-card],
+.dashboard-layout > [data-signup-dashboard-card="admin"],
+.dashboard-layout > .admin-signup-card,
+.dashboard-layout > [data-phase31-training-manager] {
   display: none !important;
 }
 
-.phase34-admin-shell-active .phase34-admin-shell .dashboard-card[data-admin-owned="true"] {
+.phase34-admin-shell .dashboard-card[data-admin-owned="true"],
+.phase34-admin-shell [data-admin-content-card],
+.phase34-admin-shell .admin-attendance-card,
+.phase34-admin-shell .admin-training-card,
+.phase34-admin-shell [data-reports-card],
+.phase34-admin-shell [data-audit-history-card],
+.phase34-admin-shell .audit-history-card,
+.phase34-admin-shell [data-admin-referrals-card],
+.phase34-admin-shell .admin-referrals-card,
+.phase34-admin-shell [data-admin-points-card],
+.phase34-admin-shell .admin-points-card,
+.phase34-admin-shell [data-notification-history-card],
+.phase34-admin-shell .notification-history-card,
+.phase34-admin-shell [data-notification-settings-card],
+.phase34-admin-shell [data-phase32-qa-card],
+.phase34-admin-shell [data-signup-dashboard-card="admin"],
+.phase34-admin-shell .admin-signup-card,
+.phase34-admin-shell [data-phase31-training-manager] {
   display: block !important;
 }
 
