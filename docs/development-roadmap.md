@@ -1,13 +1,13 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 39 drawer action completion and admin notes.
+Last updated: after Phase 40 referral and points admin workflow pass.
 
 ## Current status
 
 The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now:
 
 ```text
-Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → drawer review actions with notes/hours + fallback tools where needed
+Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → drawer review actions with notes/hours/referral status + fallback tools where needed
 ```
 
 The current app includes:
@@ -20,6 +20,8 @@ The current app includes:
 - Phase 37 visible legacy admin surface retirement from the main dashboard.
 - Phase 38 drawer review actions for opportunity sign-ups, attendance claims, and training sign-ups.
 - Phase 39 drawer admin notes, attendance verified-hours input, and inline action feedback.
+- Phase 40 referral status workflow in the admin drawer.
+- Points adjustment remains policy-gated and read-only.
 - Phase 31 admin workspace support retained for compatibility but retired as a primary visible surface.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
@@ -252,16 +254,7 @@ index.html
 
 ### Phase 39 — Drawer Action Completion and Admin Notes
 
-Implemented drawer action completion for the current migrated review flows:
-
-- Added admin notes textarea to drawer review actions.
-- Added attendance verified-hours input.
-- Prefills notes and verified hours from existing record data where available.
-- Passes `adminNotes` into existing opportunity sign-up, attendance, and training review functions.
-- Allows attendance verified-hours override before verification.
-- Adds inline success/error notice area inside the drawer.
-- Shows a brief success notice before closing the drawer and remounting the active admin page.
-- Preserves existing confirmation prompts and authoritative review/save functions.
+Implemented drawer action completion for the current migrated review flows.
 
 Primary documentation:
 
@@ -276,38 +269,63 @@ assets/phase-thirty-eight-drawer-review-actions.js
 assets/phase-thirty-six-admin-tables.css
 ```
 
+### Phase 40 — Referral and Points Admin Workflows
+
+Implemented referral workflow support while keeping points adjustment policy-gated:
+
+- Added `review_app_referral_status(...)` admin-only RPC.
+- Added referral status updates for `accepted`, `converted`, `cancelled`, and `duplicate`.
+- Stores referral review metadata in `app_referrals.metadata`.
+- Writes `referral.status_reviewed` audit entries.
+- Revokes anonymous execution and keeps admin enforcement inside the function.
+- Exposes referral records to the shared Phase 36 admin table layer.
+- Adds drawer actions for referral status review.
+- Keeps points rows read-only with a policy-gated note.
+- Live check confirmed anonymous execution on the referral review RPC is not available.
+
+Primary files:
+
+```text
+supabase/migrations/202605110011_phase_forty_referral_admin_workflow.sql
+assets/referrals.js
+assets/phase-thirty-eight-drawer-review-actions.js
+docs/phase-forty-referral-points-admin-workflows.md
+```
+
 Known limitations:
 
-- Referral status workflow actions are not yet migrated.
-- Points adjustment workflow is not yet implemented and should remain policy-gated.
-- Audit remains dependent on the existing audit card for full search/export details.
-- Fallback legacy tools should stay until drawer actions pass manual QA.
+- Referral conversion currently updates status only; it does not trigger separate email delivery.
+- Points are not manually adjustable from the drawer.
+- Points adjustment should require policy approval and strong audit metadata.
+- Drawer workflows still require manual QA.
 
 ## Current consolidation roadmap
 
-The next work should continue the single-admin-interface track carefully:
+The next work should stop adding feature layers and move into QA/production gate work:
 
 ```text
-Phase 40 — Referral and Points Admin Workflows
+Phase 41 — Manual QA and Production Gate Review
 ```
 
-## Phase 40 — Referral and Points Admin Workflows
+## Phase 41 — Manual QA and Production Gate Review
 
-Purpose: complete the remaining admin workflows that were not part of the sign-up/attendance/training review drawer migration.
+Purpose: validate the single admin interface and decide what can be retired safely.
 
 Recommended scope:
 
-- Referral status workflow.
-- Referral conversion handling.
-- Referral admin notes, if schema/functions support them.
-- Policy-gated points adjustment workflow.
-- Strong audit metadata around manual points adjustments.
-- QA checklist expansion for referrals and points.
+- Run the Phase 32 manual QA checklist with separate volunteer and admin accounts.
+- Verify Phase 34–40 admin shell, tables, drawers, and drawer actions.
+- Verify referral status drawer actions and audit entries.
+- Re-run Phase 32, Phase 33, and Phase 40 verification checks.
+- Decide whether fallback legacy tools can be removed or must remain.
+- Decide whether points adjustment is policy-approved.
+- Confirm Supabase Auth redirect URLs and email templates.
+- Enable leaked-password protection in Supabase Auth console.
 
 Safety rule:
 
 ```text
-Do not add unrestricted points adjustment unless policy-approved and audited.
+Do not delete fallback action tools until drawer actions are manually QA-tested with separate admin and volunteer accounts.
 ```
 
 ## Production/manual requirements still pending
@@ -321,6 +339,7 @@ Do not treat the app as production-complete until these are done:
 5. Re-run Phase 32 and Phase 33 SQL verification.
 6. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
 7. Decide whether legacy non-`app_*` tables and `volunteer_verified_hour_totals` can be removed.
+8. Decide whether points adjustment is policy-approved.
 
 ## Later follow-up items
 
