@@ -1,13 +1,13 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 36 admin table queues and detail drawers.
+Last updated: after Phase 37 visible legacy admin surface retirement.
 
 ## Current status
 
-The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now moving toward:
+The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now:
 
 ```text
-Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers
+Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → fallback tools only where needed
 ```
 
 The current app includes:
@@ -17,7 +17,8 @@ The current app includes:
 - Phase 34 single admin shell entry point and admin navigation.
 - Phase 35 canonical admin pages with collapsed legacy fallback tools.
 - Phase 36 table queues and detail drawers for key admin workflows.
-- Phase 31 admin workspace tabs and filtering retained for compatibility.
+- Phase 37 visible legacy admin surface retirement from the main dashboard.
+- Phase 31 admin workspace support retained for compatibility but retired as a primary visible surface.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
 - Hierarchical opportunity/session editing.
@@ -140,7 +141,7 @@ docs/phase-thirty-training-session-parity.md
 
 ### Phase 31 — Admin UX Refinement
 
-Implemented an additive admin workspace layer.
+Implemented an additive admin workspace layer. Phase 31 is now retained for compatibility and support code only; Phase 34+ is the preferred admin interface.
 
 Primary files:
 
@@ -201,14 +202,7 @@ docs/phase-thirty-five-canonical-admin-pages.md
 
 ### Phase 36 — Table Queues and Detail Drawers
 
-Implemented the third phase of the single-admin-interface consolidation track:
-
-- Added reusable admin table styles and controller.
-- Added search, status/type filtering, basic sorting, result counts, and empty states.
-- Added right-side detail drawer with normalised fields and raw record JSON.
-- Replaced Phase 35 previews with Phase 36 tables for Sign-ups, Attendance, Training, Referrals, Points, and Audit where data is available.
-- Kept legacy action tools under collapsed fallback sections.
-- Kept row-level mutations in legacy tools until action migration can be tested safely.
+Implemented the third phase of the single-admin-interface consolidation track.
 
 Primary files:
 
@@ -218,37 +212,45 @@ assets/phase-thirty-six-admin-tables.js
 docs/phase-thirty-six-admin-table-queues.md
 ```
 
+### Phase 37 — Legacy Admin Surface Retirement
+
+Implemented visible-surface retirement without deleting unique capabilities:
+
+- Hid legacy admin cards from the main dashboard by default.
+- Kept one visible dashboard-level admin entry point: Admin workspace.
+- Kept legacy mutation/action tools reachable inside admin shell fallback sections.
+- Marked the Phase 31 hub as retired as a visible primary admin surface.
+- Added a System / QA note showing fallback legacy-surface status.
+- Did not delete action cards, Phase 31 support files, Sveltia files, or legacy code paths that may still be needed for mutations.
+
+Primary files:
+
+```text
+assets/phase-thirty-seven-legacy-surface-retirement.js
+docs/phase-thirty-seven-legacy-surface-retirement.md
+```
+
+Related change:
+
+```text
+assets/phase-thirty-four-admin-shell.css
+index.html
+```
+
 Known limitations:
 
-- Drawer actions are not yet wired to review/verify/update RPCs.
-- Audit still depends on the existing RPC-backed audit card for operational action/search.
-- Referral/points tables depend on existing local store helpers where available.
-- Sorting/filtering is client-side and suitable for pilot scale only.
-- Legacy action tools remain necessary for mutations.
+- Some fallback tools are still required for approve/verify/update mutations.
+- Drawer actions are not yet connected to Supabase RPCs.
+- Legacy code still runs to generate fallback tools.
+- Full deletion should wait until Phase 38+ action migration and manual QA.
 
 ## Current consolidation roadmap
 
 The next work should continue the single-admin-interface track carefully:
 
 ```text
-Phase 37 — Legacy Admin Surface Removal
 Phase 38 — Drawer Action Migration
 ```
-
-## Phase 37 — Legacy Admin Surface Removal
-
-Purpose: remove duplicated legacy admin surfaces only where Phase 34–36 already provide a safe replacement, while keeping mutation tools that have not yet been migrated.
-
-Recommended scope:
-
-- Retire old dashboard-level admin card rendering where the shell already owns the workflow.
-- Disable or hide Phase 31 tab/filter layer if Phase 34+ shell fully covers it.
-- Demote generic admin content management to static content only.
-- Remove duplicate training/session editing routes that conflict with the canonical Training page.
-- Do not remove legacy cards that still contain the only safe mutation controls.
-- Delete legacy Sveltia files only after manual QA and rollback decision:
-  - `admin/index.html`;
-  - `admin/config.yml`.
 
 ## Phase 38 — Drawer Action Migration
 
@@ -262,6 +264,12 @@ Recommended scope:
 - Referral status workflow.
 - Points adjustment workflow, if policy-approved.
 - Confirmation prompts and audit metadata.
+
+Safety rule:
+
+```text
+Do not delete fallback action tools until their drawer actions are implemented and manually QA-tested.
+```
 
 ## Production/manual requirements still pending
 
