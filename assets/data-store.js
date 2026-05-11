@@ -159,7 +159,7 @@ const VolunteerDataStore = (() => {
     }
 
     authState.user = data.user;
-    authState.profile = await fetchAppUser(data.user);
+    authState.profile = await ensureAppUser(data.user);
     const session = sessionFromAuthUser(data.user, authState.profile);
     if (session) {
       saveSession(session);
