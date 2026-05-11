@@ -39,6 +39,10 @@
     loadDeferredScript('assets/audit-history.js', '__phaseTwentySevenAuditHistoryLoaderInstalled');
   }
 
+  function loadPhaseTwentyEightNotificationPolish() {
+    loadDeferredScript('assets/notification-polish.js', '__phaseTwentyEightNotificationPolishLoaderInstalled');
+  }
+
   async function refreshAttendanceCodes() {
     if (!isAdmin() || typeof window.VolunteerDataStore?.fetchAttendanceCodes !== 'function') return;
     if (fetchInProgress) return;
@@ -135,6 +139,7 @@
   loadPhaseTwentyFiveGamification();
   loadPhaseTwentySixReports();
   loadPhaseTwentySevenAuditHistory();
+  loadPhaseTwentyEightNotificationPolish();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindUiObserver();
