@@ -1,6 +1,6 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 40 referral and points admin workflow pass.
+Last updated: after Phase 41 validation assets.
 
 ## Current status
 
@@ -21,6 +21,7 @@ The current app includes:
 - Phase 38 drawer review actions for opportunity sign-ups, attendance claims, and training sign-ups.
 - Phase 39 drawer admin notes, attendance verified-hours input, and inline action feedback.
 - Phase 40 referral status workflow in the admin drawer.
+- Phase 41 validation assets for SQL and browser smoke checks.
 - Points adjustment remains policy-gated and read-only.
 - Phase 31 admin workspace support retained for compatibility but retired as a primary visible surface.
 - Phase 32 QA smoke-check panel and verification SQL.
@@ -44,244 +45,9 @@ The app remains pilot/beta until manual QA, Auth console settings, and productio
 
 ## Recently completed phases
 
-### Phase 24 — Referral / Invite Friends
-
-Implemented Supabase-backed referrals.
-
-Primary files:
-
-```text
-supabase/migrations/202605110001_phase_twenty_four_referrals.sql
-assets/referrals.js
-docs/phase-twenty-four-referrals.md
-```
-
-### Phase 25 — Gamification Backend
-
-Implemented backend-first points and achievements.
-
-Primary files:
-
-```text
-supabase/migrations/202605110002_phase_twenty_five_gamification.sql
-assets/gamification.js
-docs/phase-twenty-five-gamification.md
-```
-
-### Phase 26 — Reporting and CSV Exports
-
-Implemented admin reports and browser CSV export.
-
-Primary files:
-
-```text
-supabase/migrations/202605110003_phase_twenty_six_reports.sql
-assets/reports.js
-docs/phase-twenty-six-reporting.md
-```
-
-### Phase 27 — Audit History UI
-
-Implemented admin audit history viewer.
-
-Primary files:
-
-```text
-supabase/migrations/202605110004_phase_twenty_seven_audit_ui.sql
-assets/audit-history.js
-docs/phase-twenty-seven-audit-history.md
-```
-
-### Phase 28 — Notification Polish
-
-Implemented notification preferences, history, grouping, and improved routing.
-
-Primary files:
-
-```text
-supabase/migrations/202605110005_phase_twenty_eight_notification_polish.sql
-assets/notification-polish.js
-assets/notifications.js
-docs/phase-twenty-eight-notification-polish.md
-```
-
-### Phase 29 — Session-Aware Attendance Validation
-
-Implemented session-level facilitator-code validation.
-
-Primary files:
-
-```text
-supabase/migrations/202605110006_phase_twenty_nine_session_attendance_validation.sql
-assets/attendance-code-validation.js
-assets/session-attendance-validation.js
-docs/phase-twenty-nine-session-attendance-validation.md
-```
-
-### Phase 29.5 — Security and Session Contract Hardening
-
-Implemented a focused hardening pass and attendance session guard.
-
-Primary files:
-
-```text
-supabase/migrations/202605110007_phase_twenty_nine_five_security_session_hardening.sql
-assets/phase-twenty-nine-five-hardening.js
-docs/phase-twenty-nine-five-security-session-hardening.md
-```
-
-### Phase 30 — Training Session Parity
-
-Implemented compatibility-safe training session foundation.
-
-Primary files:
-
-```text
-supabase/migrations/202605110008_phase_thirty_training_session_parity.sql
-supabase/migrations/202605110009_phase_thirty_training_session_unique_constraint_fix.sql
-assets/phase-thirty-training-session-parity.js
-docs/phase-thirty-training-session-parity.md
-```
-
-### Phase 31 — Admin UX Refinement
-
-Implemented an additive admin workspace layer. Phase 31 is now retained for compatibility and support code only; Phase 34+ is the preferred admin interface.
-
-Primary files:
-
-```text
-assets/phase-thirty-one-admin-ux.css
-assets/phase-thirty-one-admin-ux.js
-docs/phase-thirty-one-admin-ux-refinement.md
-```
-
-### Phase 32 — QA / Smoke Tests / Hardening
-
-Implemented a repeatable QA baseline.
-
-Primary files:
-
-```text
-docs/phase-thirty-two-qa-smoke-tests.md
-supabase/verification/phase32_smoke_checks.sql
-assets/phase-thirty-two-qa-tools.css
-assets/phase-thirty-two-qa-tools.js
-```
-
-### Phase 33 — Production Readiness
-
-Implemented production-readiness groundwork.
-
-Primary files:
-
-```text
-supabase/migrations/202605110010_phase_thirty_three_low_risk_production_hardening.sql
-supabase/verification/phase33_production_readiness_checks.sql
-docs/phase-thirty-three-production-readiness.md
-```
-
-### Phase 34 — Admin Shell Consolidation
-
-Implemented the first phase of moving toward a single admin interface.
-
-Primary files:
-
-```text
-assets/phase-thirty-four-admin-shell.css
-assets/phase-thirty-four-admin-shell.js
-docs/phase-thirty-four-admin-shell-consolidation.md
-```
-
-### Phase 35 — Canonical Admin Pages
-
-Implemented the second phase of the single-admin-interface consolidation track.
-
-Primary files:
-
-```text
-assets/phase-thirty-five-canonical-admin-pages.css
-assets/phase-thirty-five-canonical-admin-pages.js
-docs/phase-thirty-five-canonical-admin-pages.md
-```
-
-### Phase 36 — Table Queues and Detail Drawers
-
-Implemented the third phase of the single-admin-interface consolidation track.
-
-Primary files:
-
-```text
-assets/phase-thirty-six-admin-tables.css
-assets/phase-thirty-six-admin-tables.js
-docs/phase-thirty-six-admin-table-queues.md
-```
-
-### Phase 37 — Legacy Admin Surface Retirement
-
-Implemented visible-surface retirement without deleting unique capabilities.
-
-Primary files:
-
-```text
-assets/phase-thirty-seven-legacy-surface-retirement.js
-docs/phase-thirty-seven-legacy-surface-retirement.md
-```
-
-Related change:
-
-```text
-assets/phase-thirty-four-admin-shell.css
-index.html
-```
-
-### Phase 38 — Drawer Review Action Migration
-
-Implemented the first safe set of row-level drawer actions.
-
-Primary files:
-
-```text
-assets/phase-thirty-eight-drawer-review-actions.js
-docs/phase-thirty-eight-drawer-review-actions.md
-```
-
-Related change:
-
-```text
-assets/phase-thirty-six-admin-tables.js
-index.html
-```
-
-### Phase 39 — Drawer Action Completion and Admin Notes
-
-Implemented drawer action completion for the current migrated review flows.
-
-Primary documentation:
-
-```text
-docs/phase-thirty-nine-drawer-action-completion.md
-```
-
-Related change:
-
-```text
-assets/phase-thirty-eight-drawer-review-actions.js
-assets/phase-thirty-six-admin-tables.css
-```
-
 ### Phase 40 — Referral and Points Admin Workflows
 
-Implemented referral workflow support while keeping points adjustment policy-gated:
-
-- Added `review_app_referral_status(...)` admin-only RPC.
-- Added referral status updates for `accepted`, `converted`, `cancelled`, and `duplicate`.
-- Stores referral review metadata in `app_referrals.metadata`.
-- Writes `referral.status_reviewed` audit entries.
-- Revokes anonymous execution and keeps admin enforcement inside the function.
-- Exposes referral records to the shared Phase 36 admin table layer.
-- Adds drawer actions for referral status review.
-- Keeps points rows read-only with a policy-gated note.
-- Live check confirmed anonymous execution on the referral review RPC is not available.
+Implemented referral workflow support while keeping points adjustment policy-gated.
 
 Primary files:
 
@@ -292,20 +58,35 @@ assets/phase-thirty-eight-drawer-review-actions.js
 docs/phase-forty-referral-points-admin-workflows.md
 ```
 
-Known limitations:
+### Phase 41 — Validation Assets
 
-- Referral conversion currently updates status only; it does not trigger separate email delivery.
-- Points are not manually adjustable from the drawer.
-- Points adjustment should require policy approval and strong audit metadata.
-- Drawer workflows still require manual QA.
+Generated non-destructive validation assets for the current QA gate:
+
+- Supabase SQL validation checks for Phase 34–40 prerequisites and security posture.
+- Browser-console admin UI smoke script for shell/table/drawer wiring.
+- Phase 41 validation runbook with pass criteria and failure handling.
+
+Primary files:
+
+```text
+supabase/verification/phase41_validation_checks.sql
+scripts/phase41-admin-ui-smoke.js
+docs/phase-forty-one-validation-runbook.md
+```
+
+## Full phase history
+
+For prior implementation details, see the individual phase docs in `docs/` and verification SQL in `supabase/verification/`.
 
 ## Current consolidation roadmap
 
-The next work should stop adding feature layers and move into QA/production gate work:
+The next work should remain validation-focused:
 
 ```text
 Phase 41 — Manual QA and Production Gate Review
 ```
+
+Do not add new feature/UI layers until the validation assets have been run and reviewed.
 
 ## Phase 41 — Manual QA and Production Gate Review
 
@@ -313,10 +94,12 @@ Purpose: validate the single admin interface and decide what can be retired safe
 
 Recommended scope:
 
+- Run `supabase/verification/phase41_validation_checks.sql`.
+- Run `scripts/phase41-admin-ui-smoke.js` as a signed-in admin.
 - Run the Phase 32 manual QA checklist with separate volunteer and admin accounts.
 - Verify Phase 34–40 admin shell, tables, drawers, and drawer actions.
 - Verify referral status drawer actions and audit entries.
-- Re-run Phase 32, Phase 33, and Phase 40 verification checks.
+- Re-run Phase 32 and Phase 33 verification checks.
 - Decide whether fallback legacy tools can be removed or must remain.
 - Decide whether points adjustment is policy-approved.
 - Confirm Supabase Auth redirect URLs and email templates.
@@ -332,14 +115,16 @@ Do not delete fallback action tools until drawer actions are manually QA-tested 
 
 Do not treat the app as production-complete until these are done:
 
-1. Run the Phase 32 manual QA checklist with separate volunteer and admin accounts.
-2. Enable leaked-password protection in Supabase Auth console.
-3. Verify production Auth redirect URLs and email templates.
-4. Run the in-app QA panel as admin.
-5. Re-run Phase 32 and Phase 33 SQL verification.
-6. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
-7. Decide whether legacy non-`app_*` tables and `volunteer_verified_hour_totals` can be removed.
-8. Decide whether points adjustment is policy-approved.
+1. Run the Phase 41 SQL validation checks.
+2. Run the Phase 41 browser admin UI smoke script.
+3. Run the Phase 32 manual QA checklist with separate volunteer and admin accounts.
+4. Enable leaked-password protection in Supabase Auth console.
+5. Verify production Auth redirect URLs and email templates.
+6. Run the in-app QA panel as admin.
+7. Re-run Phase 32 and Phase 33 SQL verification.
+8. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
+9. Decide whether legacy non-`app_*` tables and `volunteer_verified_hour_totals` can be removed.
+10. Decide whether points adjustment is policy-approved.
 
 ## Later follow-up items
 
