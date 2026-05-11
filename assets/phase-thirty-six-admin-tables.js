@@ -235,6 +235,13 @@
     return layer;
   }
 
+  function drawerActionMarkup(record) {
+    if (window.MENDAKIPhase38DrawerActions?.renderActions) {
+      return window.MENDAKIPhase38DrawerActions.renderActions(record, escapeHtml) || '';
+    }
+    return '<span class="dashboard-muted">Actions remain in legacy tools until row-level mutations are migrated safely.</span>';
+  }
+
   function openDrawer(record) {
     drawerRecord = record;
     const layer = ensureDrawer();
@@ -250,7 +257,7 @@
         ${Object.entries(details).filter(([k]) => !k.startsWith('__')).map(([key, value]) => `<div class="phase36-detail-row"><span>${escapeHtml(key)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
         <div class="phase36-detail-row"><span>Raw record</span><code>${escapeHtml(JSON.stringify(raw, null, 2))}</code></div>
       </div>
-      <div class="phase36-drawer-actions"><button class="button dashboard-secondary" type="button" data-phase36-close-drawer>Close</button><span class="dashboard-muted">Actions remain in legacy tools until row-level mutations are migrated safely.</span></div>
+      <div class="phase36-drawer-actions"><button class="button dashboard-secondary" type="button" data-phase36-close-drawer>Close</button>${drawerActionMarkup(record)}</div>
     `;
     layer.hidden = false;
   }
@@ -308,5 +315,5 @@
 
   bind();
   ensureDrawer();
-  window.MENDAKIPhase36AdminTables = { render, openDrawer, closeDrawer };
+  window.MENDAKIPhase36AdminTables = { render, openDrawer, closeDrawer, currentRecord: () => drawerRecord };
 })();
