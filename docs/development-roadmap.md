@@ -1,6 +1,6 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 29 session-aware attendance validation and the accepted Phase 29.5 hardening decision.
+Last updated: after Phase 29.5 security/session hardening; Phase 30 is the accepted next development phase.
 
 ## Current status
 
@@ -17,6 +17,7 @@ The current app includes:
 - Hierarchical opportunity/session editing.
 - Session-specific opportunity signups.
 - Session-aware attendance validation foundation.
+- Phase 29.5 attendance session guard.
 - Attendance review.
 - Training lifecycle.
 - Referrals / invite friends.
@@ -156,73 +157,50 @@ assets/session-attendance-validation.js
 docs/phase-twenty-nine-session-attendance-validation.md
 ```
 
-Current limitation:
+### Phase 29.5 — Security and Session Contract Hardening
 
-- Attendance flow still infers session from cached signup data rather than passing signup/session directly through the attendance flow.
+Implemented a focused hardening pass:
+
+- Revoked anonymous execute access from sensitive RPC families.
+- Kept authenticated execute access where current app flows require it.
+- Preserved database-side admin checks for admin-only RPCs.
+- Hardened `validate_session_attendance_code(...)` to require authentication.
+- Added `get_phase_29_5_rpc_grant_audit()` for future grant verification.
+- Added an attendance check-in/out guard that requires explicit session resolution before saving attendance.
+- Documented smoke checks and remaining limitations.
+
+Primary files:
+
+```text
+supabase/migrations/202605110007_phase_twenty_nine_five_security_session_hardening.sql
+assets/phase-twenty-nine-five-hardening.js
+docs/phase-twenty-nine-five-security-session-hardening.md
+```
+
+Verification performed:
+
+```sql
+select *
+from public.get_phase_29_5_rpc_grant_audit()
+where anon_can_execute = true;
+```
+
+Expected/current result: zero rows for the targeted Phase 29.5 RPC set.
 
 ## Accepted roadmap order
 
 Use this order in future sessions unless a new production blocker appears:
 
 ```text
-Phase 29.5 — Security and Session Contract Hardening
 Phase 30 — Training Session Parity
 Phase 31 — Admin UX Refinement
 Phase 32 — QA / Smoke Tests / Hardening
 Phase 33 — Production Readiness
 ```
 
-## Phase 29.5 — Security and Session Contract Hardening
+## Phase 30 — Training Session Parity
 
 Status: accepted immediate next phase.
-
-Purpose: address foundational security and session-contract issues before adding training session parity.
-
-Why this comes before Phase 30:
-
-- Phases 24–29 expanded privileged Supabase RPC usage across referrals, points, reports, audit logs, notifications, attendance, and admin workflows.
-- Supabase advisor flagged many `SECURITY DEFINER` RPCs as executable by `anon` and/or broadly by `authenticated`.
-- Client-side admin checks are not security boundaries.
-- Training session parity would add more session-sensitive and permission-sensitive flows; it should not inherit unresolved opportunity/attendance contract gaps.
-
-Recommended scope:
-
-- Classify RPCs by access level:
-  - public-safe;
-  - authenticated volunteer;
-  - admin-only.
-- Revoke `EXECUTE` from `anon` on sensitive mutation/report/admin RPCs.
-- Grant `EXECUTE` only to the roles that need each RPC.
-- Add or verify database-side admin checks inside admin-only RPCs.
-- Review `SECURITY DEFINER` functions for safe `search_path` handling.
-- Ensure volunteer RPCs operate only on the current user’s own records.
-- Tighten attendance flow so `signupId` and `sessionId` are passed explicitly instead of inferred from cached signup data.
-- Prefer `validate_session_attendance_code(...)` whenever a session exists.
-- Keep opportunity-level attendance-code fallback only when explicitly allowed.
-- Add minimum role-permission smoke checks.
-
-Minimum smoke checks:
-
-- Anonymous user cannot call sensitive mutation RPCs.
-- Anonymous user cannot call admin report/audit/points-review RPCs.
-- Volunteer cannot call admin report/audit/review/code-management RPCs.
-- Volunteer can create/cancel only their own signups.
-- Volunteer can read/update only their own notifications/preferences/referrals/points summary.
-- Admin can review signups and attendance.
-- Correct session facilitator code is accepted.
-- Wrong-session facilitator code is rejected.
-- Attendance claim stores the correct `session_id`.
-
-Non-blocking items that can remain for Phase 32/33:
-
-- Duplicate/unused index cleanup.
-- RLS performance lint cleanup using `(select auth.uid())`-style initplans.
-- Legacy non-`app_*` table cleanup.
-- Full Auth redirect/email template review.
-- Leaked-password protection toggle.
-- Legacy Sveltia file deletion.
-
-## Phase 30 — Training Session Parity
 
 Purpose: give training the same true session model as opportunities.
 
@@ -283,6 +261,7 @@ Recommended scope:
 - Capacity/waitlist tests.
 - Session-selection tests.
 - Session-aware attendance tests.
+- Training session-selection and session-completion tests.
 - Auth tests.
 - Referral attribution tests.
 - Referral duplicate-prevention tests.
@@ -290,6 +269,8 @@ Recommended scope:
 - CSV/report export tests.
 - Notification preference/grouping tests.
 - Audit filtering/export tests.
+- Re-run `get_phase_29_5_rpc_grant_audit()` and confirm targeted RPCs still have no anonymous execute grants.
+- Confirm volunteer users cannot access admin report/audit/review/code-management RPC results.
 
 Dependencies:
 
@@ -304,6 +285,12 @@ Recommended scope:
 - Verify Supabase Auth redirects and email templates.
 - RLS/security review across all app tables and RPCs.
 - Review function `SECURITY DEFINER` search paths and grants.
+- Decide whether signed-in `SECURITY DEFINER` RPC warnings are acceptable, should become `SECURITY INVOKER`, or should be hidden behind stricter backend paths.
+- Review and, if safe, revoke anonymous execute from helper role functions such as `current_app_role`, `current_app_user_id`, and `current_app_user_is_admin` without breaking RLS policy evaluation.
+- Fix mutable `search_path` warnings for helper/report functions such as `report_date_in_range`, `make_referral_code`, and `notification_category_for_type`.
+- Resolve or retire legacy non-`app_*` tables with RLS enabled and no policies.
+- Review the `volunteer_verified_hour_totals` security-definer view and convert/remove it if not required.
+- Enable leaked password protection when Auth settings are ready.
 - Environment/config documentation.
 - Backup/restore guidance.
 - Deployment checklist.
@@ -312,6 +299,8 @@ Recommended scope:
 - Scheduled/server-side points backfill instead of frontend-triggered award runs.
 - Export pagination/size limits.
 - Data-retention policy.
+- Duplicate/unused index cleanup after checking real usage.
+- RLS performance lint cleanup using `(select auth.uid())`-style initplans.
 - Remove obsolete demo/local fallback paths where appropriate.
 - Delete legacy Sveltia files after QA:
   - `admin/index.html`;
@@ -324,7 +313,7 @@ Dependencies:
 
 ## Later follow-up items
 
-Keep these visible but do not let them block Phase 29.5 or Phase 30 unless they become operational blockers:
+Keep these visible but do not let them block Phase 30 unless they become operational blockers:
 
 - Public referral landing page.
 - Referral conversion workflow.
@@ -341,18 +330,19 @@ Keep these visible but do not let them block Phase 29.5 or Phase 30 unless they 
 
 ## Recommended next task
 
-Start with **Phase 29.5 — Security and Session Contract Hardening**.
+Start with **Phase 30 — Training Session Parity**.
 
 Reasoning:
 
-- The app is still pilot/beta, so full production readiness can wait.
-- However, sensitive RPC grants and session-contract gaps should be fixed before adding another session-heavy model in Phase 30.
-- This should be treated as a short hardening phase, not a full roadmap pause.
+- Phase 29.5 closed the immediate anonymous sensitive-RPC exposure for the targeted RPC set.
+- The next model gap is training, which still lacks true session parity with opportunities.
+- Remaining advisor findings are documented for Phase 32/33 and should not block Phase 30 unless they begin breaking pilot flows.
 
-Minimum Phase 29.5 implementation should include:
+Minimum Phase 30 implementation should include:
 
-1. RPC access classification and grant cleanup.
-2. Database-side admin checks for admin-only RPCs.
-3. Explicit attendance `signupId` / `sessionId` passing.
-4. Session-first attendance-code validation.
-5. Focused role-permission and session-code smoke checks.
+1. Training session table/RPC support.
+2. Session-specific training signup selection.
+3. Training signup rows carrying `session_id` and session metadata.
+4. Training capacity/waitlist based on session, not only parent training.
+5. Training completion/points attribution that can reference the selected session.
+6. Documentation and focused QA notes.
