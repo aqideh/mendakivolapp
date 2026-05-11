@@ -136,12 +136,12 @@
         <nav class="phase34-admin-nav" aria-label="Admin workspace navigation">
           ${AREAS.map(([key, label]) => `<button type="button" class="${key === state34.activeArea ? 'active' : ''}" data-phase34-area="${key}"><span>${escapeHtml(label)}</span></button>`).join('')}
         </nav>
-        <main class="phase34-admin-page-wrap" data-phase34-page-wrap>
+        <main class="phase34-admin-page-wrap" data-phase34-page-wrap data-phase34-active-area="${escapeHtml(state34.activeArea)}">
           <div class="phase34-admin-page-head">
             <div>
               <p class="eyebrow dark">${escapeHtml(state34.activeArea)}</p>
-              <h3>${escapeHtml(title)}</h3>
-              <p class="dashboard-muted">${escapeHtml(description)}</p>
+              <h3 data-phase34-page-title>${escapeHtml(title)}</h3>
+              <p class="dashboard-muted" data-phase34-page-description>${escapeHtml(description)}</p>
             </div>
           </div>
           <div class="phase34-admin-cards" data-phase34-page-cards></div>
