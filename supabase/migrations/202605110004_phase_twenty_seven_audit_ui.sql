@@ -1,23 +1,47 @@
 -- Phase 27 - Audit History UI
 -- Canonical audit-log table and admin-only read RPC.
--- If an older audit table already exists in production under a different name,
--- map/merge it into public.app_audit_logs before relying on this UI.
+-- This migration tolerates an existing public.app_audit_logs table by adding
+-- the canonical columns required by the Phase 27 viewer.
 
 create extension if not exists pgcrypto;
 
 create table if not exists public.app_audit_logs (
   id uuid primary key default gen_random_uuid(),
-  actor_user_id uuid references public.app_users(id) on delete set null,
-  actor_email text,
-  action_type text not null,
-  entity_type text not null,
-  entity_id text,
-  target_user_id uuid references public.app_users(id) on delete set null,
-  target_email text,
-  summary text,
-  metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+alter table public.app_audit_logs
+  add column if not exists actor_user_id uuid references public.app_users(id) on delete set null,
+  add column if not exists actor_email text,
+  add column if not exists action_type text,
+  add column if not exists entity_type text,
+  add column if not exists entity_id text,
+  add column if not exists target_user_id uuid references public.app_users(id) on delete set null,
+  add column if not exists target_email text,
+  add column if not exists summary text,
+  add column if not exists metadata jsonb not null default '{}'::jsonb;
+
+alter table public.app_audit_logs
+  alter column action_type set default 'unknown_action',
+  alter column entity_type set default 'unknown_entity',
+  alter column metadata set default '{}'::jsonb;
+
+update public.app_audit_logs
+set action_type = coalesce(nullif(action_type, ''), 'legacy_event')
+where action_type is null or action_type = '';
+
+update public.app_audit_logs
+set entity_type = coalesce(nullif(entity_type, ''), 'legacy_entity')
+where entity_type is null or entity_type = '';
+
+update public.app_audit_logs
+set metadata = '{}'::jsonb
+where metadata is null;
+
+alter table public.app_audit_logs
+  alter column action_type set not null,
+  alter column entity_type set not null,
+  alter column metadata set not null;
 
 create index if not exists app_audit_logs_created_idx on public.app_audit_logs (created_at desc);
 create index if not exists app_audit_logs_action_idx on public.app_audit_logs (action_type, created_at desc);
