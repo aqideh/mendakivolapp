@@ -20,13 +20,18 @@
     const notes = raw.adminNotes || raw.admin_notes || meta.admin_notes || '';
     const claimedHours = raw.claimedHours || raw.claimed_hours || record?.hours || '';
     const verifiedHours = raw.verifiedHours || raw.verified_hours || claimedHours || '';
+    const clarificationResponse = raw.clarificationResponse || raw.clarification_response || '';
     const hoursField = record?.__type === 'Attendance claim'
       ? `<label class="phase39-drawer-field">Verified hours<input type="number" min="0" step="0.25" value="${escapeHtml(verifiedHours)}" data-phase39-verified-hours placeholder="${escapeHtml(claimedHours || '0')}"></label>`
+      : '';
+    const responseBlock = record?.__type === 'Attendance claim' && clarificationResponse
+      ? `<div class="phase39-response-note"><strong>Volunteer clarification</strong><p>${escapeHtml(clarificationResponse)}</p></div>`
       : '';
     return `
       <div class="phase39-drawer-fields">
         ${hoursField}
-        <label class="phase39-drawer-field">Admin notes<textarea rows="3" data-phase39-admin-notes placeholder="Optional note for this review">${escapeHtml(notes)}</textarea></label>
+        ${responseBlock}
+        <label class="phase39-drawer-field">Message to volunteer<textarea rows="3" data-phase39-admin-notes placeholder="Required when requesting clarification. Add what you need the volunteer to clarify.">${escapeHtml(notes)}</textarea></label>
         <div class="phase39-action-notice" data-phase39-action-notice hidden></div>
       </div>
     `;
@@ -87,7 +92,8 @@
   }
 
   function drawer() { return document.querySelector('.phase36-drawer'); }
-  function notesValue() { return drawer()?.querySelector('[data-phase39-admin-notes]')?.value?.trim() || ''; }
+  function notesField() { return drawer()?.querySelector('[data-phase39-admin-notes]') || null; }
+  function notesValue() { return notesField()?.value?.trim() || ''; }
   function verifiedHoursValue(fallback = 0) {
     const value = drawer()?.querySelector('[data-phase39-verified-hours]')?.value;
     if (value === undefined || value === null || value === '') return Number(fallback || 0);
@@ -102,6 +108,18 @@
       node.dataset.variant = variant;
     }
     if (variant === 'error') window.alert(message);
+  }
+
+  function requireClarificationMessage(status) {
+    if (status !== 'clarification_requested') return true;
+    const field = notesField();
+    if (notesValue()) return true;
+    showNotice('Please enter a message explaining what the volunteer should clarify.', 'error');
+    if (field) {
+      field.focus();
+      field.setAttribute('aria-invalid', 'true');
+    }
+    return false;
   }
 
   async function refresh(message = 'Review action saved.') {
@@ -131,13 +149,22 @@
   async function updateAttendance(record, status) {
     const claim = byId(store()?.getAttendanceClaims?.(), record.__id);
     if (!claim || typeof store()?.saveSupabaseAttendanceClaim !== 'function') throw new Error('Attendance review is unavailable.');
+    if (!requireClarificationMessage(status)) return;
     if (!window.confirm(`Set attendance status to ${status}?`)) return;
     const fallbackHours = status === 'verified' ? Number(claim.verifiedHours || claim.claimedHours || record.hours || 0) : Number(claim.verifiedHours || 0);
     const verifiedHours = status === 'verified' || status === 'adjusted' ? verifiedHoursValue(fallbackHours) : fallbackHours;
-    const next = { ...claim, claimStatus: status, verifiedHours, adminNotes: notesValue() || claim.adminNotes || '', reviewedBy: session().email || 'admin', reviewedAt: now(), updatedAt: now() };
+    const next = {
+      ...claim,
+      claimStatus: status,
+      verifiedHours,
+      adminNotes: notesValue() || claim.adminNotes || '',
+      reviewedBy: session().email || 'admin',
+      reviewedAt: now(),
+      updatedAt: now()
+    };
     const result = await store().saveSupabaseAttendanceClaim(next, { mode: 'update', review: true });
     if (!result?.ok && !result?.transactional) throw new Error(result?.reason || 'Attendance review failed.');
-    await refresh(`Attendance claim updated to ${status}.`);
+    await refresh(status === 'clarification_requested' ? 'Clarification request sent to volunteer.' : `Attendance claim updated to ${status}.`);
   }
 
   async function updateTraining(record, status) {
