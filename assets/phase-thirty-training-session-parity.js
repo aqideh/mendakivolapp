@@ -2,7 +2,7 @@
   if (window.__phaseThirtyTrainingSessionParityInstalled) return;
   window.__phaseThirtyTrainingSessionParityInstalled = true;
 
-  const state = {
+  const stateCache = {
     sessionsByTraining: new Map(),
     syncing: false
   };
@@ -12,6 +12,9 @@
   function currentSession() { return store()?.getSession?.() || null; }
   function ready() { return Boolean(client() && currentSession()?.email); }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
+  function appState() {
+    try { return typeof state !== 'undefined' ? state : null; } catch (_) { return null; }
+  }
 
   function formatDate(value) {
     if (!value) return 'Date to be confirmed';
@@ -98,9 +101,9 @@
   }
 
   function applyTrainingCatalog(rows) {
-    const currentState = (() => { try { return typeof window.state !== 'undefined' ? window.state : null; } catch (_) { return null; } })();
+    const currentState = appState();
     const grouped = groupedSessions(rows);
-    state.sessionsByTraining = grouped;
+    stateCache.sessionsByTraining = grouped;
 
     if (!currentState?.data) return;
     const parents = rows
@@ -117,22 +120,22 @@
   }
 
   async function syncTrainingSessions() {
-    if (state.syncing) return;
-    state.syncing = true;
+    if (stateCache.syncing) return;
+    stateCache.syncing = true;
     try {
       const rows = await fetchTrainingSessions();
       applyTrainingCatalog(rows);
       decorateTrainingCards();
-      if (typeof window.phaseFourRender === 'function') window.phaseFourRender();
+      if (typeof phaseFourRender === 'function') phaseFourRender();
       decorateTrainingCards();
       window.dispatchEvent(new CustomEvent('volunteer-training-sessions-synced'));
     } finally {
-      state.syncing = false;
+      stateCache.syncing = false;
     }
   }
 
   function sessionsForTraining(trainingId) {
-    return state.sessionsByTraining.get(String(trainingId)) || [];
+    return stateCache.sessionsByTraining.get(String(trainingId)) || [];
   }
 
   function selectedSessionId(trainingId) {
@@ -230,7 +233,7 @@
     const supabase = client();
     const userSession = currentSession();
     if (!supabase || !userSession?.email) {
-      if (typeof window.phaseOneOpenAuth === 'function') window.phaseOneOpenAuth();
+      if (typeof phaseOneOpenAuth === 'function') phaseOneOpenAuth();
       return;
     }
     setBusy(button, true, 'Signing up...');
@@ -247,7 +250,7 @@
     }
     upsertLocalSignup(rowToSignup(data));
     await refreshTrainingSignups().catch(() => null);
-    if (typeof window.phaseFourRender === 'function') window.phaseFourRender();
+    if (typeof phaseFourRender === 'function') phaseFourRender();
     decorateTrainingCards();
   }
 
