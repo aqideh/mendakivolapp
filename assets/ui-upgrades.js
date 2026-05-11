@@ -36,6 +36,10 @@
     return window.VolunteerDataStore?.currentEmail?.() || session()?.email || '';
   }
 
+  function displayName() {
+    return profile()?.name || session()?.name || 'Volunteer';
+  }
+
   function formatDateTime(value) {
     if (!value) return '';
     const parsed = new Date(value);
@@ -69,20 +73,6 @@
     return opp?.time || 'Date to be confirmed';
   }
 
-  function nextUserEvent() {
-    const email = currentEmail();
-    if (!email) return null;
-    const opportunities = appData()?.opportunities || [];
-    const confirmed = signups()
-      .filter(item => item.email === email && ['confirmed', 'pending_review', 'waitlisted'].includes(item.status))
-      .map(item => {
-        const opp = opportunities.find(candidate => String(candidate.id) === String(item.opportunityId)) || item;
-        return { ...item, date: opportunityDate(opp), label: opportunityLabel(opp) };
-      })
-      .sort((a, b) => (a.date?.getTime?.() || Number.MAX_SAFE_INTEGER) - (b.date?.getTime?.() || Number.MAX_SAFE_INTEGER));
-    return confirmed[0] || null;
-  }
-
   function verifiedHours() {
     const email = currentEmail();
     const fromClaims = claims()
@@ -111,44 +101,87 @@
     window.setTimeout(() => overlay.remove(), 700);
   }
 
-  function decorateEmptyState() {
-    const copy = qs('[data-dashboard-profile-copy]');
-    if (!copy || currentEmail() || qs('[data-ui-value-empty]')) return;
-    const block = document.createElement('div');
-    block.className = 'ui-value-empty-state';
-    block.dataset.uiValueEmpty = 'true';
-    block.innerHTML = `
-      <strong>Start your volunteer journey in under a minute.</strong>
-      <ul class="ui-quick-benefits">
-        <li>✅ Save your profile and preferred volunteer type</li>
-        <li>📅 Sign up for opportunities and training</li>
-        <li>🏅 Track hours, milestones, and completed sessions</li>
-      </ul>
-      <button class="button button-primary" type="button" data-auth-open>🚀 Create your volunteer account</button>
-    `;
-    copy.insertAdjacentElement('afterend', block);
+  function syncProfileActions() {
+    const signedIn = Boolean(currentEmail());
+    const profileCard = qs('.dashboard-profile-card');
+    if (!profileCard) return;
+    const signIn = qs('[data-auth-entry]', profileCard);
+    const signOut = qs('[data-auth-sign-out]', profileCard);
+    if (signIn) {
+      signIn.hidden = signedIn;
+      signIn.textContent = 'Sign in';
+    }
+    if (signOut) {
+      signOut.hidden = !signedIn;
+      signOut.textContent = 'Sign out';
+    }
   }
 
-  function decorateProfileSummary() {
+  function buildVolunteerProfileHero() {
     const card = qs('.dashboard-profile-card');
-    if (!card || !currentEmail()) return;
-    card.querySelector('[data-ui-profile-welcome]')?.remove();
-    const next = nextUserEvent();
-    const name = profile()?.name || session()?.name || 'Volunteer';
-    const welcome = document.createElement('div');
-    welcome.className = 'ui-profile-welcome';
-    welcome.dataset.uiProfileWelcome = 'true';
-    welcome.innerHTML = `
-      <strong>Welcome back, ${escapeHtml(name)}.</strong>
-      <p class="dashboard-muted">${next ? `Next: ${escapeHtml(next.label)} · ${escapeHtml(next.title || 'Opportunity')}` : 'Next: choose an opportunity to start building your volunteer record.'}</p>
+    if (!card) return null;
+    let hero = qs('[data-volunteer-profile-hero]', card);
+    if (!hero) {
+      hero = document.createElement('div');
+      hero.className = 'volunteer-profile-hero';
+      hero.dataset.volunteerProfileHero = 'true';
+      card.prepend(hero);
+    }
+    const signedIn = Boolean(currentEmail());
+    hero.innerHTML = `
+      <p class="eyebrow dark">Volunteer profile</p>
+      <h2>${signedIn ? `Welcome back, ${escapeHtml(displayName())}` : 'Welcome to your volunteer profile'}</h2>
     `;
-    card.prepend(welcome);
+    return hero;
+  }
+
+  function mergeStatsIntoProfileCard() {
+    const profileCard = qs('.dashboard-profile-card');
+    const statsCard = qs('#stats-title')?.closest('.dashboard-card');
+    if (!profileCard || !statsCard || statsCard === profileCard) return;
+
+    let target = qs('[data-profile-stats]', profileCard);
+    if (!target) {
+      target = document.createElement('div');
+      target.className = 'profile-stats-merged';
+      target.dataset.profileStats = 'true';
+    }
+
+    const statTitle = qs('#stats-title', statsCard);
+    const statGrid = qs('.dashboard-stat-grid', statsCard);
+    const statMuted = qsa(':scope > .dashboard-muted, :scope > [data-stat-pending-attendance]', statsCard);
+    const progress = qs('[data-ui-progress]', statsCard);
+
+    if (statTitle && statTitle.parentElement !== target) target.append(statTitle);
+    if (statGrid && statGrid.parentElement !== target) target.append(statGrid);
+    statMuted.forEach(node => {
+      if (node.parentElement !== target) target.append(node);
+    });
+    if (progress && progress.parentElement !== target) target.append(progress);
+
+    if (!target.parentElement) profileCard.append(target);
+    statsCard.hidden = true;
+    statsCard.dataset.mergedIntoProfile = 'true';
+  }
+
+  function decorateProfileCard() {
+    const card = qs('.dashboard-profile-card');
+    if (!card) return;
+    card.querySelector('[data-ui-profile-welcome]')?.remove();
+    card.querySelector('[data-ui-value-empty]')?.remove();
+    buildVolunteerProfileHero();
+    const legacyHeader = qs(':scope > div:not([data-volunteer-profile-hero]):not([data-profile-stats])', card);
+    if (legacyHeader) legacyHeader.hidden = true;
+    const summary = qs('[data-profile-summary]', card);
+    if (summary) summary.hidden = true;
+    syncProfileActions();
+    mergeStatsIntoProfileCard();
   }
 
   function decorateProgress() {
-    const statsCard = qs('#stats-title')?.closest('.dashboard-card');
-    if (!statsCard || !currentEmail()) return;
-    statsCard.querySelector('[data-ui-progress]')?.remove();
+    const statsHost = qs('[data-profile-stats]') || qs('#stats-title')?.closest('.dashboard-card');
+    if (!statsHost || !currentEmail()) return;
+    statsHost.querySelector('[data-ui-progress]')?.remove();
     const hours = verifiedHours();
     const percent = Math.min(100, Math.round((hours / HOUR_GOAL) * 100));
     const completed = signups().filter(item => item.email === currentEmail() && item.status === 'completed').length;
@@ -165,7 +198,7 @@
         <span class="ui-achievement">${trainingCompleted >= 1 ? '🎓' : '🔒'} Training complete</span>
       </div>
     `;
-    statsCard.append(wrap);
+    statsHost.append(wrap);
   }
 
   function statusKind(text) {
@@ -292,8 +325,7 @@
   }
 
   function runEnhancements() {
-    decorateEmptyState();
-    decorateProfileSummary();
+    decorateProfileCard();
     decorateProgress();
     decorateStatusBadges();
     decorateCards();
