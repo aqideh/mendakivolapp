@@ -1,6 +1,6 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 31 admin UX refinement implementation; Phase 32 is the accepted next development phase.
+Last updated: after Phase 32 QA/smoke-test baseline implementation; Phase 33 is the accepted next development phase.
 
 ## Current status
 
@@ -15,6 +15,7 @@ The current app includes:
 - Supabase Auth.
 - Dashboard and admin tools.
 - Phase 31 admin workspace tabs and filtering.
+- Phase 32 QA smoke-check panel and verification SQL.
 - Hierarchical opportunity/session editing.
 - Session-specific opportunity signups.
 - Session-aware attendance validation foundation.
@@ -232,55 +233,70 @@ assets/phase-thirty-one-admin-ux.js
 docs/phase-thirty-one-admin-ux-refinement.md
 ```
 
+### Phase 32 — QA / Smoke Tests / Hardening
+
+Implemented a repeatable QA baseline:
+
+- Manual QA checklist covering auth, profile, opportunities, attendance, training, referrals, points, reports, audit, notifications, and admin workspace.
+- Consolidated Supabase verification SQL that returns one result set.
+- Admin-only in-app QA smoke-check panel.
+- Read-only checks for required tables, Phase 30 columns/functions, Phase 29.5 anonymous grant audit, session reference integrity, admin report/audit RPC access, and operational counts.
+- Live Supabase verification run passed all consolidated SQL checks.
+
+Primary files:
+
+```text
+docs/phase-thirty-two-qa-smoke-tests.md
+supabase/verification/phase32_smoke_checks.sql
+assets/phase-thirty-two-qa-tools.css
+assets/phase-thirty-two-qa-tools.js
+```
+
+Live verification results:
+
+- `phase29_5_anon_rpc_grants`: pass, 0.
+- `required_tables_missing`: pass, 0.
+- `phase30_training_columns_missing`: pass, 0.
+- `phase30_functions_missing`: pass, 0.
+- `phase30_training_session_unique_index_missing`: pass, 0.
+- `invalid_training_signup_session_refs`: pass, 0.
+- `invalid_training_parent_refs`: pass, 0.
+- `invalid_opportunity_signup_session_refs`: pass, 0.
+- `invalid_attendance_claim_session_refs`: pass, 0.
+
+Context counts at verification time:
+
+```text
+opportunities: 7
+opportunity_sessions: 7
+opportunity_signups: 4
+attendance_claims: 2
+training_rows: 3
+training_signups: 0
+referrals: 0
+points_ledger: 0
+notifications: 3
+audit_logs: 0
+```
+
 Known limitations:
 
-- The admin workspace is still a dashboard-tab layer, not a fully routed admin app.
-- Search/status filters are text-based over visible cards, not server-side table filters.
-- Training session deletion does not yet show a deep dependency preview.
-- Full regression and role-permission tests remain Phase 32.
+- Volunteer-vs-admin role-permission testing still requires manual sign-in with separate accounts.
+- The in-app QA panel is read-only and does not create test records.
+- Browser compatibility still needs human testing.
+- Supabase advisor warnings may still include known Phase 33 items.
 
 ## Accepted roadmap order
 
 Use this order in future sessions unless a new production blocker appears:
 
 ```text
-Phase 32 — QA / Smoke Tests / Hardening
 Phase 33 — Production Readiness
 ```
 
-## Phase 32 — QA / Smoke Tests / Hardening
+## Phase 33 — Production Readiness
 
 Status: accepted immediate next phase.
-
-Purpose: create a repeatable regression safety net.
-
-Recommended scope:
-
-- Manual QA checklist.
-- Lightweight smoke-test script.
-- Migration verification queries.
-- Role-permission tests.
-- Capacity/waitlist tests.
-- Session-selection tests.
-- Session-aware attendance tests.
-- Training session-selection and session-completion tests.
-- Auth tests.
-- Referral attribution tests.
-- Referral duplicate-prevention tests.
-- Points idempotency tests.
-- CSV/report export tests.
-- Notification preference/grouping tests.
-- Audit filtering/export tests.
-- Phase 31 admin workspace tab/filter tests.
-- Phase 31 training session manager create/edit/delete tests.
-- Re-run `get_phase_29_5_rpc_grant_audit()` and confirm targeted RPCs still have no anonymous execute grants.
-- Confirm volunteer users cannot access admin report/audit/review/code-management RPC results.
-
-Dependencies:
-
-- All operational flows that need pilot confidence.
-
-## Phase 33 — Production Readiness
 
 Purpose: prepare the pilot/beta for safer production use.
 
@@ -317,7 +333,7 @@ Dependencies:
 
 ## Later follow-up items
 
-Keep these visible but do not let them block Phase 32 unless they become operational blockers:
+Keep these visible but do not let them block Phase 33 unless they become operational blockers:
 
 - Public referral landing page.
 - Referral conversion workflow.
@@ -334,21 +350,20 @@ Keep these visible but do not let them block Phase 32 unless they become operati
 
 ## Recommended next task
 
-Start with **Phase 32 — QA / Smoke Tests / Hardening**.
+Start with **Phase 33 — Production Readiness**.
 
 Reasoning:
 
-- Phases 24–31 added many features and admin surfaces.
-- The next bottleneck is regression risk, not another feature area.
-- Phase 32 should establish repeatable manual and lightweight automated checks before production-readiness work.
+- Phases 24–32 have added the major pilot features and a QA baseline.
+- The next bottleneck is safe production operation rather than additional feature expansion.
+- Phase 33 should focus on security posture, deployment configuration, cleanup, and operational guidance.
 
-Minimum Phase 32 implementation should include:
+Minimum Phase 33 implementation should include:
 
-1. Manual QA checklist.
-2. Lightweight smoke-test script or browser-console checklist.
-3. Migration verification queries.
-4. Role-permission checks.
-5. Capacity/waitlist checks.
-6. Session-aware opportunity attendance checks.
-7. Training session-selection checks.
-8. Referral, points, reports, audit, notification, and admin workspace checks.
+1. Supabase advisor review and triage.
+2. Auth redirect/email template verification notes.
+3. RLS and RPC grant review.
+4. Environment/config documentation.
+5. Backup/restore and deployment checklist.
+6. Export/data-retention notes.
+7. Legacy Sveltia cleanup plan or deletion after manual QA confirmation.
