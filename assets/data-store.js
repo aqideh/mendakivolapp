@@ -371,10 +371,14 @@ window.VolunteerDataStore = VolunteerDataStore;
     else list.push(item);
     return list;
   }
+  function defaultSessionIdForOpportunity(opportunityId) {
+    return window.MENDAKIOpportunitySessions?.defaultForOpportunity?.(opportunityId)?.id || '';
+  }
   function opportunitySignupFromRow(row) {
     return {
       id: row.id,
       opportunityId: String(row.opportunity_id || ''),
+      sessionId: row.session_id || '',
       email: row.email || '',
       volunteerName: row.volunteer_name || 'Volunteer',
       title: row.title || '',
@@ -426,6 +430,7 @@ window.VolunteerDataStore = VolunteerDataStore;
       id: row.id,
       signupId: row.signup_id || '',
       opportunityId: String(row.opportunity_id || ''),
+      sessionId: row.session_id || '',
       email: row.email || '',
       volunteerName: row.volunteer_name || 'Volunteer',
       title: row.title || '',
@@ -581,10 +586,12 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (!validation.ok) return window.alert(validation.reason || 'Invalid facilitator code.');
     const now = new Date().toISOString();
     const existing = store().getAttendanceClaims().find(item => item.signupId === signup.id);
+    const resolvedSessionId = signup.sessionId || existing?.sessionId || defaultSessionIdForOpportunity(signup.opportunityId) || null;
     const row = {
       id: existing?.id || crypto.randomUUID(),
       signup_id: signup.id,
       opportunity_id: String(signup.opportunityId || ''),
+      session_id: resolvedSessionId,
       email: signup.email || session()?.email || '',
       volunteer_name: signup.volunteerName || session()?.name || 'Volunteer',
       title: signup.title || '',
