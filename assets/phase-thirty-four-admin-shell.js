@@ -33,6 +33,7 @@
   };
 
   const state34 = { activeArea: 'home', open: false };
+  const refreshState34 = { active: new Set(), completed: new Set(), errors: new Map() };
 
   function store() { return window.VolunteerDataStore; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
@@ -176,6 +177,35 @@
     host.insertAdjacentHTML('beforeend', '<div class="phase34-empty">Legacy fallback tools are retired from this admin shell. Use the canonical tools on this page.</div>');
   }
 
+  function refreshAdminAreaData(area, options = {}) {
+    if (!isAdmin() || !store()?.getSession?.()?.email) return;
+    if (!['signups', 'attendance'].includes(area)) return;
+    if (refreshState34.active.has(area)) return;
+    if (refreshState34.completed.has(area) && options.force !== true) return;
+
+    const task = area === 'signups'
+      ? store()?.fetchSupabaseOpportunitySignups?.()
+      : store()?.fetchSupabaseAttendanceClaims?.();
+
+    if (!task || typeof task.then !== 'function') return;
+
+    refreshState34.active.add(area);
+    refreshState34.errors.delete(area);
+    task
+      .then(() => {
+        refreshState34.completed.add(area);
+        refreshEntry();
+        if (state34.open && state34.activeArea === area) mountArea();
+      })
+      .catch(error => {
+        refreshState34.errors.set(area, error?.message || `Could not refresh ${area} data.`);
+        console.warn(`Could not refresh ${area} admin data`, error);
+      })
+      .finally(() => {
+        refreshState34.active.delete(area);
+      });
+  }
+
   function mountArea() {
     const shell = ensureShell();
     if (!shell) return;
@@ -211,6 +241,7 @@
     if (shell) shell.hidden = false;
     ensureEntry();
     mountArea();
+    refreshAdminAreaData(area);
     shell?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -233,7 +264,10 @@
     ensureShell();
     markHiddenLegacyAdminCards();
     refreshEntry();
-    if (state34.open) mountArea();
+    if (state34.open) {
+      mountArea();
+      refreshAdminAreaData(state34.activeArea);
+    }
   }
 
   function bind() {
@@ -260,7 +294,7 @@
     }, true);
   }
 
-  window.MENDAKIPhase34AdminShell = { install, openShell, closeShell, mountArea };
+  window.MENDAKIPhase34AdminShell = { install, openShell, closeShell, mountArea, refreshAdminAreaData };
 
   document.addEventListener('DOMContentLoaded', () => {
     bind();
@@ -268,7 +302,10 @@
     window.setTimeout(install, 3200);
   });
   window.addEventListener('volunteer-auth-ready', install);
-  window.addEventListener('volunteer-auth-changed', install);
+  window.addEventListener('volunteer-auth-changed', () => {
+    refreshState34.completed.clear();
+    install();
+  });
   window.addEventListener('volunteer-signups-synced', install);
   window.addEventListener('volunteer-attendance-synced', install);
   window.addEventListener('volunteer-training-signups-synced', install);
