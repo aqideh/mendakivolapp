@@ -225,8 +225,8 @@
     });
 
     if (error) {
-      console.warn('Capacity-aware sign-up unavailable; falling back to direct sign-up save.', error);
-      return { ok: false, reason: error.message, fallback: true };
+      console.warn('Capacity-aware sign-up failed. No local sign-up was created.', error);
+      return { ok: false, reason: error.message };
     }
 
     const saved = rowToSignup(data);
@@ -252,8 +252,8 @@
     });
 
     if (error) {
-      console.warn('Capacity-aware sign-up review unavailable; falling back to direct sign-up save.', error);
-      return { ok: false, reason: error.message, fallback: true };
+      console.warn('Capacity-aware sign-up review failed. No local review decision was created.', error);
+      return { ok: false, reason: error.message };
     }
 
     const saved = rowToSignup(data);
@@ -276,11 +276,13 @@
     if (options.capacityCreate === true) {
       const capacityResult = await createSupabaseSignupWithCapacity(signup);
       if (capacityResult.ok) return capacityResult;
+      return capacityResult;
     }
 
     if (options.capacityReview === true) {
       const reviewResult = await reviewSupabaseSignupWithCapacity(signup, previousStatus);
       if (reviewResult.ok) return reviewResult;
+      return reviewResult;
     }
 
     const row = signupToRow(signup);
@@ -291,7 +293,7 @@
     const { data, error } = await request.select('*').single();
 
     if (error) {
-      console.warn('Could not save Supabase opportunity sign-up; local fallback remains active.', error);
+      console.warn('Could not save Supabase opportunity sign-up. No local fallback was applied.', error);
       return { ok: false, reason: error.message };
     }
 
@@ -316,6 +318,175 @@
       .find(item => item.email === email && String(item.opportunityId) === String(oppId));
   }
 
+  function buildSignupDraft(oppId) {
+    const current = session();
+    if (!current?.email) return { ok: false, reason: 'auth_required' };
+    const currentState = appState();
+    const opp = currentState?.data?.opportunities?.find(item => String(item.id) === String(oppId));
+    if (!opp) return { ok: false, reason: 'not_found' };
+    const profile = window.VolunteerDataStore.getProfile?.() || {};
+    const existing = signupByOpportunityForCurrentUser(oppId);
+    return {
+      ok: true,
+      signup: {
+        id: existing?.id || crypto.randomUUID(),
+        opportunityId: String(opp.id),
+        email: current.email,
+        volunteerName: profile?.name || current.name || 'Volunteer',
+        title: opp.title,
+        type: opp.type,
+        category: opp.category,
+        time: opp.time,
+        location: opp.location,
+        commitment: opp.commitment,
+        hours: Number(opp.defaultHours || existing?.hours || 0),
+        status: 'pending_review',
+        signedUpAt: existing?.signedUpAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    };
+  }
+
+  function setButtonBusy(button, busy, label = 'Saving...') {
+    if (!button) return;
+    if (busy) {
+      button.dataset.originalText = button.textContent || '';
+      button.disabled = true;
+      button.textContent = label;
+    } else {
+      button.disabled = false;
+      if (button.dataset.originalText) button.textContent = button.dataset.originalText;
+      delete button.dataset.originalText;
+    }
+  }
+
+  function showSignupNotice(message, variant = 'success') {
+    if (typeof phaseTwoShowModalNotice === 'function') {
+      phaseTwoShowModalNotice(message, variant);
+      return;
+    }
+    if (variant === 'error') window.alert(message);
+  }
+
+  function labelForStatus(status) {
+    if (typeof phaseTwoStatusLabel === 'function') return phaseTwoStatusLabel(status);
+    return status || 'Pending review';
+  }
+
+  async function refreshAfterAuthoritativeWrite() {
+    await fetchSupabaseOpportunitySignups();
+    refreshVisibleSignupViews();
+  }
+
+  async function createAuthoritativeSignup(button) {
+    const draft = buildSignupDraft(button.dataset.signupOpportunity);
+    if (!draft.ok) {
+      if (draft.reason === 'auth_required' && typeof phaseOneOpenAuth === 'function') phaseOneOpenAuth();
+      else showSignupNotice('Could not create this sign-up. Please try again.', 'error');
+      return;
+    }
+
+    setButtonBusy(button, true, 'Signing up...');
+    const result = await createSupabaseSignupWithCapacity(draft.signup);
+    setButtonBusy(button, false);
+
+    if (!result.ok) {
+      showSignupNotice(`Could not create this sign-up: ${result.reason || 'database write failed'}`, 'error');
+      return;
+    }
+
+    await refreshAfterAuthoritativeWrite();
+    button.textContent = labelForStatus(result.signup.status);
+    button.disabled = true;
+    showSignupNotice(`Your sign-up is ${labelForStatus(result.signup.status).toLowerCase()}. It will appear in your dashboard.`);
+  }
+
+  async function cancelAuthoritativeSignup(button) {
+    const oppId = button.dataset.cancelSignup;
+    const before = signupByOpportunityForCurrentUser(oppId);
+    if (!before) {
+      showSignupNotice('Could not find this sign-up to cancel.', 'error');
+      return;
+    }
+
+    const next = {
+      ...before,
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setButtonBusy(button, true, 'Cancelling...');
+    const result = await saveSupabaseOpportunitySignup(next, { mode: 'update', previousStatus: before.status || '' });
+    setButtonBusy(button, false);
+
+    if (!result.ok) {
+      showSignupNotice(`Could not cancel this sign-up: ${result.reason || 'database write failed'}`, 'error');
+      return;
+    }
+
+    await refreshAfterAuthoritativeWrite();
+    showSignupNotice('Your sign-up was cancelled.');
+  }
+
+  async function reviewAuthoritativeSignup(button) {
+    const signupId = button.dataset.signupId;
+    const status = button.dataset.adminSignupStatus;
+    const before = signupById(signupId);
+    if (!before || !status) return;
+
+    const next = {
+      ...before,
+      status,
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: session()?.email || 'admin',
+      updatedAt: new Date().toISOString()
+    };
+
+    setButtonBusy(button, true, 'Saving...');
+    const result = await reviewSupabaseSignupWithCapacity(next, before.status || '');
+    setButtonBusy(button, false);
+
+    if (!result.ok) {
+      window.alert(`Could not update sign-up status: ${result.reason || 'database write failed'}`);
+      return;
+    }
+
+    await refreshAfterAuthoritativeWrite();
+  }
+
+  function installAuthoritativeSignupHandlers() {
+    if (window.__phaseEightAuthoritativeSignupHandlersInstalled) return;
+    window.__phaseEightAuthoritativeSignupHandlersInstalled = true;
+
+    document.addEventListener('click', event => {
+      if (!isSupabaseReady()) return;
+
+      const signupButton = event.target.closest('[data-signup-opportunity]');
+      if (signupButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        createAuthoritativeSignup(signupButton);
+        return;
+      }
+
+      const cancelButton = event.target.closest('[data-cancel-signup]');
+      if (cancelButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        cancelAuthoritativeSignup(cancelButton);
+        return;
+      }
+
+      const adminStatusButton = event.target.closest('[data-admin-signup-status]');
+      if (adminStatusButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        reviewAuthoritativeSignup(adminStatusButton);
+      }
+    }, true);
+  }
+
   function persistSignupChange(signup, options = {}) {
     if (!signup) return Promise.resolve({ ok: false, reason: 'missing_signup' });
     return saveSupabaseOpportunitySignup(signup, options).then(result => {
@@ -334,12 +505,14 @@
     const originalUpdate = phaseTwoUpdateSignupStatus;
 
     window.phaseTwoCreateSignup = function phaseEightCreateSignup(oppId) {
+      if (isSupabaseReady()) return { ok: false, reason: 'supabase_authoritative_handler' };
       const result = originalCreate(oppId);
       if (result?.ok && result.signup) persistSignupChange(result.signup, { mode: 'upsert', capacityCreate: true });
       return result;
     };
 
     window.phaseTwoCancelSignup = function phaseEightCancelSignup(oppId) {
+      if (isSupabaseReady()) return { ok: false, reason: 'supabase_authoritative_handler' };
       const email = window.VolunteerDataStore.currentEmail();
       const before = signupByOpportunityForCurrentUser(oppId);
       const result = originalCancel(oppId);
@@ -352,6 +525,7 @@
     };
 
     window.phaseTwoUpdateSignupStatus = function phaseEightUpdateSignupStatus(signupId, status) {
+      if (isSupabaseReady()) return { ok: false, reason: 'supabase_authoritative_handler' };
       const before = signupById(signupId);
       const previousStatus = before?.status || '';
       const result = originalUpdate(signupId, status);
@@ -365,6 +539,7 @@
     window.__phaseEightClickPersistenceInstalled = true;
 
     document.addEventListener('click', event => {
+      if (isSupabaseReady()) return;
       const cancelButton = event.target.closest('[data-cancel-signup]');
       if (cancelButton) {
         const oppId = cancelButton.dataset.cancelSignup;
@@ -404,6 +579,8 @@
     reviewSupabaseSignupWithCapacity
   });
   window.phaseTwoPersistSignupChange = persistSignupChange;
+
+  installAuthoritativeSignupHandlers();
 
   window.addEventListener('volunteer-auth-ready', () => {
     installSignupPersistenceWrappers();
