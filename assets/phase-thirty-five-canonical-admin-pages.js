@@ -22,6 +22,10 @@
     return new Intl.DateTimeFormat('en-SG', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
   }
 
+  function phase36(area, host, ctx) {
+    return Boolean(window.MENDAKIPhase36AdminTables?.render?.(area, host, ctx));
+  }
+
   function tile(label, value) {
     return `<div class="phase35-summary-tile"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`;
   }
@@ -73,7 +77,7 @@
           <article class="phase35-action-card"><strong>Manage training</strong><span>Create sessions and review training completions.</span>${shellButton('training', 'Open training')}</article>
           <article class="phase35-action-card"><strong>Run readiness checks</strong><span>Use QA and production-readiness tools before demos.</span>${shellButton('system', 'Open System / QA')}</article>
         </div>
-        <div class="phase35-page-note">Phase 35 canonical pages are now the primary admin surface. Existing tools remain available inside collapsed fallback sections until each workflow is fully rewritten.</div>
+        <div class="phase35-page-note">Phase 35 canonical pages are now the primary admin surface. Phase 36 tables now power the main queues.</div>
       </div>
     `;
     return true;
@@ -118,56 +122,44 @@
   }
 
   function renderSignups(host, ctx) {
+    if (phase36('signups', host, ctx)) return true;
+    return renderFallbackSignups(host, ctx);
+  }
+
+  function renderFallbackSignups(host, ctx) {
     const queue = signups().filter(s => ['pending_review', 'waitlisted', 'confirmed', 'registered'].includes(statusOf(s))).slice(0, 12);
     const rows = queue.map(s => `<tr><td>${escapeHtml(s.volunteerName || s.volunteer_name || s.email || '-')}</td><td>${escapeHtml(s.title || s.opportunityTitle || s.opportunity_id || '-')}</td><td>${escapeHtml(s.sessionTitle || s.session_id || '-')}</td><td>${badge(statusOf(s))}</td><td>${escapeHtml(fmt(s.signedUpAt || s.created_at))}</td></tr>`);
-    host.innerHTML = `
-      <div class="phase35-page">
-        <div class="phase35-summary-grid">
-          ${tile('Pending review', countBy(signups(), s => statusOf(s) === 'pending_review'))}
-          ${tile('Waitlisted', countBy(signups(), s => statusOf(s) === 'waitlisted'))}
-          ${tile('Confirmed/registered', countBy(signups(), s => ['confirmed', 'registered'].includes(statusOf(s))))}
-        </div>
-        ${table('Opportunity sign-up queue preview', ['Volunteer', 'Opportunity', 'Session', 'Status', 'Submitted'], rows)}
-      </div>
-    `;
+    host.innerHTML = `<div class="phase35-page"><div class="phase35-summary-grid">${tile('Pending review', countBy(signups(), s => statusOf(s) === 'pending_review'))}${tile('Waitlisted', countBy(signups(), s => statusOf(s) === 'waitlisted'))}${tile('Confirmed/registered', countBy(signups(), s => ['confirmed', 'registered'].includes(statusOf(s))))}</div>${table('Opportunity sign-up queue preview', ['Volunteer', 'Opportunity', 'Session', 'Status', 'Submitted'], rows)}</div>`;
     legacy(host.querySelector('.phase35-page'), ctx);
     return true;
   }
 
   function renderAttendance(host, ctx) {
+    if (phase36('attendance', host, ctx)) return true;
+    return renderFallbackAttendance(host, ctx);
+  }
+
+  function renderFallbackAttendance(host, ctx) {
     const rows = attendanceClaims().slice(0, 12).map(c => `<tr><td>${escapeHtml(c.volunteerName || c.volunteer_name || c.email || '-')}</td><td>${escapeHtml(c.title || c.opportunityTitle || c.opportunity_id || '-')}</td><td>${escapeHtml(c.sessionTitle || c.session_id || '-')}</td><td>${escapeHtml(c.hours || c.claimed_hours || '-')}</td><td>${badge(statusOf(c))}</td></tr>`);
-    host.innerHTML = `
-      <div class="phase35-page">
-        <div class="phase35-summary-grid">
-          ${tile('Checked in', countBy(attendanceClaims(), c => statusOf(c) === 'checked_in'))}
-          ${tile('Submitted', countBy(attendanceClaims(), c => statusOf(c) === 'submitted'))}
-          ${tile('Verified', countBy(attendanceClaims(), c => statusOf(c) === 'verified'))}
-        </div>
-        ${table('Attendance review preview', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows)}
-      </div>
-    `;
+    host.innerHTML = `<div class="phase35-page"><div class="phase35-summary-grid">${tile('Checked in', countBy(attendanceClaims(), c => statusOf(c) === 'checked_in'))}${tile('Submitted', countBy(attendanceClaims(), c => statusOf(c) === 'submitted'))}${tile('Verified', countBy(attendanceClaims(), c => statusOf(c) === 'verified'))}</div>${table('Attendance review preview', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows)}</div>`;
     legacy(host.querySelector('.phase35-page'), ctx);
     return true;
   }
 
   function renderTraining(host, ctx) {
+    if (phase36('training', host, ctx)) return true;
+    return renderFallbackTraining(host, ctx);
+  }
+
+  function renderFallbackTraining(host, ctx) {
     const rows = trainings().slice(0, 10).map(t => `<tr><td><strong>${escapeHtml(t.title || t.id)}</strong><br><span class="dashboard-muted">${escapeHtml(t.sessionTitle || t.trainer || '')}</span></td><td>${escapeHtml(fmt(t.startsAt || t.date))}</td><td>${escapeHtml(t.location || '-')}</td><td>${escapeHtml(t.capacity || 'unlimited')}</td><td>${badge(t.status || 'Open')}</td></tr>`);
-    host.innerHTML = `
-      <div class="phase35-page">
-        <div class="phase35-summary-grid">
-          ${tile('Training rows', trainings().length)}
-          ${tile('Training sign-ups', trainingSignups().length)}
-          ${tile('Completed', countBy(trainingSignups(), t => statusOf(t) === 'completed'))}
-        </div>
-        ${table('Training programme/session preview', ['Training', 'Date', 'Location', 'Capacity', 'Status'], rows)}
-        <div class="phase35-page-note">Canonical owner: parent training rows, child sessions, training sign-ups, completion review, and training points context.</div>
-      </div>
-    `;
+    host.innerHTML = `<div class="phase35-page"><div class="phase35-summary-grid">${tile('Training rows', trainings().length)}${tile('Training sign-ups', trainingSignups().length)}${tile('Completed', countBy(trainingSignups(), t => statusOf(t) === 'completed'))}</div>${table('Training programme/session preview', ['Training', 'Date', 'Location', 'Capacity', 'Status'], rows)}<div class="phase35-page-note">Canonical owner: parent training rows, child sessions, training sign-ups, completion review, and training points context.</div></div>`;
     legacy(host.querySelector('.phase35-page'), ctx);
     return true;
   }
 
   function renderSimple(host, ctx, config) {
+    if (config.phase36Area && phase36(config.phase36Area, host, ctx)) return true;
     host.innerHTML = `
       <div class="phase35-page">
         <div class="phase35-action-grid">
@@ -187,10 +179,10 @@
     signups: renderSignups,
     attendance: renderAttendance,
     training: renderTraining,
-    referrals: (host, ctx) => renderSimple(host, ctx, { actions: [['Referral tracking', 'Review referral codes, accepted referrals, and duplicate/self-referral prevention.'], ['Workflow status', 'Future canonical workflow should add referral status transitions and conversion review.']] }),
-    points: (host, ctx) => renderSimple(host, ctx, { actions: [['Points ledger', 'Review awarded points and idempotent source records.'], ['Achievements', 'Review user achievements and future adjustment/backfill workflows.']] }),
+    referrals: (host, ctx) => renderSimple(host, ctx, { phase36Area: 'referrals', actions: [['Referral tracking', 'Review referral codes, accepted referrals, and duplicate/self-referral prevention.'], ['Workflow status', 'Future canonical workflow should add referral status transitions and conversion review.']] }),
+    points: (host, ctx) => renderSimple(host, ctx, { phase36Area: 'points', actions: [['Points ledger', 'Review awarded points and idempotent source records.'], ['Achievements', 'Review user achievements and future adjustment/backfill workflows.']] }),
     reports: (host, ctx) => renderSimple(host, ctx, { actions: [['Report runner', 'Run volunteer hours, attendance, opportunity, training, referral, and points reports.'], ['CSV exports', 'Export pilot-scale browser CSVs; large export controls remain production follow-up.']] }),
-    audit: (host, ctx) => renderSimple(host, ctx, { actions: [['Audit search', 'Find who changed what, when, and with which metadata.'], ['Audit export', 'Export audit rows for operational review.']] }),
+    audit: (host, ctx) => renderSimple(host, ctx, { phase36Area: 'audit', actions: [['Audit search', 'Find who changed what, when, and with which metadata.'], ['Audit export', 'Export audit rows for operational review.']] }),
     notifications: (host, ctx) => renderSimple(host, ctx, { actions: [['Notification history', 'Review active and historical notifications.'], ['Preferences', 'Manage preference-aware in-app notification behaviour.']] }),
     system: (host, ctx) => renderSimple(host, ctx, { actions: [['QA smoke checks', 'Run read-only in-app checks before demos or handoff.'], ['Production readiness', 'Use Phase 32 and Phase 33 SQL verification and advisor follow-ups.']] })
   };
