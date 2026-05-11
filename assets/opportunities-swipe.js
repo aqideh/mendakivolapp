@@ -81,6 +81,26 @@ function categoryLabel(category = '') {
   return volunteerCategoryMeta[category]?.label || '';
 }
 
+function opportunityListReady() {
+  return Array.isArray(state?.data?.opportunities);
+}
+
+function safeOpportunityList() {
+  return opportunityListReady() ? state.data.opportunities : [];
+}
+
+function renderOpportunityLoadingState(targetSelector = '#opportunities-grid') {
+  const shell = qs(targetSelector);
+  if (!shell) return;
+  clear(shell);
+  if (targetSelector === '#opportunities-grid') {
+    shell.className = 'container opportunity-swipe-shell';
+    const empty = qs('#opportunities-empty');
+    if (empty) empty.hidden = true;
+    shell.append(make('div', { class: 'empty-state', text: 'Opportunities are still loading.' }));
+  }
+}
+
 function opportunityPhotoNode(opp, className = 'opp-photo-wrap') {
   const alt = opp.photoAlt || `${opp.title} volunteer opportunity photo`;
   if (opp.photo) {
@@ -124,8 +144,10 @@ function createOpportunityCard(opp, index, total) {
 
 function renderHomeOpportunities() {
   const container = qs('#home-opportunities');
+  if (!container) return;
   clear(container);
-  state.data.opportunities.slice(0, 4).forEach(opp => {
+  if (!opportunityListReady()) return;
+  safeOpportunityList().slice(0, 4).forEach(opp => {
     const card = make('button', {
       type: 'button',
       class: 'mini-card',
@@ -194,16 +216,21 @@ function matchesOpportunityFilter(opp) {
 function renderOpportunities() {
   const shell = qs('#opportunities-grid');
   const empty = qs('#opportunities-empty');
+  if (!shell) return;
   clear(shell);
   shell.className = 'container opportunity-swipe-shell';
+  if (!opportunityListReady()) {
+    renderOpportunityLoadingState();
+    return;
+  }
 
-  const query = state.oppQuery.trim().toLowerCase();
-  const list = state.data.opportunities.filter(opp => {
+  const query = String(state.oppQuery || '').trim().toLowerCase();
+  const list = safeOpportunityList().filter(opp => {
     const haystack = [opp.title, opp.description, opp.location, opp.time, opp.commitment, opp.requirements, categoryLabel(opp.category)].join(' ').toLowerCase();
     return matchesOpportunityFilter(opp) && (!query || haystack.includes(query));
   });
 
-  empty.hidden = list.length > 0;
+  if (empty) empty.hidden = list.length > 0;
   shell.append(
     make('div', { class: 'swipe-instructions', text: 'Swipe the card deck to compare roles. Photos can be uploaded for each opportunity in the CMS.' }),
     make('div', { class: 'opportunity-swipe-deck', tabindex: '0', 'aria-label': 'Swipe through volunteer opportunities' }, list.map((opp, index) => createOpportunityCard(opp, index, list.length))),
