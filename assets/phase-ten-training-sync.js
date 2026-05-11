@@ -6,10 +6,6 @@
     return window.VolunteerDataStore?.authState?.supabase || null;
   }
 
-  function session() {
-    return window.VolunteerDataStore?.getSession?.() || null;
-  }
-
   function appState() {
     try {
       return typeof state !== 'undefined' ? state : null;
@@ -19,7 +15,7 @@
   }
 
   function isReady() {
-    return Boolean(client() && session()?.email);
+    return Boolean(client() && window.VolunteerDataStore.$.session()?.email);
   }
 
   function rowToTraining(row) {
@@ -81,7 +77,7 @@
   }
 
   function signupToRow(signup) {
-    const current = session() || {};
+    const current = window.VolunteerDataStore.$.session() || {};
     const now = new Date().toISOString();
     return {
       id: signup.id,
@@ -154,7 +150,7 @@
 
   async function fetchSupabaseTrainingSignups() {
     const supabase = client();
-    if (!supabase || !session()?.email) return [];
+    if (!supabase || !window.VolunteerDataStore.$.session()?.email) return [];
 
     const { data, error } = await supabase
       .from(SIGNUP_TABLE)
@@ -181,12 +177,12 @@
 
   async function createSupabaseTrainingSignupWithCapacity(signup) {
     const supabase = client();
-    if (!supabase || !session()?.email || !signup?.trainingId) return { ok: false, skipped: true };
+    if (!supabase || !window.VolunteerDataStore.$.session()?.email || !signup?.trainingId) return { ok: false, skipped: true };
 
     const { data, error } = await supabase.rpc('create_training_signup_with_capacity', {
       p_signup_id: signup.id || null,
       p_training_id: String(signup.trainingId),
-      p_volunteer_name: signup.volunteerName || session()?.name || 'Volunteer'
+      p_volunteer_name: signup.volunteerName || window.VolunteerDataStore.$.session()?.name || 'Volunteer'
     });
 
     if (error) {
@@ -206,7 +202,7 @@
 
   async function reviewSupabaseTrainingSignupLifecycle(signup, previousStatus = '') {
     const supabase = client();
-    if (!supabase || !session()?.email || !signup?.id || !window.VolunteerDataStore?.isAdmin?.()) return { ok: false, skipped: true };
+    if (!supabase || !window.VolunteerDataStore.$.session()?.email || !signup?.id || !window.VolunteerDataStore?.isAdmin?.()) return { ok: false, skipped: true };
     if (!['registered', 'waitlisted', 'completed', 'cancelled', 'declined', 'no_show'].includes(signup.status)) return { ok: false, skipped: true };
 
     const { data, error } = await supabase.rpc('review_training_signup_lifecycle', {
@@ -234,7 +230,7 @@
 
   async function saveSupabaseTrainingSignup(signup, options = {}) {
     const supabase = client();
-    if (!supabase || !session()?.email || !signup?.id) return { ok: false, skipped: true };
+    if (!supabase || !window.VolunteerDataStore.$.session()?.email || !signup?.id) return { ok: false, skipped: true };
 
     const existing = window.VolunteerDataStore.getTrainingSignups().find(item => item.id === signup.id);
     const previousStatus = options.previousStatus || existing?.status || '';
