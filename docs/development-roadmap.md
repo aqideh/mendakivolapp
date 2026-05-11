@@ -1,13 +1,13 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 37 visible legacy admin surface retirement.
+Last updated: after Phase 38 drawer review action migration.
 
 ## Current status
 
 The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now:
 
 ```text
-Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → fallback tools only where needed
+Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers → drawer review actions + fallback tools where needed
 ```
 
 The current app includes:
@@ -18,6 +18,7 @@ The current app includes:
 - Phase 35 canonical admin pages with collapsed legacy fallback tools.
 - Phase 36 table queues and detail drawers for key admin workflows.
 - Phase 37 visible legacy admin surface retirement from the main dashboard.
+- Phase 38 drawer review actions for opportunity sign-ups, attendance claims, and training sign-ups.
 - Phase 31 admin workspace support retained for compatibility but retired as a primary visible surface.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
@@ -214,14 +215,7 @@ docs/phase-thirty-six-admin-table-queues.md
 
 ### Phase 37 — Legacy Admin Surface Retirement
 
-Implemented visible-surface retirement without deleting unique capabilities:
-
-- Hid legacy admin cards from the main dashboard by default.
-- Kept one visible dashboard-level admin entry point: Admin workspace.
-- Kept legacy mutation/action tools reachable inside admin shell fallback sections.
-- Marked the Phase 31 hub as retired as a visible primary admin surface.
-- Added a System / QA note showing fallback legacy-surface status.
-- Did not delete action cards, Phase 31 support files, Sveltia files, or legacy code paths that may still be needed for mutations.
+Implemented visible-surface retirement without deleting unique capabilities.
 
 Primary files:
 
@@ -237,38 +231,78 @@ assets/phase-thirty-four-admin-shell.css
 index.html
 ```
 
+### Phase 38 — Drawer Review Action Migration
+
+Implemented the first safe set of row-level drawer actions:
+
+- Added external drawer action hook to Phase 36 tables.
+- Added drawer review actions for opportunity sign-ups:
+  - Confirm;
+  - Waitlist;
+  - Decline;
+  - Reset pending.
+- Added drawer review actions for attendance claims:
+  - Verify;
+  - Request clarification;
+  - Reject.
+- Added drawer review actions for training sign-ups:
+  - Mark completed;
+  - Mark no-show;
+  - Cancel;
+  - Reset registered.
+- Reused existing authoritative review/save functions rather than adding new direct write paths.
+- Added confirmation prompts, saving states, refresh hooks, drawer close, and shell remount after review actions.
+- Kept fallback tools available until manual QA confirms drawer actions are reliable.
+
+Primary files:
+
+```text
+assets/phase-thirty-eight-drawer-review-actions.js
+docs/phase-thirty-eight-drawer-review-actions.md
+```
+
+Related change:
+
+```text
+assets/phase-thirty-six-admin-tables.js
+index.html
+```
+
 Known limitations:
 
-- Some fallback tools are still required for approve/verify/update mutations.
-- Drawer actions are not yet connected to Supabase RPCs.
-- Legacy code still runs to generate fallback tools.
-- Full deletion should wait until Phase 38+ action migration and manual QA.
+- Drawer actions do not yet expose custom admin notes.
+- Attendance verified-hours adjustment is basic and uses existing/claimed hours.
+- Referral status workflow actions are not yet migrated.
+- Points adjustment workflow is not yet implemented and should remain policy-gated.
+- Audit remains dependent on the existing audit card for full search/export details.
+- Fallback legacy tools should stay until Phase 38 actions pass manual QA.
 
 ## Current consolidation roadmap
 
 The next work should continue the single-admin-interface track carefully:
 
 ```text
-Phase 38 — Drawer Action Migration
+Phase 39 — Drawer Action Completion and Admin Notes
 ```
 
-## Phase 38 — Drawer Action Migration
+## Phase 39 — Drawer Action Completion and Admin Notes
 
-Purpose: migrate safe row-level mutations from legacy cards into Phase 36 detail drawers.
+Purpose: complete drawer-based admin actions so fallback legacy tools can eventually be removed.
 
 Recommended scope:
 
-- Sign-up review actions.
-- Attendance verification/rejection actions.
-- Training completion/no-show actions.
-- Referral status workflow.
-- Points adjustment workflow, if policy-approved.
-- Confirmation prompts and audit metadata.
+- Add admin notes input to drawer actions.
+- Add verified-hours adjustment for attendance verification.
+- Add referral status workflow actions.
+- Add points adjustment workflow only if policy-approved.
+- Improve audit drawer data if audit rows are exposed to the shared table layer.
+- Add stronger per-action success/error notices.
+- Update QA checklist for drawer actions.
 
 Safety rule:
 
 ```text
-Do not delete fallback action tools until their drawer actions are implemented and manually QA-tested.
+Do not delete fallback action tools until drawer actions are manually QA-tested with separate admin and volunteer accounts.
 ```
 
 ## Production/manual requirements still pending
