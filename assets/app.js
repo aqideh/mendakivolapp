@@ -9,6 +9,92 @@ const state = {
 
 const pageNames = ['home', 'opportunities', 'news', 'about'];
 
+(() => {
+  if (!window.VolunteerDataStore) return;
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"]/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;'
+    }[char]));
+  }
+
+  const STATUS_LABELS = {
+    signup: {
+      pending_review: 'Pending review',
+      registered: 'Pending review',
+      confirmed: 'Confirmed',
+      waitlisted: 'Waitlisted',
+      declined: 'Not selected',
+      cancelled: 'Cancelled',
+      completed: 'Completed'
+    },
+    attendance: {
+      pending_submission: 'Not checked in',
+      checked_in: 'Checked in',
+      submitted: 'Checked out',
+      clarification_requested: 'Clarification requested',
+      verified: 'Verified',
+      adjusted: 'Adjusted',
+      rejected: 'Rejected',
+      no_show: 'No-show'
+    },
+    training: {
+      registered: 'Registered',
+      waitlisted: 'Waitlisted',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      declined: 'Declined',
+      no_show: 'No-show'
+    }
+  };
+
+  function getStatusLabel(status, type = 'signup') {
+    return STATUS_LABELS[type]?.[status] || status || 'Unknown';
+  }
+
+  const STATUS_BADGE_MAP = {
+    signup: {
+      confirmed: 'badge-open',
+      completed: 'badge-open',
+      waitlisted: 'badge-programme',
+      declined: 'badge-ad-hoc',
+      cancelled: 'badge-ad-hoc',
+      default: 'badge-volunteer'
+    },
+    attendance: {
+      verified: 'badge-open',
+      adjusted: 'badge-open',
+      rejected: 'badge-ad-hoc',
+      no_show: 'badge-ad-hoc',
+      submitted: 'badge-programme',
+      checked_in: 'badge-long-term',
+      default: 'badge-volunteer'
+    },
+    training: {
+      completed: 'badge-open',
+      registered: 'badge-open',
+      waitlisted: 'badge-programme',
+      default: 'badge-ad-hoc'
+    }
+  };
+
+  function getStatusBadgeClass(status, type = 'signup') {
+    return STATUS_BADGE_MAP[type]?.[status] || STATUS_BADGE_MAP[type]?.default || 'badge-volunteer';
+  }
+
+  window.VolunteerDataStore.utils = { escapeHtml };
+  window.VolunteerDataStore.statusLabels = { getStatusLabel, labels: STATUS_LABELS };
+  window.VolunteerDataStore.statusBadges = { getStatusBadgeClass, map: STATUS_BADGE_MAP };
+  window.VolunteerDataStore.$ = {
+    session: () => window.VolunteerDataStore.normaliseSessionRole() || {},
+    email: () => window.VolunteerDataStore.currentEmail(),
+    isAdmin: () => window.VolunteerDataStore.isAdmin()
+  };
+})();
+
 function qs(selector, root = document) {
   return root.querySelector(selector);
 }
@@ -312,8 +398,7 @@ function findOpportunity(id) {
 function findNews(id) {
   const targetId = String(id);
   return state.data.news.find(item => String(item.id) === targetId);
-}
-
+}\n
 function modalHeader(title, badgeText, badgeStyleClass) {
   return make('div', { class: 'modal-hero' }, [
     make('button', { type: 'button', class: 'close-button', 'aria-label': 'Close dialog', text: '×', dataset: { closeModal: 'true' } }),
