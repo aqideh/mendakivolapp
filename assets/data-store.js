@@ -300,9 +300,62 @@ const VolunteerDataStore = (() => {
     return saveSession({ ...session, role: nextRole });
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[character]));
+  }
+
+  function getStatusLabel(status, context = '') {
+    const value = String(status || '').toLowerCase();
+    const labels = {
+      pending_review: 'Pending review',
+      registered: context === 'training' ? 'Registered' : 'Pending review',
+      confirmed: 'Confirmed',
+      waitlisted: 'Waitlisted',
+      declined: 'Declined',
+      cancelled: 'Cancelled',
+      completed: 'Completed',
+      checked_in: 'Checked in',
+      submitted: 'Submitted',
+      pending_submission: 'Pending submission',
+      verified: 'Verified',
+      adjusted: 'Adjusted',
+      rejected: 'Rejected'
+    };
+    return labels[value] || status || 'Unknown';
+  }
+
+  function getStatusBadgeClass(status, context = '') {
+    const value = String(status || '').toLowerCase();
+    if (['confirmed', 'verified'].includes(value)) return 'badge-open';
+    if (['completed'].includes(value)) return 'badge-long-term';
+    if (['waitlisted', 'declined', 'cancelled', 'rejected'].includes(value)) return 'badge-ad-hoc';
+    if (['pending_review', 'registered', 'checked_in', 'submitted', 'pending_submission', 'adjusted'].includes(value)) return 'badge-pending';
+    return context === 'training' ? 'badge-long-term' : 'badge-ad-hoc';
+  }
+
+  const utils = Object.freeze({ escapeHtml });
+  const statusLabels = Object.freeze({ getStatusLabel });
+  const statusBadges = Object.freeze({ getStatusBadgeClass });
+  const $ = Object.freeze({
+    session: getSession,
+    email: currentEmail,
+    isAdmin,
+    isSignedIn
+  });
+
   return {
     keys,
     authState,
+    utils,
+    statusLabels,
+    statusBadges,
+    $,
     readJson,
     writeJson,
     remove,
