@@ -63,6 +63,24 @@ function phaseFourFormatDate(value) {
   return new Intl.DateTimeFormat('en-SG', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
+function phaseFourStatusLabel(status) {
+  const labels = {
+    registered: 'Registered',
+    waitlisted: 'Waitlisted',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    declined: 'Declined',
+    no_show: 'No-show'
+  };
+  return labels[status] || status || 'Registered';
+}
+
+function phaseFourStatusBadge(status) {
+  if (status === 'completed' || status === 'registered') return 'badge-open';
+  if (status === 'waitlisted') return 'badge-programme';
+  return 'badge-ad-hoc';
+}
+
 function phaseFourUserTrainingSignups() {
   const email = phaseFourEmail();
   return email ? phaseFourTrainingSignups().filter(item => item.email === email) : [];
@@ -108,7 +126,7 @@ function phaseFourSignupForTraining(trainingId) {
 function phaseFourCancelTraining(trainingId) {
   const email = phaseFourEmail();
   const signups = phaseFourTrainingSignups();
-  const existing = signups.find(item => item.email === email && item.trainingId === trainingId && item.status === 'registered');
+  const existing = signups.find(item => item.email === email && item.trainingId === trainingId && ['registered', 'waitlisted'].includes(item.status));
   if (!existing) return { ok: false };
   existing.status = 'cancelled';
   existing.cancelledAt = new Date().toISOString();
@@ -118,28 +136,39 @@ function phaseFourCancelTraining(trainingId) {
   return { ok: true };
 }
 
-function phaseFourCompleteTraining(signupId) {
+function phaseFourUpdateTrainingStatus(signupId, status, adminNotes = '') {
   const signups = phaseFourTrainingSignups();
   const signup = signups.find(item => item.id === signupId);
   if (!signup) return;
-  signup.status = 'completed';
-  signup.completedAt = new Date().toISOString();
+  signup.status = status;
+  signup.adminNotes = adminNotes;
+  signup.reviewedBy = phaseFourEmail() || 'admin';
+  signup.reviewedAt = new Date().toISOString();
+  if (status === 'completed') signup.completedAt = signup.completedAt || new Date().toISOString();
+  if (['cancelled', 'declined', 'no_show'].includes(status)) signup.cancelledAt = signup.cancelledAt || new Date().toISOString();
   signup.updatedAt = new Date().toISOString();
   phaseFourWriteTrainingSignups(signups);
   phaseFourRender();
+}
+
+function phaseFourCompleteTraining(signupId) {
+  phaseFourUpdateTrainingStatus(signupId, 'completed');
 }
 
 function phaseFourMakeCard(training) {
   const email = phaseFourEmail();
   const signup = phaseFourTrainingSignups().find(item => item.email === email && item.trainingId === training.id && item.status !== 'cancelled');
   const isRegistered = signup?.status === 'registered';
+  const isWaitlisted = signup?.status === 'waitlisted';
   const isCompleted = signup?.status === 'completed';
+  const isDeclined = signup?.status === 'declined';
   const card = document.createElement('article');
   card.className = 'training-card';
   card.innerHTML = `
     <div class="training-card-top">
       <span class="badge badge-programme">Training</span>
       <span class="badge ${training.status === 'Open' ? 'badge-open' : 'badge-ad-hoc'}">${phaseFourEscape(training.status || 'Open')}</span>
+      ${Number(training.capacity || 0) ? `<span class="badge badge-category">Capacity ${phaseFourEscape(training.capacity)}</span>` : ''}
     </div>
     <h2>${phaseFourEscape(training.title)}</h2>
     <p>${phaseFourEscape(training.description)}</p>
@@ -155,11 +184,13 @@ function phaseFourMakeCard(training) {
   const actions = card.querySelector('.training-actions');
   if (isCompleted) {
     actions.append(phaseFourButton('Completed', 'button dashboard-secondary', {}, true));
-  } else if (isRegistered) {
+  } else if (isRegistered || isWaitlisted) {
     actions.append(
-      phaseFourButton('Signed up', 'button dashboard-secondary', {}, true),
+      phaseFourButton(isWaitlisted ? 'Waitlisted' : 'Signed up', 'button dashboard-secondary', {}, true),
       phaseFourButton('Cancel', 'text-button', { cancelTraining: training.id })
     );
+  } else if (isDeclined) {
+    actions.append(phaseFourButton('Declined', 'button dashboard-secondary', {}, true));
   } else {
     actions.append(phaseFourButton('Sign up for training', 'button button-primary', { signupTraining: training.id }));
   }
@@ -216,8 +247,8 @@ function phaseFourEnsureDashboardSections() {
   adminCard.innerHTML = `
     <div class="section-header">
       <div>
-        <h2>Admin training completion</h2>
-        <p class="dashboard-muted">Mark registered training participants as completed.</p>
+        <h2>Admin training lifecycle</h2>
+        <p class="dashboard-muted">Review training registrations, waitlists, completion, and no-shows.</p>
       </div>
     </div>
     <div class="training-dashboard-list" data-admin-training-list></div>
@@ -247,9 +278,9 @@ function phaseFourRenderDashboard() {
     adminCard.hidden = !isAdmin;
     adminList.replaceChildren();
     if (isAdmin) {
-      const pending = phaseFourTrainingSignups().filter(item => item.status === 'registered');
-      if (!pending.length) adminList.append(phaseFourEmpty('No registered training participants awaiting completion.'));
-      pending.forEach(signup => adminList.append(phaseFourTrainingRow(signup, true)));
+      const visible = phaseFourTrainingSignups().filter(item => !['cancelled', 'completed', 'declined', 'no_show'].includes(item.status));
+      if (!visible.length) adminList.append(phaseFourEmpty('No active training registrations awaiting review.'));
+      visible.forEach(signup => adminList.append(phaseFourTrainingRow(signup, true)));
     }
   }
 }
@@ -262,11 +293,21 @@ function phaseFourTrainingRow(signup, adminMode) {
       <strong>${phaseFourEscape(signup.title)}</strong>
       <p>${phaseFourEscape(phaseFourFormatDate(signup.date))} · ${phaseFourEscape(signup.time || '')} · ${phaseFourEscape(signup.location || '')}</p>
       ${adminMode ? `<p>${phaseFourEscape(signup.volunteerName)} · ${phaseFourEscape(signup.email)}</p>` : ''}
+      ${signup.adminNotes ? `<p class="dashboard-muted">Admin note: ${phaseFourEscape(signup.adminNotes)}</p>` : ''}
     </div>
-    <span class="badge ${signup.status === 'completed' ? 'badge-open' : 'badge-programme'}">${phaseFourEscape(signup.status)}</span>
+    <span class="badge ${phaseFourStatusBadge(signup.status)}">${phaseFourEscape(phaseFourStatusLabel(signup.status))}</span>
   `;
   if (adminMode) {
-    row.append(phaseFourButton('Mark completed', 'button button-primary', { completeTraining: signup.id }));
+    const actions = document.createElement('div');
+    actions.className = 'training-admin-actions';
+    actions.append(
+      phaseFourButton('Confirm', 'button dashboard-secondary', { trainingStatus: signup.id, trainingNextStatus: 'registered' }),
+      phaseFourButton('Waitlist', 'button dashboard-secondary', { trainingStatus: signup.id, trainingNextStatus: 'waitlisted' }),
+      phaseFourButton('Complete', 'button button-primary', { trainingStatus: signup.id, trainingNextStatus: 'completed' }),
+      phaseFourButton('No-show', 'button dashboard-secondary', { trainingStatus: signup.id, trainingNextStatus: 'no_show' }),
+      phaseFourButton('Decline', 'button dashboard-secondary', { trainingStatus: signup.id, trainingNextStatus: 'declined' })
+    );
+    row.append(actions);
   }
   return row;
 }
@@ -305,6 +346,13 @@ function phaseFourBind() {
     if (cancel) {
       event.preventDefault();
       phaseFourCancelTraining(cancel.dataset.cancelTraining);
+      return;
+    }
+
+    const statusButton = event.target.closest('[data-training-status]');
+    if (statusButton) {
+      event.preventDefault();
+      phaseFourUpdateTrainingStatus(statusButton.dataset.trainingStatus, statusButton.dataset.trainingNextStatus || 'registered');
       return;
     }
 
