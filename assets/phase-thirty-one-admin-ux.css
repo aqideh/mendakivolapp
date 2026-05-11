@@ -1,0 +1,172 @@
+.admin-ux-hub {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+}
+
+.admin-ux-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.admin-ux-tab {
+  border: 1px solid rgba(55, 58, 54, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: #373A36;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.55rem 0.85rem;
+}
+
+.admin-ux-tab.active {
+  background: #373A36;
+  color: #fff;
+}
+
+.admin-ux-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.admin-ux-summary-tile {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1rem;
+  background: rgba(55, 58, 54, 0.035);
+  padding: 1rem;
+  text-align: left;
+}
+
+.admin-ux-summary-tile strong {
+  display: block;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.admin-ux-summary-tile span {
+  color: rgba(55, 58, 54, 0.7);
+  font-size: 0.9rem;
+}
+
+.admin-ux-toolbar {
+  align-items: end;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(150px, 220px) auto;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.admin-ux-toolbar label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.admin-ux-toolbar input,
+.admin-ux-toolbar select,
+.phase31-training-grid input,
+.phase31-training-grid select,
+.phase31-training-grid textarea {
+  border: 1px solid rgba(55, 58, 54, 0.18);
+  border-radius: 0.75rem;
+  font: inherit;
+  padding: 0.7rem 0.8rem;
+  width: 100%;
+}
+
+.admin-ux-hidden {
+  display: none !important;
+}
+
+.phase31-training-card .section-header {
+  align-items: flex-start;
+}
+
+.phase31-training-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 1rem;
+}
+
+.phase31-training-list {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 680px;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.phase31-training-parent {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1rem;
+  padding: 0.9rem;
+}
+
+.phase31-training-parent header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.phase31-training-parent h3 {
+  margin: 0 0 0.25rem;
+}
+
+.phase31-training-session-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.phase31-training-session-item {
+  background: rgba(55, 58, 54, 0.035);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+}
+
+.phase31-training-session-item strong,
+.phase31-training-parent strong {
+  display: block;
+}
+
+.phase31-training-actions,
+.phase31-training-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.phase31-training-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.phase31-training-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.phase31-training-form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.phase31-training-status {
+  color: rgba(55, 58, 54, 0.72);
+  min-height: 1.25rem;
+}
+
+@media (max-width: 760px) {
+  .admin-ux-toolbar,
+  .phase31-training-grid,
+  .phase31-training-form-row {
+    grid-template-columns: 1fr;
+  }
+}
