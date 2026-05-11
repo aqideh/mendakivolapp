@@ -295,6 +295,43 @@ body.dark-mode .auth-modal {
   gap: 0.35rem;
 }
 
+/* Desktop profile-card repair: UI upgrade content is injected into a card that
+   dashboard-pages.css turns into a multi-column grid. Explicit placement keeps
+   the welcome panel, summary, and actions from overlapping or becoming cramped. */
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.86fr);
+  align-items: start;
+  align-content: start;
+}
+
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card .ui-profile-welcome,
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card [data-ui-value-empty] {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card > div:first-of-type {
+  min-width: 0;
+}
+
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card .profile-summary {
+  min-width: 0;
+}
+
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card .dashboard-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  align-self: start;
+}
+
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card .profile-pill {
+  min-width: 0;
+}
+
+.dashboard-paged[data-dashboard-view="home"] .dashboard-profile-card .profile-pill strong {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 720px) {
   .site-header {
     position: sticky;
