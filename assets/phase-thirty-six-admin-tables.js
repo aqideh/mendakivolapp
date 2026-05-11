@@ -3,6 +3,7 @@
   window.__phaseThirtySixAdminTablesInstalled = true;
 
   const tableState = new Map();
+  const rowCache = new Map();
   let drawerRecord = null;
 
   function store() { return window.VolunteerDataStore; }
@@ -25,7 +26,10 @@
     return new Intl.DateTimeFormat('en-SG', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
   }
 
-  function statusOf(item) { return String(item?.status || item?.claimStatus || item?.claim_status || item?.referralStatus || item?.type || ''); }
+  function statusOf(item) {
+    return String(item?.status || item?.claimStatus || item?.claim_status || item?.referralStatus || item?.type || '');
+  }
+
   function valueOf(item, keys, fallback = '-') {
     for (const key of keys) {
       const value = item?.[key];
@@ -53,16 +57,16 @@
   }
 
   function applyFilters(id, rows) {
-    const state = getState(id);
+    const current = getState(id);
     let filtered = asArray(rows).slice();
-    if (state.search) {
-      const q = state.search.toLowerCase();
+    if (current.search) {
+      const q = current.search.toLowerCase();
       filtered = filtered.filter(row => textFor(row).includes(q));
     }
-    if (state.status) filtered = filtered.filter(row => statusOf(row) === state.status);
-    if (state.sort) {
-      const dir = state.dir === 'desc' ? -1 : 1;
-      filtered.sort((a, b) => String(valueOf(a, [state.sort], '')).localeCompare(String(valueOf(b, [state.sort], ''))) * dir);
+    if (current.status) filtered = filtered.filter(row => statusOf(row) === current.status);
+    if (current.sort) {
+      const dir = current.dir === 'desc' ? -1 : 1;
+      filtered.sort((a, b) => String(valueOf(a, [current.sort], '')).localeCompare(String(valueOf(b, [current.sort], ''))) * dir);
     }
     return filtered;
   }
@@ -72,24 +76,34 @@
   }
 
   function toolbar(id, rows) {
-    const state = getState(id);
+    const current = getState(id);
     return `
       <div class="phase36-toolbar">
-        <label>Search<input data-phase36-search="${escapeHtml(id)}" value="${escapeHtml(state.search)}" placeholder="Search table"></label>
-        <label>Status<select data-phase36-status="${escapeHtml(id)}"><option value="">Any status/type</option>${statuses(rows).map(s => `<option value="${escapeHtml(s)}" ${state.status === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}</select></label>
-        <label>Sort<select data-phase36-sort="${escapeHtml(id)}"><option value="">Default order</option><option value="status" ${state.sort === 'status' ? 'selected' : ''}>Status</option><option value="createdAt" ${state.sort === 'createdAt' ? 'selected' : ''}>Created</option><option value="updatedAt" ${state.sort === 'updatedAt' ? 'selected' : ''}>Updated</option></select></label>
+        <label>Search<input data-phase36-search="${escapeHtml(id)}" value="${escapeHtml(current.search)}" placeholder="Search table"></label>
+        <label>Status<select data-phase36-status="${escapeHtml(id)}"><option value="">Any status/type</option>${statuses(rows).map(s => `<option value="${escapeHtml(s)}" ${current.status === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}</select></label>
+        <label>Sort<select data-phase36-sort="${escapeHtml(id)}"><option value="">Default order</option><option value="status" ${current.sort === 'status' ? 'selected' : ''}>Status</option><option value="createdAt" ${current.sort === 'createdAt' ? 'selected' : ''}>Created</option><option value="updatedAt" ${current.sort === 'updatedAt' ? 'selected' : ''}>Updated</option></select></label>
+        <button class="button dashboard-secondary" type="button" data-phase36-reset="${escapeHtml(id)}">Reset filters</button>
       </div>
     `;
+  }
+
+  function emptyMarkup(id, safeRows) {
+    const current = getState(id);
+    if (safeRows.length && (current.search || current.status)) {
+      return `<div class="phase36-empty">No matching records. Clear the search text or reset filters to show the ${safeRows.length} loaded record${safeRows.length === 1 ? '' : 's'}.</div>`;
+    }
+    return '<div class="phase36-empty">No records loaded yet. Use Refresh queue, or sign out and sign in again if this does not update.</div>';
   }
 
   function table(id, title, headers, rows, cells) {
     const safeRows = asArray(rows);
     const filtered = applyFilters(id, safeRows);
+    rememberRows(id, filtered);
     return `
       ${toolbar(id, safeRows)}
       <section class="phase36-table-card">
         <div class="phase36-table-head"><h4>${escapeHtml(title)}</h4><span class="dashboard-muted">${filtered.length} of ${safeRows.length}</span></div>
-        ${filtered.length ? `<table class="phase36-table"><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${filtered.map(row => `<tr data-phase36-row="${escapeHtml(id)}" data-phase36-row-id="${escapeHtml(row.__id)}">${cells(row).join('')}</tr>`).join('')}</tbody></table>` : `<div class="phase36-empty">No matching records.</div>`}
+        ${filtered.length ? `<table class="phase36-table"><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${filtered.map(row => `<tr data-phase36-row="${escapeHtml(id)}" data-phase36-row-id="${escapeHtml(row.__id)}">${cells(row).join('')}</tr>`).join('')}</tbody></table>` : emptyMarkup(id, safeRows)}
       </section>
     `;
   }
@@ -107,7 +121,7 @@
       title: valueOf(row, ['title', 'opportunityTitle', 'opportunity_id', 'opportunityId']),
       session: valueOf(row, ['sessionTitle', 'session_id', 'sessionId']),
       status: statusOf(row),
-      createdAt: valueOf(row, ['signedUpAt', 'created_at', 'createdAt']),
+      createdAt: valueOf(row, ['signedUpAt', 'signed_up_at', 'created_at', 'createdAt']),
       updatedAt: valueOf(row, ['updatedAt', 'updated_at']),
       raw: row
     };
@@ -121,9 +135,9 @@
       email: valueOf(row, ['email']),
       title: valueOf(row, ['title', 'opportunityTitle', 'opportunity_id', 'opportunityId']),
       session: valueOf(row, ['sessionTitle', 'session_id', 'sessionId']),
-      hours: valueOf(row, ['hours', 'claimed_hours', 'verified_hours']),
+      hours: valueOf(row, ['hours', 'claimedHours', 'claimed_hours', 'verifiedHours', 'verified_hours']),
       status: statusOf(row),
-      createdAt: valueOf(row, ['checkedInAt', 'submittedAt', 'created_at', 'createdAt']),
+      createdAt: valueOf(row, ['checkInAt', 'checkedInAt', 'submittedAt', 'created_at', 'createdAt']),
       updatedAt: valueOf(row, ['updatedAt', 'updated_at']),
       raw: row
     };
@@ -138,7 +152,7 @@
       title: valueOf(row, ['title', 'trainingTitle', 'training_id', 'trainingId']),
       session: valueOf(row, ['sessionTitle', 'trainingSessionId', 'training_session_id']),
       status: statusOf(row),
-      createdAt: valueOf(row, ['signedUpAt', 'created_at', 'createdAt']),
+      createdAt: valueOf(row, ['signedUpAt', 'signed_up_at', 'created_at', 'createdAt']),
       updatedAt: valueOf(row, ['updatedAt', 'updated_at']),
       raw: row
     };
@@ -175,55 +189,49 @@
 
   function renderSignups(host, ctx) {
     const rows = signups().map(normaliseSignup);
-    host.innerHTML = `<div class="phase36-page">${table('Opportunity sign-up review table', ['Volunteer', 'Opportunity', 'Session', 'Status', 'Submitted'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
+    host.innerHTML = `<div class="phase36-page">${table('signups', 'Opportunity sign-up review table', ['Volunteer', 'Opportunity', 'Session', 'Status', 'Submitted'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
     attachFallback(host.querySelector('.phase36-page'), ctx);
-    rememberRows('signups', rows);
     return true;
   }
 
   function renderAttendance(host, ctx) {
     const rows = attendanceClaims().map(normaliseAttendance);
-    host.innerHTML = `<div class="phase36-page">${table('Attendance review table', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${escapeHtml(row.hours)}</td>`, `<td>${statusBadge(row.status)}</td>`])}</div>`;
+    host.innerHTML = `<div class="phase36-page">${table('attendance', 'Attendance review table', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${escapeHtml(row.hours)}</td>`, `<td>${statusBadge(row.status)}</td>`])}</div>`;
     attachFallback(host.querySelector('.phase36-page'), ctx);
-    rememberRows('attendance', rows);
     return true;
   }
 
   function renderTraining(host, ctx) {
     const rows = trainingSignups().map(normaliseTraining);
     const trainingRows = rows.length ? rows : trainings().map((t, i) => ({ __id: t.id || `training-${i}`, __type: 'Training programme/session', volunteer: '-', email: '', title: valueOf(t, ['title', 'id']), session: valueOf(t, ['sessionTitle', 'id']), status: valueOf(t, ['status'], 'Open'), createdAt: valueOf(t, ['startsAt', 'date']), updatedAt: valueOf(t, ['updatedAt', 'updated_at']), raw: t }));
-    host.innerHTML = `<div class="phase36-page">${table('Training sign-up and session table', ['Volunteer', 'Training', 'Session', 'Status', 'Date'], trainingRows, row => [`<td>${escapeHtml(row.volunteer)}</td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
+    host.innerHTML = `<div class="phase36-page">${table('training', 'Training sign-up and session table', ['Volunteer', 'Training', 'Session', 'Status', 'Date'], trainingRows, row => [`<td>${escapeHtml(row.volunteer)}</td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
     attachFallback(host.querySelector('.phase36-page'), ctx);
-    rememberRows('training', trainingRows);
     return true;
   }
 
   function renderReferrals(host, ctx) {
     const rows = referrals().map(normaliseReferral);
-    host.innerHTML = `<div class="phase36-page">${table('Referral queue table', ['Code', 'Referrer', 'Referred', 'Status', 'Created'], rows, row => [`<td><code>${escapeHtml(row.code)}</code></td>`, `<td>${escapeHtml(row.referrer)}</td>`, `<td>${escapeHtml(row.referred)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
+    host.innerHTML = `<div class="phase36-page">${table('referrals', 'Referral queue table', ['Code', 'Referrer', 'Referred', 'Status', 'Created'], rows, row => [`<td><code>${escapeHtml(row.code)}</code></td>`, `<td>${escapeHtml(row.referrer)}</td>`, `<td>${escapeHtml(row.referred)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
     attachFallback(host.querySelector('.phase36-page'), ctx);
-    rememberRows('referrals', rows);
     return true;
   }
 
   function renderPoints(host, ctx) {
     const rows = points().map(normalisePoints);
-    host.innerHTML = `<div class="phase36-page">${table('Points ledger table', ['User', 'Reason/source', 'Points', 'Type', 'Awarded'], rows, row => [`<td>${escapeHtml(row.user)}</td>`, `<td>${escapeHtml(row.reason)}</td>`, `<td>${escapeHtml(row.points)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
+    host.innerHTML = `<div class="phase36-page">${table('points', 'Points ledger table', ['User', 'Reason/source', 'Points', 'Type', 'Awarded'], rows, row => [`<td>${escapeHtml(row.user)}</td>`, `<td>${escapeHtml(row.reason)}</td>`, `<td>${escapeHtml(row.points)}</td>`, `<td>${statusBadge(row.status)}</td>`, `<td>${escapeHtml(fmt(row.createdAt))}</td>`])}</div>`;
     attachFallback(host.querySelector('.phase36-page'), ctx);
-    rememberRows('points', rows);
     return true;
   }
 
   function renderAudit(host, ctx) {
     const rows = [];
     host.innerHTML = `<div class="phase36-page"><div class="phase36-empty">Audit table refinement will use the existing audit RPC-backed card until the audit module exposes rows to the shared table layer.</div></div>`;
-    attachFallback(host.querySelector('.phase36-page'), ctx);
     rememberRows('audit', rows);
+    attachFallback(host.querySelector('.phase36-page'), ctx);
     return true;
   }
 
   const registry = { signups: renderSignups, attendance: renderAttendance, training: renderTraining, referrals: renderReferrals, points: renderPoints, audit: renderAudit };
-  const rowCache = new Map();
 
   function rememberRows(id, rows) { rowCache.set(id, asArray(rows)); }
 
@@ -259,9 +267,7 @@
   }
 
   function drawerActionMarkup(record) {
-    if (window.MENDAKIPhase38DrawerActions?.renderActions) {
-      return window.MENDAKIPhase38DrawerActions.renderActions(record, escapeHtml) || '';
-    }
+    if (window.MENDAKIPhase38DrawerActions?.renderActions) return window.MENDAKIPhase38DrawerActions.renderActions(record, escapeHtml) || '';
     return '<span class="dashboard-muted">Actions remain in legacy tools until row-level mutations are migrated safely.</span>';
   }
 
@@ -293,22 +299,34 @@
 
   function currentAreaFromRow(row) { return row?.getAttribute('data-phase36-row') || ''; }
 
+  function resetFilters(id) {
+    tableState.set(id, { search: '', status: '', sort: '', dir: 'asc' });
+    window.MENDAKIPhase34AdminShell?.mountArea?.();
+  }
+
   function bind() {
     if (window.__phaseThirtySixAdminTablesBound) return;
     window.__phaseThirtySixAdminTablesBound = true;
     document.addEventListener('click', event => {
+      const reset = event.target.closest('[data-phase36-reset]');
+      if (reset) {
+        event.preventDefault();
+        resetFilters(reset.dataset.phase36Reset || '');
+        return;
+      }
+
       const close = event.target.closest('[data-phase36-close-drawer]');
       if (close || event.target.matches('[data-phase36-drawer-layer]')) {
         closeDrawer();
         return;
       }
+
       const row = event.target.closest('[data-phase36-row]');
       if (row) {
         const area = currentAreaFromRow(row);
         const id = row.getAttribute('data-phase36-row-id');
         const record = (rowCache.get(area) || []).find(item => String(item.__id) === String(id));
         if (record) openDrawer(record);
-        return;
       }
     }, true);
 
@@ -328,9 +346,9 @@
       }
       const sort = event.target.closest('[data-phase36-sort]');
       if (sort) {
-        const state = getState(sort.dataset.phase36Sort);
-        state.sort = sort.value || '';
-        state.dir = state.dir === 'asc' ? 'desc' : 'asc';
+        const current = getState(sort.dataset.phase36Sort);
+        current.sort = sort.value || '';
+        current.dir = current.dir === 'asc' ? 'desc' : 'asc';
         window.MENDAKIPhase34AdminShell?.mountArea?.();
       }
     }, true);
@@ -338,5 +356,5 @@
 
   bind();
   ensureDrawer();
-  window.MENDAKIPhase36AdminTables = { render, openDrawer, closeDrawer, currentRecord: () => drawerRecord };
+  window.MENDAKIPhase36AdminTables = { render, openDrawer, closeDrawer, currentRecord: () => drawerRecord, resetFilters };
 })();
