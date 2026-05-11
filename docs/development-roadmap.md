@@ -1,13 +1,13 @@
 # MENDAKI Volunteer Hub — Development Roadmap
 
-Last updated: after Phase 35 canonical admin pages.
+Last updated: after Phase 36 admin table queues and detail drawers.
 
 ## Current status
 
 The app is a Supabase-backed pilot/beta volunteer management app. Sveltia CMS is deprecated as the production admin path. The authoritative admin path is now moving toward:
 
 ```text
-Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages
+Signed-in app dashboard → Admin workspace entry → Single admin shell → Canonical workflow pages → Table queues and drawers
 ```
 
 The current app includes:
@@ -16,6 +16,7 @@ The current app includes:
 - Dashboard and admin tools.
 - Phase 34 single admin shell entry point and admin navigation.
 - Phase 35 canonical admin pages with collapsed legacy fallback tools.
+- Phase 36 table queues and detail drawers for key admin workflows.
 - Phase 31 admin workspace tabs and filtering retained for compatibility.
 - Phase 32 QA smoke-check panel and verification SQL.
 - Phase 33 production-readiness verification SQL and runbook.
@@ -176,14 +177,7 @@ docs/phase-thirty-three-production-readiness.md
 
 ### Phase 34 — Admin Shell Consolidation
 
-Implemented the first phase of moving toward a single admin interface:
-
-- Added one main dashboard Admin workspace entry card.
-- Added a single admin shell with left/admin navigation.
-- Added pages for Home, Content, Opportunities, Sign-ups, Attendance, Training, Referrals, Points, Reports, Audit, Notifications, and System / QA.
-- Mounted existing legacy admin tools into assigned shell pages.
-- Hid legacy admin-card sprawl from the main dashboard while the shell is active.
-- Kept legacy tools and Phase 31 compatibility layer available until purpose-built admin pages replace them.
+Implemented the first phase of moving toward a single admin interface.
 
 Primary files:
 
@@ -195,13 +189,7 @@ docs/phase-thirty-four-admin-shell-consolidation.md
 
 ### Phase 35 — Canonical Admin Pages
 
-Implemented the second phase of the single-admin-interface consolidation track:
-
-- Added canonical page renderer hook to the Phase 34 shell.
-- Added canonical page layouts for Home, Content, Opportunities, Sign-ups, Attendance, Training, Referrals, Points, Reports, Audit, Notifications, and System / QA.
-- Added summary tiles and preview tables for the main operational pages.
-- Moved existing legacy tools behind collapsed `Show existing tools` sections.
-- Formalised the rule: one workflow = one canonical owner page.
+Implemented the second phase of the single-admin-interface consolidation track.
 
 Primary files:
 
@@ -211,50 +199,69 @@ assets/phase-thirty-five-canonical-admin-pages.js
 docs/phase-thirty-five-canonical-admin-pages.md
 ```
 
+### Phase 36 — Table Queues and Detail Drawers
+
+Implemented the third phase of the single-admin-interface consolidation track:
+
+- Added reusable admin table styles and controller.
+- Added search, status/type filtering, basic sorting, result counts, and empty states.
+- Added right-side detail drawer with normalised fields and raw record JSON.
+- Replaced Phase 35 previews with Phase 36 tables for Sign-ups, Attendance, Training, Referrals, Points, and Audit where data is available.
+- Kept legacy action tools under collapsed fallback sections.
+- Kept row-level mutations in legacy tools until action migration can be tested safely.
+
+Primary files:
+
+```text
+assets/phase-thirty-six-admin-tables.css
+assets/phase-thirty-six-admin-tables.js
+docs/phase-thirty-six-admin-table-queues.md
+```
+
 Known limitations:
 
-- Queue previews are read-only summaries, not full action tables.
-- Existing legacy tools still perform many actions.
-- Detail drawers are not implemented yet.
-- Table-level search/filter/sort remains Phase 36.
-- Some canonical pages are action-card placeholders until their legacy cards are rewritten.
+- Drawer actions are not yet wired to review/verify/update RPCs.
+- Audit still depends on the existing RPC-backed audit card for operational action/search.
+- Referral/points tables depend on existing local store helpers where available.
+- Sorting/filtering is client-side and suitable for pilot scale only.
+- Legacy action tools remain necessary for mutations.
 
 ## Current consolidation roadmap
 
-The next work should continue the single-admin-interface track:
+The next work should continue the single-admin-interface track carefully:
 
 ```text
-Phase 36 — Table Queues and Detail Drawers
 Phase 37 — Legacy Admin Surface Removal
+Phase 38 — Drawer Action Migration
 ```
-
-## Phase 36 — Table Queues and Detail Drawers
-
-Purpose: replace dense cards and inline forms with scalable tables, search/filter/sort, and detail drawers.
-
-Recommended scope:
-
-- Sign-up review table with row detail drawer and review actions.
-- Attendance review table with row detail drawer and verification actions.
-- Training signup/completion table with row detail drawer.
-- Referral queue table.
-- Points ledger table.
-- Audit table refinements.
-- Reusable detail drawer/action pattern.
 
 ## Phase 37 — Legacy Admin Surface Removal
 
-Purpose: remove duplicated legacy admin surfaces after the shell, canonical pages, and table queues pass QA.
+Purpose: remove duplicated legacy admin surfaces only where Phase 34–36 already provide a safe replacement, while keeping mutation tools that have not yet been migrated.
 
 Recommended scope:
 
-- Retire old dashboard-level admin card rendering.
-- Retire Phase 31 tab/filter layer if Phase 34+ shell fully covers it.
+- Retire old dashboard-level admin card rendering where the shell already owns the workflow.
+- Disable or hide Phase 31 tab/filter layer if Phase 34+ shell fully covers it.
 - Demote generic admin content management to static content only.
-- Remove duplicate training/session editing routes.
+- Remove duplicate training/session editing routes that conflict with the canonical Training page.
+- Do not remove legacy cards that still contain the only safe mutation controls.
 - Delete legacy Sveltia files only after manual QA and rollback decision:
   - `admin/index.html`;
   - `admin/config.yml`.
+
+## Phase 38 — Drawer Action Migration
+
+Purpose: migrate safe row-level mutations from legacy cards into Phase 36 detail drawers.
+
+Recommended scope:
+
+- Sign-up review actions.
+- Attendance verification/rejection actions.
+- Training completion/no-show actions.
+- Referral status workflow.
+- Points adjustment workflow, if policy-approved.
+- Confirmation prompts and audit metadata.
 
 ## Production/manual requirements still pending
 
