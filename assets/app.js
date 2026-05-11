@@ -398,7 +398,8 @@ function findOpportunity(id) {
 function findNews(id) {
   const targetId = String(id);
   return state.data.news.find(item => String(item.id) === targetId);
-}\n
+}
+
 function modalHeader(title, badgeText, badgeStyleClass) {
   return make('div', { class: 'modal-hero' }, [
     make('button', { type: 'button', class: 'close-button', 'aria-label': 'Close dialog', text: '×', dataset: { closeModal: 'true' } }),
