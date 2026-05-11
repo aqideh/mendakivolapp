@@ -3,6 +3,7 @@
   window.__phaseThirtyEightDrawerReviewActionsInstalled = true;
 
   function store() { return window.VolunteerDataStore; }
+  function client() { return store()?.authState?.supabase || null; }
   function session() { return store()?.getSession?.() || store()?.$?.session?.() || {}; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
   function byId(items, id) { return (items || []).find(item => String(item.id) === String(id)); }
@@ -15,7 +16,8 @@
 
   function fieldBlock(record) {
     const raw = record?.raw || {};
-    const notes = raw.adminNotes || raw.admin_notes || '';
+    const meta = raw.metadata || {};
+    const notes = raw.adminNotes || raw.admin_notes || meta.admin_notes || '';
     const claimedHours = raw.claimedHours || raw.claimed_hours || record?.hours || '';
     const verifiedHours = raw.verifiedHours || raw.verified_hours || claimedHours || '';
     const hoursField = record?.__type === 'Attendance claim'
@@ -63,11 +65,24 @@
     ].join('');
   }
 
+  function renderReferral(record) {
+    const current = String(record?.status || '');
+    return [
+      fieldBlock(record),
+      current !== 'accepted' ? button('referral:accepted', 'Mark accepted', true) : '',
+      current !== 'converted' ? button('referral:converted', 'Mark converted', true) : '',
+      current !== 'duplicate' ? button('referral:duplicate', 'Mark duplicate') : '',
+      current !== 'cancelled' ? button('referral:cancelled', 'Cancel referral') : ''
+    ].join('');
+  }
+
   function renderActions(record) {
     if (!isAdmin()) return '<span class="dashboard-muted">Admin access required.</span>';
     if (record?.__type === 'Opportunity sign-up') return renderSignup(record);
     if (record?.__type === 'Attendance claim') return renderAttendance(record);
     if (record?.__type === 'Training sign-up' || record?.__type === 'Training programme/session') return renderTraining(record);
+    if (record?.__type === 'Referral') return renderReferral(record);
+    if (record?.__type === 'Points ledger entry') return '<span class="dashboard-muted">Points adjustment is policy-gated and remains read-only in this phase.</span>';
     return '<span class="dashboard-muted">No drawer review actions for this record type yet.</span>';
   }
 
@@ -93,6 +108,8 @@
     if (typeof store()?.fetchSupabaseOpportunitySignups === 'function') await store().fetchSupabaseOpportunitySignups();
     if (typeof store()?.fetchSupabaseAttendanceClaims === 'function') await store().fetchSupabaseAttendanceClaims();
     if (typeof store()?.fetchSupabaseTrainingSignups === 'function') await store().fetchSupabaseTrainingSignups();
+    if (typeof window.MENDAKIReferrals?.sync === 'function') await window.MENDAKIReferrals.sync();
+    if (typeof window.MENDAKIGamification?.sync === 'function') await window.MENDAKIGamification.sync({ award: false });
     if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
     showNotice(message);
     window.setTimeout(() => {
@@ -142,6 +159,19 @@
     await refresh(`Training sign-up updated to ${status}.`);
   }
 
+  async function updateReferral(record, status) {
+    if (!client()) throw new Error('Supabase is not configured.');
+    if (!window.confirm(`Set referral status to ${status}?`)) return;
+    const { data, error } = await client().rpc('review_app_referral_status', {
+      p_referral_id: record.__id,
+      p_status: status,
+      p_admin_notes: notesValue() || null
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.reason || 'Referral review failed.');
+    await refresh(`Referral updated to ${status}.`);
+  }
+
   async function handleAction(action) {
     const record = window.MENDAKIPhase36AdminTables?.currentRecord?.();
     if (!record) throw new Error('No selected row.');
@@ -149,6 +179,7 @@
     if (type === 'signup') return updateSignup(record, status);
     if (type === 'attendance') return updateAttendance(record, status);
     if (type === 'training') return updateTraining(record, status);
+    if (type === 'referral') return updateReferral(record, status);
     throw new Error('Unsupported review action.');
   }
 
