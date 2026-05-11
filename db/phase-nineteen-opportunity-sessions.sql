@@ -98,28 +98,37 @@ where not exists (
 );
 
 -- Backfill existing sign-ups and attendance claims to the earliest/default
--- session for their opportunity when possible.
+-- session for their opportunity when possible. Use correlated scalar subqueries
+-- instead of UPDATE ... FROM LATERAL so this runs cleanly in Supabase/Postgres.
 update public.app_opportunity_signups s
-set session_id = chosen.id
-from lateral (
+set session_id = (
   select os.id
   from public.app_opportunity_sessions os
   where os.opportunity_id = s.opportunity_id
   order by os.starts_at nulls last, os.created_at asc
   limit 1
-) chosen
-where s.session_id is null;
+)
+where s.session_id is null
+  and exists (
+    select 1
+    from public.app_opportunity_sessions os
+    where os.opportunity_id = s.opportunity_id
+  );
 
 update public.app_attendance_claims c
-set session_id = chosen.id
-from lateral (
+set session_id = (
   select os.id
   from public.app_opportunity_sessions os
   where os.opportunity_id = c.opportunity_id
   order by os.starts_at nulls last, os.created_at asc
   limit 1
-) chosen
-where c.session_id is null;
+)
+where c.session_id is null
+  and exists (
+    select 1
+    from public.app_opportunity_sessions os
+    where os.opportunity_id = c.opportunity_id
+  );
 
 create or replace function public.app_default_opportunity_session_id(p_opportunity_id text)
 returns uuid
