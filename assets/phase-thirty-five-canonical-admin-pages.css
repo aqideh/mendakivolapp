@@ -1,0 +1,124 @@
+.phase35-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.phase35-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.phase35-summary-tile,
+.phase35-action-card,
+.phase35-table-card {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1rem;
+}
+
+.phase35-summary-tile strong {
+  display: block;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.phase35-action-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.phase35-action-card {
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+}
+
+.phase35-action-card button,
+.phase35-link-button {
+  justify-self: start;
+}
+
+.phase35-table-card {
+  overflow: auto;
+}
+
+.phase35-table-card h4 {
+  margin: 0 0 0.75rem;
+}
+
+.phase35-table {
+  border-collapse: collapse;
+  min-width: 680px;
+  width: 100%;
+}
+
+.phase35-table th,
+.phase35-table td {
+  border-bottom: 1px solid rgba(55, 58, 54, 0.09);
+  padding: 0.7rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.phase35-table th {
+  color: rgba(55, 58, 54, 0.68);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.phase35-status-pill {
+  border-radius: 999px;
+  background: rgba(55, 58, 54, 0.08);
+  display: inline-block;
+  font-size: 0.82rem;
+  padding: 0.22rem 0.55rem;
+}
+
+.phase35-status-pill.warn {
+  background: rgba(190, 128, 34, 0.12);
+}
+
+.phase35-status-pill.good {
+  background: rgba(32, 133, 85, 0.12);
+}
+
+.phase35-empty-state {
+  border: 1px dashed rgba(55, 58, 54, 0.22);
+  border-radius: 1rem;
+  color: rgba(55, 58, 54, 0.72);
+  padding: 1rem;
+}
+
+.phase35-legacy-tools {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1rem;
+  margin-top: 0.5rem;
+  padding: 0.8rem 1rem;
+}
+
+.phase35-legacy-tools summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.phase35-legacy-tool-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.phase35-page-note {
+  background: rgba(55, 58, 54, 0.045);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 760px) {
+  .phase35-table {
+    min-width: 560px;
+  }
+}
