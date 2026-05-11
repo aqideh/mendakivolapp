@@ -10,13 +10,21 @@
     return String(value || '').replace(/[&<>\"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
   }
 
-  function loadUrgentPrePhaseFixes() {
-    if (window.__prePhaseUrgentFixesLoaderInstalled) return;
-    window.__prePhaseUrgentFixesLoaderInstalled = true;
+  function loadDeferredScript(src, flagName) {
+    if (window[flagName]) return;
+    window[flagName] = true;
     const script = document.createElement('script');
-    script.src = 'assets/pre-phase-urgent-fixes.js';
+    script.src = src;
     script.defer = true;
     document.head.append(script);
+  }
+
+  function loadUrgentPrePhaseFixes() {
+    loadDeferredScript('assets/pre-phase-urgent-fixes.js', '__prePhaseUrgentFixesLoaderInstalled');
+  }
+
+  function loadPhaseTwentyFourReferrals() {
+    loadDeferredScript('assets/referrals.js', '__phaseTwentyFourReferralsLoaderInstalled');
   }
 
   async function refreshAttendanceCodes() {
@@ -111,6 +119,7 @@
   }
 
   loadUrgentPrePhaseFixes();
+  loadPhaseTwentyFourReferrals();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindUiObserver();
