@@ -40,7 +40,7 @@ as $$
          c.opportunity_id::text,
          c.session_id,
          c.title,
-         c.claim_status,
+         c.claim_status::text,
          coalesce(c.claimed_hours, 0),
          coalesce(c.verified_hours, 0),
          c.check_in_at,
@@ -50,7 +50,7 @@ as $$
   from public.app_attendance_claims c
   where public.current_app_user_is_admin()
     and (p_opportunity_id is null or c.opportunity_id::text = p_opportunity_id)
-    and (p_status is null or c.claim_status = p_status)
+    and (p_status is null or c.claim_status::text = p_status)
     and public.report_date_in_range(coalesce(c.reviewed_at, c.submitted_at, c.check_out_at, c.check_in_at, c.created_at), p_start_date, p_end_date)
   order by coalesce(c.reviewed_at, c.submitted_at, c.check_out_at, c.check_in_at, c.created_at) desc;
 $$;
@@ -88,8 +88,8 @@ as $$
          c.opportunity_id::text,
          c.session_id,
          c.title,
-         c.claim_status,
-         c.claimed_status,
+         c.claim_status::text,
+         c.claimed_status::text,
          coalesce(c.claimed_hours, 0),
          coalesce(c.verified_hours, 0),
          c.submitted_at,
@@ -97,7 +97,7 @@ as $$
          c.admin_notes
   from public.app_attendance_claims c
   where public.current_app_user_is_admin()
-    and (p_status is null or c.claim_status = p_status)
+    and (p_status is null or c.claim_status::text = p_status)
     and public.report_date_in_range(coalesce(c.submitted_at, c.reviewed_at, c.check_out_at, c.created_at), p_start_date, p_end_date)
   order by coalesce(c.submitted_at, c.reviewed_at, c.check_out_at, c.created_at) desc;
 $$;
@@ -138,7 +138,7 @@ as $$
          s.title,
          s.type,
          s.category,
-         s.status,
+         s.status::text,
          s.signed_up_at,
          s.reviewed_at,
          s.confirmed_at,
@@ -148,7 +148,7 @@ as $$
   from public.app_opportunity_signups s
   where public.current_app_user_is_admin()
     and (p_opportunity_id is null or s.opportunity_id::text = p_opportunity_id)
-    and (p_status is null or s.status = p_status)
+    and (p_status is null or s.status::text = p_status)
     and public.report_date_in_range(coalesce(s.signed_up_at, s.updated_at), p_start_date, p_end_date)
   order by coalesce(s.signed_up_at, s.updated_at) desc;
 $$;
@@ -188,14 +188,14 @@ as $$
          t.time,
          t.location,
          t.trainer,
-         t.status,
+         t.status::text,
          t.signed_up_at,
          t.completed_at,
          t.reviewed_at,
          t.admin_notes
   from public.app_training_signups t
   where public.current_app_user_is_admin()
-    and (p_status is null or t.status = p_status)
+    and (p_status is null or t.status::text = p_status)
     and public.report_date_in_range(coalesce(t.completed_at, t.signed_up_at, t.created_at), p_start_date, p_end_date)
   order by coalesce(t.completed_at, t.signed_up_at, t.created_at) desc;
 $$;
@@ -227,14 +227,14 @@ as $$
          coalesce(r.referred_email, referred.email),
          referred.full_name,
          r.referral_code,
-         r.status,
+         r.status::text,
          r.accepted_at,
          r.created_at
   from public.app_referrals r
   left join public.app_users referrer on referrer.id = r.referrer_user_id
   left join public.app_users referred on referred.id = r.referred_user_id
   where public.current_app_user_is_admin()
-    and (p_status is null or r.status = p_status)
+    and (p_status is null or r.status::text = p_status)
     and public.report_date_in_range(coalesce(r.accepted_at, r.created_at), p_start_date, p_end_date)
   order by coalesce(r.accepted_at, r.created_at) desc;
 $$;
@@ -264,7 +264,7 @@ as $$
          u.email,
          u.full_name,
          l.points,
-         l.reason,
+         l.reason::text,
          l.source_type,
          l.source_id,
          l.created_at,
@@ -272,7 +272,7 @@ as $$
   from public.app_points_ledger l
   left join public.app_users u on u.id = l.app_user_id
   where public.current_app_user_is_admin()
-    and (p_reason is null or l.reason = p_reason)
+    and (p_reason is null or l.reason::text = p_reason)
     and public.report_date_in_range(l.created_at, p_start_date, p_end_date)
   order by l.created_at desc;
 $$;
