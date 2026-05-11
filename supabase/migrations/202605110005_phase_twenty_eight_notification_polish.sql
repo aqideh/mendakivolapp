@@ -1,29 +1,74 @@
 -- Phase 28 - Notification Polish
 -- Preferences, history, grouping metadata, and helper notification RPCs.
+-- This migration tolerates an existing public.app_notifications table by adding
+-- the canonical columns required by the Phase 28 notification layer.
 
 create extension if not exists pgcrypto;
 
 create table if not exists public.app_notifications (
-  id uuid primary key default gen_random_uuid(),
-  recipient_email text,
-  recipient_role text not null default 'volunteer',
-  title text not null,
-  message text,
-  notification_type text not null default 'general',
-  related_table text,
-  related_id text,
-  is_read boolean not null default false,
-  read_at timestamptz,
-  cleared_at timestamptz,
-  created_at timestamptz not null default now()
+  id uuid primary key default gen_random_uuid()
 );
 
 alter table public.app_notifications
+  add column if not exists recipient_email text,
+  add column if not exists recipient_role text,
+  add column if not exists title text,
+  add column if not exists message text,
+  add column if not exists notification_type text,
+  add column if not exists related_table text,
+  add column if not exists related_id text,
+  add column if not exists is_read boolean,
+  add column if not exists read_at timestamptz,
+  add column if not exists cleared_at timestamptz,
+  add column if not exists created_at timestamptz,
   add column if not exists group_key text,
   add column if not exists action_url text,
-  add column if not exists metadata jsonb not null default '{}'::jsonb;
+  add column if not exists metadata jsonb;
 
-update public.app_notifications set metadata = '{}'::jsonb where metadata is null;
+alter table public.app_notifications
+  alter column recipient_role set default 'volunteer',
+  alter column title set default 'Notification',
+  alter column message set default '',
+  alter column notification_type set default 'general',
+  alter column is_read set default false,
+  alter column created_at set default now(),
+  alter column metadata set default '{}'::jsonb;
+
+update public.app_notifications
+set recipient_role = coalesce(nullif(recipient_role, ''), 'volunteer')
+where recipient_role is null or recipient_role = '';
+
+update public.app_notifications
+set title = coalesce(nullif(title, ''), 'Notification')
+where title is null or title = '';
+
+update public.app_notifications
+set message = coalesce(message, '')
+where message is null;
+
+update public.app_notifications
+set notification_type = coalesce(nullif(notification_type, ''), 'general')
+where notification_type is null or notification_type = '';
+
+update public.app_notifications
+set is_read = false
+where is_read is null;
+
+update public.app_notifications
+set created_at = now()
+where created_at is null;
+
+update public.app_notifications
+set metadata = '{}'::jsonb
+where metadata is null;
+
+alter table public.app_notifications
+  alter column recipient_role set not null,
+  alter column title set not null,
+  alter column notification_type set not null,
+  alter column is_read set not null,
+  alter column created_at set not null,
+  alter column metadata set not null;
 
 create index if not exists app_notifications_recipient_created_idx on public.app_notifications (recipient_email, created_at desc);
 create index if not exists app_notifications_role_created_idx on public.app_notifications (recipient_role, created_at desc);
@@ -45,6 +90,11 @@ drop policy if exists "Users can update own notifications" on public.app_notific
 create policy "Users can update own notifications"
   on public.app_notifications for update
   using (
+    lower(recipient_email) = lower((select email from public.app_users where auth_user_id = auth.uid() limit 1))
+    or (recipient_role = 'admin' and public.current_app_user_is_admin())
+    or public.current_app_user_is_admin()
+  )
+  with check (
     lower(recipient_email) = lower((select email from public.app_users where auth_user_id = auth.uid() limit 1))
     or (recipient_role = 'admin' and public.current_app_user_is_admin())
     or public.current_app_user_is_admin()
