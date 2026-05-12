@@ -304,19 +304,6 @@
     };
   }
 
-  function loadScriptOnce(src, attributeName) {
-    if (document.querySelector(`script[${attributeName}]`)) return;
-    const script = document.createElement('script');
-    script.src = src;
-    script.defer = true;
-    script.setAttribute(attributeName, 'true');
-    document.head.appendChild(script);
-  }
-
-  function loadNotificationPanelPolish() {
-    if (!window.__notificationPanelPolishInstalled) loadScriptOnce('assets/notification-panel-polish.js', 'data-notification-panel-polish');
-  }
-
   window.MENDAKIDataAccess = Object.freeze({
     canonicalTables,
     deprecatedTables,
@@ -335,6 +322,4 @@
     adminQueueCounts,
     countByStatus
   });
-
-  loadNotificationPanelPolish();
 })();
