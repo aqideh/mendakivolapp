@@ -28,7 +28,7 @@
   }
 
   function renderOpportunities(host) {
-    host.innerHTML = `<div class="phase35-page" data-opportunity-admin-canonical-page><div class="phase35-summary-grid">${tile('Parent opportunities', opportunities().length)}${tile('Session rows', sessions().length)}${tile('Active sign-ups', countBy(signups(), s => !['cancelled', 'declined'].includes(statusOf(s))))}</div><div class="phase35-page-note">Manage parent listings, opportunity sessions, capacity, waitlist, and facilitator code configuration.</div><div class="admin-content-workspace" data-content-workspace data-opportunity-admin-canonical-workspace></div></div>`;
+    host.innerHTML = `<div class="phase35-page" data-opportunity-admin-canonical-page><div class="phase35-summary-grid">${tile('Parent opportunities', opportunities().length)}${tile('Session rows', sessions().length)}</div><div class="phase35-page-note">Manage parent listings, opportunity sessions, capacity, waitlist, facilitator code configuration, photos, and delete actions.</div><div class="admin-content-workspace" data-content-workspace data-opportunity-admin-canonical-workspace></div></div>`;
     window.MENDAKIAdminOpportunityHierarchy.renderOpportunityHierarchy();
     return true;
   }
