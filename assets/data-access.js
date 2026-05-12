@@ -195,6 +195,16 @@
     };
   }
 
+  function loadAdminReviewBridge() {
+    if (window.__adminReviewDataAccessBridgeInstalled) return;
+    if (document.querySelector('script[data-admin-review-data-access-bridge]')) return;
+    const script = document.createElement('script');
+    script.src = 'assets/admin-review-data-access-bridge.js';
+    script.defer = true;
+    script.dataset.adminReviewDataAccessBridge = 'true';
+    document.head.appendChild(script);
+  }
+
   window.MENDAKIDataAccess = Object.freeze({
     canonicalTables,
     deprecatedTables,
@@ -210,4 +220,6 @@
     adminQueueCounts,
     countByStatus
   });
+
+  loadAdminReviewBridge();
 })();
