@@ -2,57 +2,16 @@
   let attendanceCodes = {};
   let fetchInProgress = false;
 
-  function isAdmin() {
-    return Boolean(window.VolunteerDataStore?.isAdmin?.());
-  }
-
-  function escapeHtml(value) {
-    return String(value || '').replace(/[&<>\"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
-  }
-
-  function loadDeferredScript(src, flagName) {
-    if (window[flagName]) return;
-    window[flagName] = true;
-    const script = document.createElement('script');
-    script.src = src;
-    script.defer = true;
-    document.head.append(script);
-  }
-
-  function loadUrgentPrePhaseFixes() {
-    loadDeferredScript('assets/pre-phase-urgent-fixes.js', '__prePhaseUrgentFixesLoaderInstalled');
-  }
-
-  function loadPhaseTwentyFourReferrals() {
-    loadDeferredScript('assets/referrals.js', '__phaseTwentyFourReferralsLoaderInstalled');
-  }
-
-  function loadPhaseTwentyFiveGamification() {
-    loadDeferredScript('assets/gamification.js', '__phaseTwentyFiveGamificationLoaderInstalled');
-  }
-
-  function loadPhaseTwentySixReports() {
-    loadDeferredScript('assets/reports.js', '__phaseTwentySixReportsLoaderInstalled');
-  }
-
-  function loadPhaseTwentySevenAuditHistory() {
-    loadDeferredScript('assets/audit-history.js', '__phaseTwentySevenAuditHistoryLoaderInstalled');
-  }
-
-  function loadPhaseTwentyEightNotificationPolish() {
-    loadDeferredScript('assets/notification-polish.js', '__phaseTwentyEightNotificationPolishLoaderInstalled');
-  }
-
-  function loadPhaseTwentyNineSessionAttendanceValidation() {
-    loadDeferredScript('assets/session-attendance-validation.js', '__phaseTwentyNineSessionAttendanceValidationLoaderInstalled');
-  }
+  function store() { return window.VolunteerDataStore; }
+  function isAdmin() { return store().isAdmin(); }
+  function escapeHtml(value) { return store().utils.escapeHtml(value); }
 
   async function refreshAttendanceCodes() {
-    if (!isAdmin() || typeof window.VolunteerDataStore?.fetchAttendanceCodes !== 'function') return;
+    if (!isAdmin()) return;
     if (fetchInProgress) return;
     fetchInProgress = true;
     try {
-      attendanceCodes = await window.VolunteerDataStore.fetchAttendanceCodes();
+      attendanceCodes = await store().fetchAttendanceCodes();
       applyAttendanceCodesToAdminUi();
     } finally {
       fetchInProgress = false;
@@ -60,7 +19,7 @@
   }
 
   function opportunityIdFromForm(form) {
-    return String(form?.querySelector('[name="id"]')?.value || '').trim();
+    return String(form.querySelector('[name="id"]').value || '').trim();
   }
 
   function prefillOpportunityForm() {
@@ -78,7 +37,7 @@
       note = document.createElement('p');
       note.className = 'dashboard-muted';
       note.dataset.currentFacilitatorCode = 'true';
-      input.closest('label')?.after(note);
+      input.closest('label').after(note);
     }
     note.textContent = `Current saved facilitator code: ${codeRecord.code}`;
   }
@@ -93,13 +52,11 @@
       if (!note) {
         note = document.createElement('span');
         note.dataset.facilitatorCodeNote = 'true';
-        item.querySelector('span span')?.after(note);
+        item.querySelector('span span').after(note);
       }
-      if (note) {
-        note.innerHTML = codeRecord?.code
-          ? `Facilitator code: <strong>${escapeHtml(codeRecord.code)}</strong>`
-          : 'Facilitator code: not set';
-      }
+      note.innerHTML = codeRecord?.code
+        ? `Facilitator code: <strong>${escapeHtml(codeRecord.code)}</strong>`
+        : 'Facilitator code: not set';
     });
   }
 
@@ -117,7 +74,6 @@
   function bindUiObserver() {
     if (window.__adminAttendanceCodeViewBound) return;
     window.__adminAttendanceCodeViewBound = true;
-
     document.addEventListener('click', event => {
       if (
         event.target.closest('[data-content-type="opportunity"]') ||
@@ -128,29 +84,18 @@
         refreshAttendanceCodes().then(scheduleApply);
       }
     }, true);
-
     document.addEventListener('submit', event => {
       if (event.target.closest('[data-content-form="opportunity"]')) {
         window.setTimeout(() => refreshAttendanceCodes().then(scheduleApply), 900);
       }
     }, true);
-
     window.addEventListener('volunteer-opportunities-synced', () => refreshAttendanceCodes().then(scheduleApply));
   }
-
-  loadUrgentPrePhaseFixes();
-  loadPhaseTwentyFourReferrals();
-  loadPhaseTwentyFiveGamification();
-  loadPhaseTwentySixReports();
-  loadPhaseTwentySevenAuditHistory();
-  loadPhaseTwentyEightNotificationPolish();
-  loadPhaseTwentyNineSessionAttendanceValidation();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindUiObserver();
     window.setTimeout(refreshAttendanceCodes, 700);
   });
-
   window.addEventListener('volunteer-auth-ready', refreshAttendanceCodes);
   window.addEventListener('volunteer-auth-changed', refreshAttendanceCodes);
 })();
