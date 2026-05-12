@@ -63,6 +63,7 @@ The following phase-numbered admin modules were consolidated into responsibility
 | Admin workspace shell | `assets/admin-workspace.js` | `assets/phase-thirty-four-admin-shell.js` |
 | Admin pages router | `assets/admin-pages.js` | `assets/phase-thirty-five-canonical-admin-pages.js` |
 | Admin review actions | `assets/admin-review-actions.js` | `assets/phase-thirty-eight-drawer-review-actions.js` |
+| Admin queue sync | `assets/admin-queue-sync.js` | `assets/phase-forty-two-admin-queue-sync.js` |
 
 ### Active responsibility-named scripts
 
@@ -71,6 +72,7 @@ The following phase-numbered admin modules were consolidated into responsibility
 ```text
 assets/volunteer-actions.js
 assets/admin-tables.js
+assets/admin-queue-sync.js
 assets/admin-review-actions.js
 assets/admin-pages.js
 assets/admin-workspace.js
@@ -81,6 +83,7 @@ assets/admin-workspace.js
 ```text
 window.MENDAKIVolunteerActions
 window.MENDAKIAdminTables
+window.MENDAKIAdminQueueSync
 window.MENDAKIAdminReviewActions
 window.MENDAKIAdminPages
 window.MENDAKIAdminWorkspace
@@ -93,6 +96,7 @@ MENDAKIPhase34AdminShell
 MENDAKIPhase35CanonicalAdminPages
 MENDAKIPhase36AdminTables
 MENDAKIPhase38DrawerActions
+MENDAKIPhase42AdminQueueSync
 ```
 
 ### Session validation and admin tools cleanup
@@ -102,23 +106,23 @@ MENDAKIPhase38DrawerActions
 - Removed development-facing bridge/legacy/compatibility wording from the admin UI where handled.
 - Replaced dynamic feature script loading with explicit primary script loading where completed.
 
-## Remaining roadmap
-
 ### Phase 14 — Admin queue sync module rename
 
-Target:
+Completed:
 
-- Rename `assets/phase-forty-two-admin-queue-sync.js` to `assets/admin-queue-sync.js`.
-- Update script loading in `index.html`.
-- Update any globals or data attributes that still carry phase-numbered names.
-- Delete the old phase-numbered file after active consumers are updated.
-- Verify that opportunity sign-up and attendance queue refresh still work from the admin workspace.
+- Renamed `assets/phase-forty-two-admin-queue-sync.js` to `assets/admin-queue-sync.js`.
+- Updated script loading in `index.html`.
+- Replaced the phase-numbered queue sync install flag, render wrapper marker, global namespace, and queue refresh data attributes.
+- Removed direct references to old admin shell/table namespaces from the queue sync module.
+- Deleted the old phase-numbered file after active consumers were updated.
 
-Expected primary namespace:
+Primary namespace:
 
 ```text
 window.MENDAKIAdminQueueSync
 ```
+
+## Remaining roadmap
 
 ### Phase 15 — Admin tools module rename
 
@@ -218,7 +222,9 @@ These commits are useful reference points for the cleanup sequence:
 - `881afcc` — removed phase-numbered admin shell module.
 - `db235c8` — removed phase-numbered admin pages module.
 - `9f9fdd0` — removed phase-numbered drawer review actions module.
+- `452ed50` — added responsibility-named admin queue sync module.
+- `963f0c7` — removed phase-numbered admin queue sync module.
 
 ## Next recommended step
 
-Proceed with **Phase 14 — Admin queue sync module rename**. Keep the queue refresh behavior primary and verify that sign-up and attendance queues still render current rows after the rename.
+Proceed with **Phase 15 — Admin tools module rename**. Keep the admin tools page rendered through the primary admin pages path and verify session validation, reports, audit, notifications, and QA tools still mount after the rename.
