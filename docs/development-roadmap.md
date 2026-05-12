@@ -64,6 +64,7 @@ The following phase-numbered admin modules were consolidated into responsibility
 | Admin pages router | `assets/admin-pages.js` | `assets/phase-thirty-five-canonical-admin-pages.js` |
 | Admin review actions | `assets/admin-review-actions.js` | `assets/phase-thirty-eight-drawer-review-actions.js` |
 | Admin queue sync | `assets/admin-queue-sync.js` | `assets/phase-forty-two-admin-queue-sync.js` |
+| Admin tools | `assets/admin-tools.js` | `assets/phase-forty-two-canonical-admin-tools.js` |
 
 ### Active responsibility-named scripts
 
@@ -74,6 +75,7 @@ assets/volunteer-actions.js
 assets/admin-tables.js
 assets/admin-queue-sync.js
 assets/admin-review-actions.js
+assets/admin-tools.js
 assets/admin-pages.js
 assets/admin-workspace.js
 ```
@@ -85,6 +87,7 @@ window.MENDAKIVolunteerActions
 window.MENDAKIAdminTables
 window.MENDAKIAdminQueueSync
 window.MENDAKIAdminReviewActions
+window.MENDAKIAdminTools
 window.MENDAKIAdminPages
 window.MENDAKIAdminWorkspace
 ```
@@ -97,6 +100,7 @@ MENDAKIPhase35CanonicalAdminPages
 MENDAKIPhase36AdminTables
 MENDAKIPhase38DrawerActions
 MENDAKIPhase42AdminQueueSync
+MENDAKIPhase42CanonicalAdminTools
 ```
 
 ### Session validation and admin tools cleanup
@@ -122,22 +126,23 @@ Primary namespace:
 window.MENDAKIAdminQueueSync
 ```
 
-## Remaining roadmap
-
 ### Phase 15 — Admin tools module rename
 
-Target:
+Completed:
 
-- Rename `assets/phase-forty-two-canonical-admin-tools.js` to `assets/admin-tools.js`.
-- Update `admin-pages.js` to call the responsibility-named namespace.
-- Replace phase-numbered data attributes where they are implementation-facing and not needed for styling/tests.
-- Delete the old phase-numbered file after consumers are updated.
+- Renamed `assets/phase-forty-two-canonical-admin-tools.js` to `assets/admin-tools.js`.
+- Updated script loading in `index.html`.
+- Updated `admin-pages.js` to call the responsibility-named `MENDAKIAdminTools` namespace.
+- Replaced the phase-numbered admin tools install flag, state object, global namespace, page data attributes, form data attributes, table row action attributes, export attributes, and notification load attributes.
+- Deleted the old phase-numbered file after active consumers were updated.
 
-Expected primary namespace:
+Primary namespace:
 
 ```text
 window.MENDAKIAdminTools
 ```
+
+## Remaining roadmap
 
 ### Phase 16 — CSS responsibility cleanup
 
@@ -224,7 +229,9 @@ These commits are useful reference points for the cleanup sequence:
 - `9f9fdd0` — removed phase-numbered drawer review actions module.
 - `452ed50` — added responsibility-named admin queue sync module.
 - `963f0c7` — removed phase-numbered admin queue sync module.
+- `0d55835` — added responsibility-named admin tools module.
+- `ee152d2` — removed phase-numbered admin tools module.
 
 ## Next recommended step
 
-Proceed with **Phase 15 — Admin tools module rename**. Keep the admin tools page rendered through the primary admin pages path and verify session validation, reports, audit, notifications, and QA tools still mount after the rename.
+Proceed with **Phase 16 — CSS responsibility cleanup**. Rename or consolidate admin CSS into responsibility-named stylesheets only after confirming selector coverage for workspace, admin pages, admin tables, and QA tools.
