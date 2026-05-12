@@ -28,6 +28,20 @@
     const role = String(session()?.role || '').toLowerCase();
     return role === 'admin' || role === 'super_admin';
   }
+  function appState() { return window.state || state; }
+  function currentOpportunity(opportunityId) {
+    return asArray(appState()?.data?.opportunities).find(item => String(item.id) === String(opportunityId));
+  }
+  function currentUserSignupForOpportunity(opportunityId) {
+    const email = session()?.email || '';
+    return listOpportunitySignups().find(item => item.email === email && String(item.opportunityId) === String(opportunityId));
+  }
+  function refreshVisibleSignupViews() {
+    if (typeof window.renderOpportunities === 'function') window.renderOpportunities();
+    if (typeof window.renderHomeOpportunities === 'function') window.renderHomeOpportunities();
+    if (typeof window.phaseTwoRenderDashboardSignups === 'function') window.phaseTwoRenderDashboardSignups();
+    if (typeof window.phaseThreeRender === 'function') window.phaseThreeRender();
+  }
 
   function emit(domain) {
     window.dispatchEvent(new CustomEvent('mendaki-data-access-state', { detail: snapshot(domain) }));
@@ -112,6 +126,11 @@
     if (area === 'attendance') return refreshAttendanceClaims();
     if (area === 'training') return refreshTrainingSignups();
     return [];
+  }
+
+  function requireSignedIn() {
+    if (!session()?.email) throw new Error('Please sign in first.');
+    if (!client()) throw new Error('Supabase is not configured.');
   }
 
   function requireAdmin() {
@@ -222,6 +241,48 @@
     window.dispatchEvent(new CustomEvent(eventName));
   }
 
+  async function createOpportunitySignup(opportunityId) {
+    return runMutation('opportunitySignups', async () => {
+      requireSignedIn();
+      const opportunity = currentOpportunity(opportunityId);
+      if (!opportunity) throw new Error('Opportunity not found.');
+      const existing = currentUserSignupForOpportunity(opportunityId);
+      if (existing && !['cancelled', 'declined', 'completed'].includes(existing.status)) throw new Error('You already have an active sign-up for this opportunity.');
+      const { data, error } = await client().rpc('create_opportunity_signup_with_capacity', {
+        p_signup_id: existing?.id || crypto.randomUUID(),
+        p_opportunity_id: String(opportunity.id),
+        p_volunteer_name: store().getProfile()?.name || session().name || 'Volunteer'
+      });
+      if (error) throw error;
+      const saved = opportunitySignupFromRow(data, existing || {});
+      if (!saved) throw new Error('Sign-up was not returned by the database.');
+      upsertLocal(listOpportunitySignups, store().saveOpportunitySignups, 'volunteer-signups-synced', saved);
+      await refreshOpportunitySignups();
+      refreshVisibleSignupViews();
+      return { ok: true, signup: saved };
+    });
+  }
+
+  async function cancelOpportunitySignup(opportunityId) {
+    return runMutation('opportunitySignups', async () => {
+      requireSignedIn();
+      const signup = currentUserSignupForOpportunity(opportunityId);
+      if (!signup) throw new Error('Sign-up not found.');
+      if (!['pending_review', 'registered', 'confirmed', 'waitlisted'].includes(signup.status)) throw new Error('This sign-up can no longer be cancelled.');
+      const { data, error } = await client().rpc('cancel_opportunity_signup', {
+        p_signup_id: signup.id,
+        p_cancellation_reason: null
+      });
+      if (error) throw error;
+      const saved = opportunitySignupFromRow(data, signup);
+      if (!saved) throw new Error('Cancellation was not returned by the database.');
+      upsertLocal(listOpportunitySignups, store().saveOpportunitySignups, 'volunteer-signups-synced', saved);
+      await refreshOpportunitySignups();
+      refreshVisibleSignupViews();
+      return { ok: true, signup: saved };
+    });
+  }
+
   async function reviewOpportunitySignup(signupId, status, options = {}) {
     return runMutation('opportunitySignups', async () => {
       requireAdmin();
@@ -316,6 +377,8 @@
     refreshAttendanceClaims,
     refreshTrainingSignups,
     refreshAdminQueue,
+    createOpportunitySignup,
+    cancelOpportunitySignup,
     reviewOpportunitySignup,
     reviewAttendanceClaim,
     reviewTrainingSignup,
