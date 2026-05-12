@@ -26,11 +26,7 @@ const VolunteerDataStore = (() => {
     }
   }
 
-  function writeJson(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-    return value;
-  }
-
+  function writeJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); return value; }
   function remove(key) { localStorage.removeItem(key); }
   function readArray(key) { const value = readJson(key, []); return Array.isArray(value) ? value : []; }
   function normaliseEmail(email) { return String(email || '').trim().toLowerCase(); }
@@ -260,7 +256,6 @@ window.VolunteerDataStore = VolunteerDataStore;
   function session() { return store().getSession(); }
   function ready() { return Boolean(client() && session()?.email); }
   function admin() { return Boolean(store().isAdmin()); }
-  function appData() { return state.data; }
   function notice(message) { if (typeof phaseTwoShowModalNotice === 'function') phaseTwoShowModalNotice(message, 'error'); else window.alert(message); }
   function setBusy(button, busy, label = 'Saving...') {
     if (!button) return;
@@ -274,49 +269,28 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (typeof phaseThreeRender === 'function') phaseThreeRender();
     if (typeof phaseFourRender === 'function') phaseFourRender();
   }
-  function upsertLocal(list, item, matcher) { const index = list.findIndex(matcher); if (index >= 0) list[index] = item; else list.push(item); return list; }
-  function trainingDraft(trainingId) {
-    const training = appData().trainings.find(item => String(item.id) === String(trainingId));
-    const current = session();
-    if (!current?.email || !training) return null;
-    const existing = store().getTrainingSignups().find(item => item.email === current.email && String(item.trainingId) === String(trainingId));
-    const profile = store().getProfile() || {};
-    return { id: existing?.id || crypto.randomUUID(), trainingId: String(training.id), email: current.email, volunteerName: profile.name || current.name || 'Volunteer', title: training.title || '', date: training.date || '', time: training.time || '', location: training.location || '', trainer: training.trainer || '', status: 'registered', signedUpAt: existing?.signedUpAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
-  }
   async function handleOpportunityCancel(button) {
-    const signup = store().getOpportunitySignups().find(item => item.email === store().currentEmail() && String(item.opportunityId) === String(button.dataset.cancelSignup) && ['pending_review', 'registered', 'confirmed', 'waitlisted'].includes(item.status));
-    if (!signup) return notice('Could not find this sign-up to cancel.');
     setBusy(button, true, 'Cancelling...');
-    const { data, error } = await client().rpc('cancel_opportunity_signup', { p_signup_id: signup.id, p_cancellation_reason: null });
+    const result = await dataAccess().cancelOpportunitySignup(button.dataset.cancelSignup);
     setBusy(button, false);
-    if (error) return notice(`Could not cancel this sign-up: ${error.message}`);
-    const saved = dataAccess().mappers.opportunitySignupFromRow(data, signup);
-    store().saveOpportunitySignups(upsertLocal(store().getOpportunitySignups(), saved, item => item.id === saved.id));
-    await store().fetchSupabaseOpportunitySignups();
+    if (!result.ok) return notice(result.reason || 'Could not cancel this sign-up.');
     refreshAll();
   }
   async function handleTrainingSignup(button) {
-    const draft = trainingDraft(button.dataset.signupTraining);
-    if (!draft) return phaseOneOpenAuth();
     setBusy(button, true, 'Signing up...');
-    const { data, error } = await client().rpc('create_training_signup_with_capacity', { p_signup_id: draft.id, p_training_id: draft.trainingId, p_volunteer_name: draft.volunteerName });
+    const result = await dataAccess().createTrainingSignup(button.dataset.signupTraining);
     setBusy(button, false);
-    if (error) return notice(`Could not sign up for training: ${error.message}`);
-    const saved = dataAccess().mappers.trainingSignupFromRow(data, draft);
-    store().saveTrainingSignups(upsertLocal(store().getTrainingSignups(), saved, item => item.id === saved.id || (item.email === saved.email && String(item.trainingId) === String(saved.trainingId))));
-    await store().fetchSupabaseTrainingSignups();
+    if (!result.ok) {
+      if (result.reason === 'Please sign in first.') return phaseOneOpenAuth();
+      return notice(result.reason || 'Could not sign up for training.');
+    }
     refreshAll();
   }
   async function handleTrainingCancel(button) {
-    const signup = store().getTrainingSignups().find(item => item.email === store().currentEmail() && String(item.trainingId) === String(button.dataset.cancelTraining) && ['registered', 'waitlisted'].includes(item.status));
-    if (!signup) return notice('Could not find this training sign-up to cancel.');
     setBusy(button, true, 'Cancelling...');
-    const { data, error } = await client().rpc('cancel_training_signup', { p_signup_id: signup.id, p_cancellation_reason: null });
+    const result = await dataAccess().cancelTrainingSignup(button.dataset.cancelTraining);
     setBusy(button, false);
-    if (error) return notice(`Could not cancel training sign-up: ${error.message}`);
-    const saved = dataAccess().mappers.trainingSignupFromRow(data, signup);
-    store().saveTrainingSignups(upsertLocal(store().getTrainingSignups(), saved, item => item.id === saved.id));
-    await store().fetchSupabaseTrainingSignups();
+    if (!result.ok) return notice(result.reason || 'Could not cancel training sign-up.');
     refreshAll();
   }
   async function handleTrainingReview(button) {
