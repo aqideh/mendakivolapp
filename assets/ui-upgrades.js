@@ -4,74 +4,13 @@
   const qsa = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const escapeHtml = value => window.VolunteerDataStore?.utils?.escapeHtml?.(value) || String(value || '');
 
-  function session() {
-    return window.VolunteerDataStore?.getSession?.() || null;
-  }
-
-  function profile() {
-    return window.VolunteerDataStore?.getProfile?.() || null;
-  }
-
-  function signups() {
-    return window.VolunteerDataStore?.getOpportunitySignups?.() || [];
-  }
-
-  function claims() {
-    return window.VolunteerDataStore?.getAttendanceClaims?.() || [];
-  }
-
-  function trainings() {
-    return window.VolunteerDataStore?.getTrainingSignups?.() || [];
-  }
-
-  function appData() {
-    try {
-      return typeof state !== 'undefined' ? state.data : null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function currentEmail() {
-    return window.VolunteerDataStore?.currentEmail?.() || session()?.email || '';
-  }
-
-  function displayName() {
-    return profile()?.name || session()?.name || 'Volunteer';
-  }
-
-  function formatDateTime(value) {
-    if (!value) return '';
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return new Intl.DateTimeFormat('en-SG', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: 'numeric',
-      minute: '2-digit'
-    }).format(parsed);
-  }
-
-  function parseDateFromText(value) {
-    if (!value) return null;
-    const iso = String(value).match(/\d{4}-\d{2}-\d{2}/)?.[0];
-    if (iso) return new Date(`${iso}T09:00:00`);
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  function opportunityDate(opp) {
-    if (opp?.startsAt) return new Date(opp.startsAt);
-    if (opp?.sessionTimeLabel) return parseDateFromText(opp.sessionTimeLabel);
-    return parseDateFromText(opp?.time);
-  }
-
-  function opportunityLabel(opp) {
-    const date = opportunityDate(opp);
-    if (date && !Number.isNaN(date.getTime())) return formatDateTime(date.toISOString());
-    return opp?.time || 'Date to be confirmed';
-  }
+  function session() { return window.VolunteerDataStore?.getSession?.() || null; }
+  function profile() { return window.VolunteerDataStore?.getProfile?.() || null; }
+  function signups() { return window.VolunteerDataStore?.getOpportunitySignups?.() || []; }
+  function claims() { return window.VolunteerDataStore?.getAttendanceClaims?.() || []; }
+  function trainings() { return window.VolunteerDataStore?.getTrainingSignups?.() || []; }
+  function currentEmail() { return window.VolunteerDataStore?.currentEmail?.() || session()?.email || ''; }
+  function displayName() { return profile()?.name || session()?.name || 'Volunteer'; }
 
   function verifiedHours() {
     const email = currentEmail();
@@ -154,9 +93,7 @@
 
     if (statTitle && statTitle.parentElement !== target) target.append(statTitle);
     if (statGrid && statGrid.parentElement !== target) target.append(statGrid);
-    statMuted.forEach(node => {
-      if (node.parentElement !== target) target.append(node);
-    });
+    statMuted.forEach(node => { if (node.parentElement !== target) target.append(node); });
     if (progress && progress.parentElement !== target) target.append(progress);
 
     if (!target.parentElement) profileCard.append(target);
@@ -173,9 +110,7 @@
       summary.dataset.profileSummaryRemoved = 'true';
       summary.style.setProperty('display', 'none', 'important');
     }
-    qsa('.profile-pill', card).forEach(node => {
-      node.remove();
-    });
+    qsa('.profile-pill', card).forEach(node => node.remove());
   }
 
   function decorateProfileCard() {
@@ -236,16 +171,7 @@
   }
 
   function decorateCards() {
-    const opportunities = appData()?.opportunities || [];
-    qsa('[data-opp-id]').forEach(card => {
-      const opp = opportunities.find(item => String(item.id) === String(card.dataset.oppId));
-      if (!opp || card.querySelector('[data-ui-next-meta]')) return;
-      const meta = document.createElement('span');
-      meta.className = 'ui-next-meta';
-      meta.dataset.uiNextMeta = 'true';
-      meta.textContent = `📍 Next: ${opportunityLabel(opp)}`;
-      card.append(meta);
-    });
+    qsa('[data-ui-next-meta]').forEach(node => node.remove());
     qsa('[data-signup-opportunity]').forEach(button => {
       if (!button.dataset.uiCtaApplied && !button.disabled) {
         button.dataset.uiCtaApplied = 'true';
@@ -257,7 +183,7 @@
   function decorateOpportunityPage() {
     const top = qs('#page-opportunities .page-topper');
     if (!top || qs('[data-ui-opportunity-alert]')) return;
-    const count = (appData()?.opportunities || []).length;
+    const count = (() => { try { return state?.data?.opportunities?.length || 0; } catch (_) { return 0; } })();
     const alert = document.createElement('div');
     alert.className = 'ui-inline-alert';
     alert.dataset.uiOpportunityAlert = 'true';
@@ -269,7 +195,7 @@
   }
 
   function removeOpportunityTimeline() {
-    qsa('[data-ui-timeline]').forEach(node => node.remove());
+    qsa('[data-ui-timeline], [data-ui-next-meta]').forEach(node => node.remove());
   }
 
   function installMobileAffordances() {
@@ -321,9 +247,7 @@
     if (window.__uiUpgradesBound) return;
     window.__uiUpgradesBound = true;
     document.addEventListener('click', event => {
-      if (event.target.closest('[data-ui-focus-search]')) {
-        qs('#opp-search')?.focus();
-      }
+      if (event.target.closest('[data-ui-focus-search]')) qs('#opp-search')?.focus();
     });
   }
 
