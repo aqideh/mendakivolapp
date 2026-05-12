@@ -4,7 +4,7 @@ Last updated: 2026-05-12
 
 This document records the current cleanup and development direction for the `expansion` branch.
 
-The current workstream is focused on stabilising the primary application path. Duplicated compatibility paths, phase-numbered bridge modules, and development-facing UI copy should be removed rather than preserved.
+The current workstream has stabilised the primary application path. Duplicated compatibility paths, phase-numbered bridge modules, and development-facing UI copy were removed where covered by the cleanup stream.
 
 ## Current principles
 
@@ -31,7 +31,7 @@ Signed-in app dashboard
 → MENDAKIDataAccess / Supabase RPCs
 ```
 
-The app remains pilot/beta until manual QA, Auth console settings, production policy decisions, and final release checks are completed.
+The current development cleanup phases are complete. The app remains pilot/beta until manual QA, Auth console settings, production policy decisions, and final release checks are completed.
 
 ## Completed work in the current cleanup stream
 
@@ -206,34 +206,37 @@ window.MENDAKIAdminUX
 window.MENDAKIAdminQA
 ```
 
-## Remaining roadmap
-
 ### Phase 18 — Manual QA checklist and release readiness
 
-Target:
+Completed:
 
-- Add or update a manual QA checklist covering:
+- Added `docs/manual-qa-release-readiness.md` as the dedicated release gate checklist.
+- Documented required admin and volunteer test accounts.
+- Documented required sample data.
+- Documented SQL validation and signed-in admin browser smoke checks.
+- Documented manual QA flows for:
+  - Volunteer account behavior
   - Admin sign-up queue load and search
-  - Sign-up confirm/waitlist/decline actions
-  - Attendance verify/reject/clarification actions
-  - Volunteer clarification response flow
+  - Sign-up confirm / waitlist / decline actions
+  - Attendance verify / adjust / clarification / reject actions
+  - Volunteer clarification response
   - Training sign-up review
   - Referral review
   - Points ledger read-only review
   - Admin reports export
   - Audit search
   - Notifications history
-- Record known required test users and sample data assumptions.
-- Document deployment validation using query-string cache busting, for example `?v=<commit>`.
+- Documented deployment validation using cache busting: `?v=<commit>`.
+- Documented final release decision states and known non-code gates.
 
-## Production/manual requirements still pending
+## Remaining release gates
 
-Do not treat the app as production-complete until these are done:
+There are no additional development phases in this roadmap. Remaining work is release validation and policy/console decisions:
 
 1. Run the latest SQL validation checks.
 2. Run the browser admin UI smoke script as a signed-in admin.
 3. Run the manual QA checklist with separate volunteer and admin accounts.
-4. Enable leaked-password protection in Supabase Auth console.
+4. Enable or explicitly decide leaked-password protection in Supabase Auth console.
 5. Verify production Auth redirect URLs and email templates.
 6. Run the in-app QA panel as admin.
 7. Decide how to handle remaining authenticated `SECURITY DEFINER` RPC warnings.
@@ -248,6 +251,7 @@ Do not treat the app as production-complete until these are done:
 - Attendance integrity depends on session-specific facilitator code validation.
 - Opportunity sign-up status and attendance updates should remain routed through transactional Supabase RPCs where available.
 - Capacity and waitlist behavior should be enforced by the primary sign-up review path.
+- Manual QA and release readiness are tracked in `docs/manual-qa-release-readiness.md`.
 
 ## Recent cleanup commit anchors
 
@@ -270,7 +274,8 @@ These commits are useful reference points for the cleanup sequence:
 - `3b50e15` — added responsibility-named admin QA module.
 - `b5d0b85` — loaded responsibility-named admin UX and QA scripts.
 - `b976003` — removed phase-numbered admin QA module.
+- `721d68e` — added manual QA and release readiness checklist.
 
 ## Next recommended step
 
-Proceed with **Phase 18 — Manual QA checklist and release readiness**. Focus on documenting the signed-in admin browser smoke process, volunteer/admin manual QA flows, required test users, sample-data assumptions, and deployment validation steps.
+Run the release gates in `docs/manual-qa-release-readiness.md` against the deployed `expansion` build using `?v=<commit>` cache busting. Do not mark the app production-ready until the release decision section in that checklist is completed.
