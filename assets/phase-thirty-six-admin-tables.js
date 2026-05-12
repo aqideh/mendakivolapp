@@ -7,15 +7,16 @@
   let drawerRecord = null;
 
   function store() { return window.VolunteerDataStore; }
+  function dataAccess() { return window.MENDAKIDataAccess; }
   function appState() { try { return typeof state !== 'undefined' ? state : null; } catch (_) { return null; } }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
   function asArray(value) { return Array.isArray(value) ? value : []; }
   function opportunities() { return asArray(appState()?.data?.opportunities); }
   function sessions() { return asArray(appState()?.data?.sessions); }
   function trainings() { return asArray(appState()?.data?.trainings); }
-  function signups() { return asArray(store()?.getOpportunitySignups?.()); }
-  function attendanceClaims() { return asArray(store()?.getAttendanceClaims?.()); }
-  function trainingSignups() { return asArray(store()?.getTrainingSignups?.()); }
+  function signups() { return asArray(dataAccess()?.listOpportunitySignups?.() || store()?.getOpportunitySignups?.()); }
+  function attendanceClaims() { return asArray(dataAccess()?.listAttendanceClaims?.() || store()?.getAttendanceClaims?.()); }
+  function trainingSignups() { return asArray(dataAccess()?.listTrainingSignups?.() || store()?.getTrainingSignups?.()); }
   function referrals() { return asArray(store()?.getReferrals?.() || store()?.getReferralRecords?.()); }
   function points() { return asArray(store()?.getPointsLedger?.()); }
 
@@ -51,6 +52,16 @@
     return tableState.get(id);
   }
 
+  function domainForTable(id) {
+    if (id === 'signups') return 'opportunitySignups';
+    if (id === 'attendance') return 'attendanceClaims';
+    return id;
+  }
+
+  function queueSnapshot(id) {
+    return dataAccess()?.snapshot?.(domainForTable(id)) || { loading: false, error: '', lastRefreshedAt: '' };
+  }
+
   function textFor(row) {
     try { return JSON.stringify(row).toLowerCase(); }
     catch (_) { return String(row?.__id || '').toLowerCase(); }
@@ -77,18 +88,34 @@
 
   function toolbar(id, rows) {
     const current = getState(id);
+    const snap = queueSnapshot(id);
+    const refreshed = snap.lastRefreshedAt ? `Last refreshed ${fmt(snap.lastRefreshedAt)}` : 'Not refreshed this session';
     return `
       <div class="phase36-toolbar">
         <label>Search<input data-phase36-search="${escapeHtml(id)}" value="${escapeHtml(current.search)}" placeholder="Search table"></label>
         <label>Status<select data-phase36-status="${escapeHtml(id)}"><option value="">Any status/type</option>${statuses(rows).map(s => `<option value="${escapeHtml(s)}" ${current.status === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}</select></label>
         <label>Sort<select data-phase36-sort="${escapeHtml(id)}"><option value="">Default order</option><option value="status" ${current.sort === 'status' ? 'selected' : ''}>Status</option><option value="createdAt" ${current.sort === 'createdAt' ? 'selected' : ''}>Created</option><option value="updatedAt" ${current.sort === 'updatedAt' ? 'selected' : ''}>Updated</option></select></label>
-        <button class="button dashboard-secondary" type="button" data-phase36-reset="${escapeHtml(id)}">Reset filters</button>
+        <div class="phase36-toolbar-actions">
+          <button class="button dashboard-secondary" type="button" data-phase36-reset="${escapeHtml(id)}">Reset filters</button>
+          <button class="button dashboard-secondary" type="button" data-phase36-refresh="${escapeHtml(id)}" ${snap.loading ? 'disabled' : ''}>${snap.loading ? 'Refreshing...' : 'Refresh queue'}</button>
+          <span class="dashboard-muted">${escapeHtml(refreshed)}</span>
+        </div>
       </div>
     `;
   }
 
+  function queueStateMarkup(id, safeRows) {
+    const snap = queueSnapshot(id);
+    if (snap.error) return `<div class="phase36-empty" data-variant="error">Could not refresh queue: ${escapeHtml(snap.error)}</div>`;
+    if (snap.loading && !safeRows.length) return '<div class="phase36-empty">Loading queue records...</div>';
+    if (snap.loading) return '<div class="phase36-empty">Refreshing queue records...</div>';
+    return '';
+  }
+
   function emptyMarkup(id, safeRows) {
     const current = getState(id);
+    const stateMarkup = queueStateMarkup(id, safeRows);
+    if (stateMarkup) return stateMarkup;
     if (safeRows.length && (current.search || current.status)) {
       return `<div class="phase36-empty">No matching records. Clear the search text or reset filters to show the ${safeRows.length} loaded record${safeRows.length === 1 ? '' : 's'}.</div>`;
     }
@@ -98,9 +125,11 @@
   function table(id, title, headers, rows, cells) {
     const safeRows = asArray(rows);
     const filtered = applyFilters(id, safeRows);
+    const stateMarkup = filtered.length ? queueStateMarkup(id, safeRows) : '';
     rememberRows(id, filtered);
     return `
       ${toolbar(id, safeRows)}
+      ${stateMarkup}
       <section class="phase36-table-card">
         <div class="phase36-table-head"><h4>${escapeHtml(title)}</h4><span class="dashboard-muted">${filtered.length} of ${safeRows.length}</span></div>
         ${filtered.length ? `<table class="phase36-table"><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${filtered.map(row => `<tr data-phase36-row="${escapeHtml(id)}" data-phase36-row-id="${escapeHtml(row.__id)}">${cells(row).join('')}</tr>`).join('')}</tbody></table>` : emptyMarkup(id, safeRows)}
@@ -137,6 +166,7 @@
       session: valueOf(row, ['sessionTitle', 'session_id', 'sessionId']),
       hours: valueOf(row, ['hours', 'claimedHours', 'claimed_hours', 'verifiedHours', 'verified_hours']),
       status: statusOf(row),
+      clarificationResponse: valueOf(row, ['clarificationResponse', 'clarification_response'], ''),
       createdAt: valueOf(row, ['checkInAt', 'checkedInAt', 'submittedAt', 'created_at', 'createdAt']),
       updatedAt: valueOf(row, ['updatedAt', 'updated_at']),
       raw: row
@@ -196,7 +226,7 @@
 
   function renderAttendance(host, ctx) {
     const rows = attendanceClaims().map(normaliseAttendance);
-    host.innerHTML = `<div class="phase36-page">${table('attendance', 'Attendance review table', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${escapeHtml(row.hours)}</td>`, `<td>${statusBadge(row.status)}</td>`])}</div>`;
+    host.innerHTML = `<div class="phase36-page">${table('attendance', 'Attendance review table', ['Volunteer', 'Opportunity', 'Session', 'Hours', 'Status'], rows, row => [`<td><strong>${escapeHtml(row.volunteer)}</strong><br><span class="dashboard-muted">${escapeHtml(row.email)}</span></td>`, `<td>${escapeHtml(row.title)}${row.clarificationResponse ? '<br><span class="dashboard-muted">Volunteer responded to clarification</span>' : ''}</td>`, `<td>${escapeHtml(row.session)}</td>`, `<td>${escapeHtml(row.hours)}</td>`, `<td>${statusBadge(row.status)}</td>`])}</div>`;
     attachFallback(host.querySelector('.phase36-page'), ctx);
     return true;
   }
@@ -275,7 +305,6 @@
     drawerRecord = record;
     const layer = ensureDrawer();
     const drawer = layer.querySelector('.phase36-drawer');
-    const raw = record.raw || {};
     const details = { ...record, raw: undefined };
     drawer.innerHTML = `
       <div class="phase36-drawer-header">
@@ -283,8 +312,7 @@
         <button class="close-button" type="button" data-phase36-close-drawer aria-label="Close detail drawer">×</button>
       </div>
       <div class="phase36-detail-grid">
-        ${Object.entries(details).filter(([k]) => !k.startsWith('__')).map(([key, value]) => `<div class="phase36-detail-row"><span>${escapeHtml(key)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
-        <div class="phase36-detail-row"><span>Raw record</span><code>${escapeHtml(JSON.stringify(raw, null, 2))}</code></div>
+        ${Object.entries(details).filter(([k, value]) => !k.startsWith('__') && k !== 'raw' && value !== undefined && value !== '').map(([key, value]) => `<div class="phase36-detail-row"><span>${escapeHtml(key)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
       </div>
       <div class="phase36-drawer-actions"><button class="button dashboard-secondary" type="button" data-phase36-close-drawer>Close</button>${drawerActionMarkup(record)}</div>
     `;
@@ -304,10 +332,25 @@
     window.MENDAKIPhase34AdminShell?.mountArea?.();
   }
 
+  async function refreshQueue(id) {
+    const refresh = dataAccess()?.refreshAdminQueue;
+    if (typeof refresh === 'function') await refresh(id, { force: true });
+    else if (id === 'signups' && typeof store()?.fetchSupabaseOpportunitySignups === 'function') await store().fetchSupabaseOpportunitySignups();
+    else if (id === 'attendance' && typeof store()?.fetchSupabaseAttendanceClaims === 'function') await store().fetchSupabaseAttendanceClaims();
+    window.MENDAKIPhase34AdminShell?.mountArea?.();
+  }
+
   function bind() {
     if (window.__phaseThirtySixAdminTablesBound) return;
     window.__phaseThirtySixAdminTablesBound = true;
     document.addEventListener('click', event => {
+      const refresh = event.target.closest('[data-phase36-refresh]');
+      if (refresh) {
+        event.preventDefault();
+        refreshQueue(refresh.dataset.phase36Refresh || '').catch(error => console.warn('Could not refresh admin queue.', error));
+        return;
+      }
+
       const reset = event.target.closest('[data-phase36-reset]');
       if (reset) {
         event.preventDefault();
@@ -352,9 +395,13 @@
         window.MENDAKIPhase34AdminShell?.mountArea?.();
       }
     }, true);
+
+    window.addEventListener('mendaki-data-access-state', () => {
+      window.MENDAKIPhase34AdminShell?.mountArea?.();
+    });
   }
 
   bind();
   ensureDrawer();
-  window.MENDAKIPhase36AdminTables = { render, openDrawer, closeDrawer, currentRecord: () => drawerRecord, resetFilters };
+  window.MENDAKIPhase36AdminTables = { render, openDrawer, closeDrawer, currentRecord: () => drawerRecord, resetFilters, refreshQueue };
 })();
