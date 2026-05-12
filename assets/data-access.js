@@ -279,6 +279,11 @@
     loadScriptOnce('assets/notification-panel-polish.js', 'data-notification-panel-polish');
   }
 
+  function loadTrainingLifecycleBridge() {
+    if (window.__trainingLifecycleBridgeInstalled) return;
+    loadScriptOnce('assets/training-lifecycle-bridge.js', 'data-training-lifecycle-bridge');
+  }
+
   window.MENDAKIDataAccess = Object.freeze({
     canonicalTables,
     deprecatedTables,
@@ -298,4 +303,5 @@
   loadAuthRoleHardening();
   loadAdminReviewBridge();
   loadNotificationPanelPolish();
+  loadTrainingLifecycleBridge();
 })();
