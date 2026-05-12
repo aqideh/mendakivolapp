@@ -28,7 +28,9 @@
     const role = String(session()?.role || '').toLowerCase();
     return role === 'admin' || role === 'super_admin';
   }
-  function appState() { return window.state || state; }
+  function appState() {
+    try { return typeof state !== 'undefined' ? window.state || state : window.state; } catch (error) { return window.state; }
+  }
   function currentOpportunity(opportunityId) {
     return asArray(appState()?.data?.opportunities).find(item => String(item.id) === String(opportunityId));
   }
@@ -41,6 +43,11 @@
     if (typeof window.renderHomeOpportunities === 'function') window.renderHomeOpportunities();
     if (typeof window.phaseTwoRenderDashboardSignups === 'function') window.phaseTwoRenderDashboardSignups();
     if (typeof window.phaseThreeRender === 'function') window.phaseThreeRender();
+  }
+  function refreshVisibleAttendanceViews() {
+    if (typeof window.phaseThreeRender === 'function') window.phaseThreeRender();
+    if (typeof window.phaseOneRenderDashboard === 'function') window.phaseOneRenderDashboard();
+    if (typeof window.phaseTwoRenderDashboardSignups === 'function') window.phaseTwoRenderDashboardSignups();
   }
 
   function emit(domain) {
@@ -225,11 +232,7 @@
     };
   }
 
-  const mappers = Object.freeze({
-    opportunitySignupFromRow,
-    trainingSignupFromRow,
-    attendanceClaimFromRow
-  });
+  const mappers = Object.freeze({ opportunitySignupFromRow, trainingSignupFromRow, attendanceClaimFromRow });
 
   function upsertLocal(listReader, listWriter, eventName, item) {
     if (!item?.id) return;
@@ -239,6 +242,78 @@
     else next.unshift(item);
     listWriter(next);
     window.dispatchEvent(new CustomEvent(eventName));
+  }
+
+  function hoursBetween(startValue, endValue) {
+    const start = new Date(startValue);
+    const end = new Date(endValue);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+    return Math.round(((end - start) / 36e5) * 100) / 100;
+  }
+
+  function defaultSessionIdForOpportunity(opportunityId) {
+    return window.MENDAKIOpportunitySessions?.defaultForOpportunity?.(opportunityId)?.id || null;
+  }
+
+  async function validateAttendanceCode(opportunityId, code) {
+    requireSignedIn();
+    const normalized = String(code || '').trim();
+    if (!/^\d{4}$/.test(normalized)) return { ok: false, reason: 'Please enter a valid 4-digit code.' };
+    const { data, error } = await client().rpc('validate_attendance_code', {
+      p_opportunity_id: String(opportunityId),
+      p_code: normalized
+    });
+    if (error) throw error;
+    return data === true ? { ok: true } : { ok: false, reason: 'Invalid facilitator code.' };
+  }
+
+  async function recordAttendancePunch(signupId, action = 'checkin', code = '') {
+    return runMutation('attendanceClaims', async () => {
+      requireSignedIn();
+      const signup = byId(listOpportunitySignups(), signupId);
+      if (!signup) throw new Error('Sign-up not found.');
+      const normalizedAction = action === 'checkout' ? 'checkout' : 'checkin';
+      const validation = await validateAttendanceCode(signup.opportunityId, code);
+      if (!validation.ok) throw new Error(validation.reason || 'Invalid facilitator code.');
+      const timestamp = now();
+      const existing = listAttendanceClaims().find(item => String(item.signupId) === String(signup.id));
+      if (normalizedAction === 'checkout' && !existing?.checkInAt) throw new Error('No check-in timestamp found. Please check in first.');
+      const resolvedSessionId = signup.sessionId || existing?.sessionId || defaultSessionIdForOpportunity(signup.opportunityId);
+      if (!resolvedSessionId) throw new Error('No session is linked to this opportunity.');
+      const row = {
+        id: existing?.id || crypto.randomUUID(),
+        signup_id: signup.id,
+        opportunity_id: String(signup.opportunityId || ''),
+        session_id: resolvedSessionId,
+        email: signup.email || session().email || '',
+        volunteer_name: signup.volunteerName || session().name || 'Volunteer',
+        title: signup.title || '',
+        claim_status: normalizedAction === 'checkout' ? 'submitted' : 'checked_in',
+        check_in_at: existing?.checkInAt || timestamp,
+        check_in_code: normalizedAction === 'checkout' ? existing?.checkInCode || null : String(code).trim(),
+        check_out_at: normalizedAction === 'checkout' ? timestamp : null,
+        check_out_code: normalizedAction === 'checkout' ? String(code).trim() : null,
+        claimed_status: normalizedAction === 'checkout' ? 'attended' : 'checked_in',
+        claimed_start: existing?.checkInAt || timestamp,
+        claimed_end: normalizedAction === 'checkout' ? timestamp : null,
+        claimed_hours: normalizedAction === 'checkout' ? hoursBetween(existing?.checkInAt, timestamp) : 0,
+        verified_hours: 0,
+        submitted_at: normalizedAction === 'checkout' ? timestamp : null,
+        reviewed_by_email: null,
+        reviewed_at: null,
+        admin_notes: null,
+        created_at: existing?.createdAt || timestamp,
+        updated_at: timestamp
+      };
+      const { data, error } = await client().from(canonicalTables.attendanceClaims).upsert(row, { onConflict: 'id' }).select('*').single();
+      if (error) throw error;
+      const saved = attendanceClaimFromRow(data, existing || {});
+      if (!saved) throw new Error('Attendance record was not returned by the database.');
+      upsertLocal(listAttendanceClaims, store().saveAttendanceClaims, 'volunteer-attendance-synced', saved);
+      await refreshAttendanceClaims();
+      refreshVisibleAttendanceViews();
+      return { ok: true, claim: saved };
+    });
   }
 
   async function createOpportunitySignup(opportunityId) {
@@ -269,10 +344,7 @@
       const signup = currentUserSignupForOpportunity(opportunityId);
       if (!signup) throw new Error('Sign-up not found.');
       if (!['pending_review', 'registered', 'confirmed', 'waitlisted'].includes(signup.status)) throw new Error('This sign-up can no longer be cancelled.');
-      const { data, error } = await client().rpc('cancel_opportunity_signup', {
-        p_signup_id: signup.id,
-        p_cancellation_reason: null
-      });
+      const { data, error } = await client().rpc('cancel_opportunity_signup', { p_signup_id: signup.id, p_cancellation_reason: null });
       if (error) throw error;
       const saved = opportunitySignupFromRow(data, signup);
       if (!saved) throw new Error('Cancellation was not returned by the database.');
@@ -379,6 +451,8 @@
     refreshAdminQueue,
     createOpportunitySignup,
     cancelOpportunitySignup,
+    validateAttendanceCode,
+    recordAttendancePunch,
     reviewOpportunitySignup,
     reviewAttendanceClaim,
     reviewTrainingSignup,
