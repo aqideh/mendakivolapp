@@ -386,6 +386,7 @@ window.VolunteerDataStore = VolunteerDataStore;
 
 (() => {
   function store() { return window.VolunteerDataStore; }
+  function dataAccess() { return window.MENDAKIDataAccess; }
   function client() { return store()?.authState?.supabase || null; }
   function session() { return store()?.getSession?.() || null; }
   function ready() { return Boolean(client() && session()?.email); }
@@ -549,7 +550,7 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (error) return notice(`Could not cancel this sign-up: ${error.message}`);
     const saved = opportunitySignupFromRow(data);
     store().saveOpportunitySignups(upsertLocal(store().getOpportunitySignups(), saved, item => item.id === saved.id));
-    await refreshOpportunitySignups().catch(() => null);
+    await refreshOpportunitySignups();
     refreshAll();
   }
   function trainingDraft(trainingId) {
@@ -590,7 +591,7 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (error) return notice(`Could not sign up for training: ${error.message}`);
     const saved = trainingSignupFromRow(data);
     store().saveTrainingSignups(upsertLocal(store().getTrainingSignups(), saved, item => item.id === saved.id || (item.email === saved.email && String(item.trainingId) === String(saved.trainingId))));
-    await refreshTrainingSignups().catch(() => null);
+    await refreshTrainingSignups();
     refreshAll();
   }
   async function handleTrainingCancel(button) {
@@ -602,26 +603,22 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (error) return notice(`Could not cancel training sign-up: ${error.message}`);
     const saved = trainingSignupFromRow(data);
     store().saveTrainingSignups(upsertLocal(store().getTrainingSignups(), saved, item => item.id === saved.id));
-    await refreshTrainingSignups().catch(() => null);
+    await refreshTrainingSignups();
     refreshAll();
   }
   async function handleTrainingReview(button) {
     if (!admin()) return;
-    const signup = store().getTrainingSignups().find(item => item.id === button.dataset.trainingStatus || item.id === button.dataset.completeTraining);
+    const signupId = button.dataset.trainingStatus || button.dataset.completeTraining;
     const status = button.dataset.trainingNextStatus || (button.dataset.completeTraining ? 'completed' : 'registered');
-    if (!signup) return;
+    if (!signupId) return;
+    if (typeof dataAccess()?.reviewTrainingSignup !== 'function') return notice('Training review is not available.');
     setBusy(button, true, 'Saving...');
-    const { data, error } = await client().rpc('review_training_signup_lifecycle', { p_signup_id: signup.id, p_status: status, p_admin_notes: signup.adminNotes || null });
+    const result = await dataAccess().reviewTrainingSignup(signupId, status, {});
     setBusy(button, false);
-    if (error) return window.alert(`Could not update training status: ${error.message}`);
-    const saved = trainingSignupFromRow(data);
-    store().saveTrainingSignups(upsertLocal(store().getTrainingSignups(), saved, item => item.id === saved.id));
-    await refreshTrainingSignups().catch(() => null);
-    if (typeof store().fetchNotifications === 'function') await store().fetchNotifications().catch(() => null);
+    if (!result?.ok) return window.alert(`Could not update training status: ${result?.reason || 'Unknown error'}`);
     refreshAll();
   }
   async function validateAttendanceCode(opportunityId, code) {
-    if (typeof store().validateAttendanceCode === 'function') return store().validateAttendanceCode(opportunityId, code);
     const { data, error } = await client().rpc('validate_attendance_code', { p_opportunity_id: String(opportunityId), p_code: String(code) });
     if (error) return { ok: false, reason: error.message };
     return data === true ? { ok: true } : { ok: false, reason: 'Invalid facilitator code.' };
@@ -671,29 +668,30 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (error) return window.alert(`Could not save attendance: ${error.message}`);
     const saved = claimFromRow(data);
     store().saveAttendanceClaims(upsertLocal(store().getAttendanceClaims(), saved, item => item.id === saved.id));
-    await refreshAttendanceClaims().catch(() => null);
+    await refreshAttendanceClaims();
     refreshAll();
   }
   async function handleAttendanceReview(form, submitter) {
     if (!admin()) return;
-    const claim = store().getAttendanceClaims().find(item => item.id === form.dataset.attendanceReview);
-    if (!claim) return;
+    const claimId = form.dataset.attendanceReview;
+    const claim = store().getAttendanceClaims().find(item => item.id === claimId);
+    if (!claim || !claimId) return;
+    if (typeof dataAccess()?.reviewAttendanceClaim !== 'function') return notice('Attendance review is not available.');
     const formData = new FormData(form);
     const enteredHours = Number(formData.get('verifiedHours') || claim.claimedHours || 0);
     const systemHours = Number(form.querySelector('input[name="verifiedHours"]')?.dataset.systemHours || claim.claimedHours || 0);
-    const action = submitter?.value || (enteredHours !== systemHours ? 'adjust' : 'verify');
+    const status = submitter?.value === 'reject'
+      ? 'rejected'
+      : submitter?.value === 'clarify'
+        ? 'clarification_requested'
+        : enteredHours !== systemHours ? 'adjusted' : 'verified';
     setBusy(submitter, true, 'Saving...');
-    const { error } = await client().rpc('review_attendance_claim_transactional', {
-      p_claim_id: claim.id,
-      p_action: action,
-      p_verified_hours: enteredHours,
-      p_admin_notes: String(formData.get('adminNotes') || '').trim() || null
+    const result = await dataAccess().reviewAttendanceClaim(claimId, status, {
+      verifiedHours: enteredHours,
+      adminNotes: String(formData.get('adminNotes') || '').trim() || null
     });
     setBusy(submitter, false);
-    if (error) return window.alert(`Could not review attendance: ${error.message}`);
-    await refreshAttendanceClaims().catch(() => null);
-    await refreshOpportunitySignups().catch(() => null);
-    if (typeof store().fetchNotifications === 'function') await store().fetchNotifications().catch(() => null);
+    if (!result?.ok) return window.alert(`Could not review attendance: ${result?.reason || 'Unknown error'}`);
     refreshAll();
   }
 
