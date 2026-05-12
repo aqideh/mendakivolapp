@@ -65,6 +65,10 @@ The following phase-numbered admin modules were consolidated into responsibility
 | Admin review actions | `assets/admin-review-actions.js` | `assets/phase-thirty-eight-drawer-review-actions.js` |
 | Admin queue sync | `assets/admin-queue-sync.js` | `assets/phase-forty-two-admin-queue-sync.js` |
 | Admin tools | `assets/admin-tools.js` | `assets/phase-forty-two-canonical-admin-tools.js` |
+| Admin workspace CSS | `assets/admin-workspace.css` | `assets/phase-thirty-one-admin-ux.css`, `assets/phase-thirty-four-admin-shell.css` |
+| Admin pages CSS | `assets/admin-pages.css` | `assets/phase-thirty-five-canonical-admin-pages.css` |
+| Admin tables CSS | `assets/admin-tables.css` | `assets/phase-thirty-six-admin-tables.css` |
+| Admin QA CSS | `assets/admin-qa.css` | `assets/phase-thirty-two-qa-tools.css` |
 
 ### Active responsibility-named scripts
 
@@ -78,6 +82,17 @@ assets/admin-review-actions.js
 assets/admin-tools.js
 assets/admin-pages.js
 assets/admin-workspace.js
+```
+
+### Active responsibility-named stylesheets
+
+`index.html` now loads these responsibility-named admin stylesheets:
+
+```text
+assets/admin-workspace.css
+assets/admin-pages.css
+assets/admin-tables.css
+assets/admin-qa.css
 ```
 
 ### Active primary namespaces
@@ -142,25 +157,27 @@ Primary namespace:
 window.MENDAKIAdminTools
 ```
 
-## Remaining roadmap
-
 ### Phase 16 — CSS responsibility cleanup
 
-Target:
+Completed:
 
-- Review phase-numbered CSS still loaded in `index.html`:
-  - `assets/phase-thirty-one-admin-ux.css`
-  - `assets/phase-thirty-two-qa-tools.css`
-  - `assets/phase-thirty-four-admin-shell.css`
-  - `assets/phase-thirty-five-canonical-admin-pages.css`
-  - `assets/phase-thirty-six-admin-tables.css`
-- Rename or consolidate CSS into responsibility-named files where safe:
-  - `assets/admin-workspace.css`
-  - `assets/admin-pages.css`
-  - `assets/admin-tables.css`
-  - `assets/admin-qa.css`
-- Update `index.html` stylesheet references.
-- Delete old phase-numbered CSS only after classes/selectors are confirmed still covered.
+- Replaced phase-numbered admin stylesheet loading in `index.html` with responsibility-named admin stylesheets.
+- Consolidated admin UX and admin shell styles into `assets/admin-workspace.css`.
+- Moved admin page styles into `assets/admin-pages.css`.
+- Moved admin table and drawer styles into `assets/admin-tables.css`.
+- Moved admin QA panel styles into `assets/admin-qa.css`.
+- Deleted the old phase-numbered CSS files after the replacement stylesheets were added and `index.html` was updated.
+
+Active admin stylesheet ownership:
+
+```text
+assets/admin-workspace.css
+assets/admin-pages.css
+assets/admin-tables.css
+assets/admin-qa.css
+```
+
+## Remaining roadmap
 
 ### Phase 17 — Final primary-path scan
 
@@ -231,7 +248,10 @@ These commits are useful reference points for the cleanup sequence:
 - `963f0c7` — removed phase-numbered admin queue sync module.
 - `0d55835` — added responsibility-named admin tools module.
 - `ee152d2` — removed phase-numbered admin tools module.
+- `1978472` — added responsibility-named admin workspace styles.
+- `8c3c176` — loaded responsibility-named admin stylesheets.
+- `0493741` — removed phase-numbered admin table stylesheet.
 
 ## Next recommended step
 
-Proceed with **Phase 16 — CSS responsibility cleanup**. Rename or consolidate admin CSS into responsibility-named stylesheets only after confirming selector coverage for workspace, admin pages, admin tables, and QA tools.
+Proceed with **Phase 17 — Final primary-path scan**. Focus on stale identifiers, deleted-file references, data access layer routing, and admin queue rendering checks.
