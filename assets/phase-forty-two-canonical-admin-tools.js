@@ -21,12 +21,12 @@
   };
 
   function store() { return window.VolunteerDataStore; }
-  function dataAccess() { return window.MENDAKIDataAccess; }
   function client() { return store().authState.supabase; }
-  function isAdmin() { return store().isAdmin(); }
   function appData() { return window.state.data; }
   function escapeHtml(value) { return store().utils.escapeHtml(value); }
   function mountArea() { window.MENDAKIPhase34AdminShell.mountArea(); }
+  function adminTables() { return window.MENDAKIAdminTables; }
+
   function fmt(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -57,7 +57,6 @@
     const rowAttr = options.rowAttr || (() => '');
     return `<section class="phase36-table-card"><div class="phase36-table-head"><h4>${escapeHtml(options.title || 'Results')}</h4><span class="dashboard-muted">${rows.length} row${rows.length === 1 ? '' : 's'}</span></div><table class="phase36-table"><thead><tr>${cols.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 50).map(row => `<tr ${rowAttr(row)}>${cols.map(col => `<td>${escapeHtml(row[col] == null ? '' : (typeof row[col] === 'object' ? JSON.stringify(row[col]) : row[col]))}</td>`).join('')}</tr>`).join('')}</tbody></table></section>${rows.length > 50 ? '<p class="dashboard-muted">Showing first 50 rows. Export CSV for full result.</p>' : ''}`;
   }
-  function textArray(value) { return String(value || '').split('\n').map(line => line.trim()).filter(Boolean); }
   function localDate(value) { return value ? String(value).slice(0, 10) : ''; }
   function appRows(name) { return appData()[name] || []; }
 
@@ -214,7 +213,7 @@
   }
   function renderPointsPage(host) {
     host.innerHTML = `<div class="phase35-page" data-phase42-page="points-policy"><div class="phase35-page-note">Manual points adjustment remains policy-gated.</div><section class="phase36-table-card"><div class="phase36-table-head"><h4>Points adjustment workflow</h4></div><div class="phase36-empty">No manual adjustment form is exposed yet. Required before enablement: policy approval, reason codes, approver metadata, audit event contract, and rollback procedure.</div></section>${state42.points.status ? `<p class="dashboard-muted">${escapeHtml(state42.points.status)}</p>` : ''}</div>`;
-    window.MENDAKIPhase36AdminTables.render('points', host, {});
+    adminTables().render('points', host);
     return true;
   }
   function renderSystemPage(host) {
