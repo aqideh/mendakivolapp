@@ -15,34 +15,28 @@
     pointsLedger: 'app_points_ledger'
   });
 
-  const deprecatedTables = Object.freeze([
-    'opportunities',
-    'opportunity_sessions',
-    'opportunity_signups',
-    'attendance_claims',
-    'trainings',
-    'training_signups'
-  ]);
-
-  const state = {
-    loading: new Set(),
-    lastError: new Map(),
-    lastRefreshedAt: new Map()
-  };
+  const deprecatedTables = Object.freeze([]);
+  const state = { loading: new Set(), lastError: new Map(), lastRefreshedAt: new Map() };
 
   function store() { return window.VolunteerDataStore; }
   function client() { return store()?.authState?.supabase || null; }
   function asArray(value) { return Array.isArray(value) ? value : []; }
   function session() { return store()?.getSession?.() || null; }
-  function isAdmin() { return Boolean(store()?.isAdmin?.()); }
   function now() { return new Date().toISOString(); }
-  function currentAdminEmail() { return session()?.email || store()?.$?.email?.() || 'admin'; }
   function byId(items, id) { return asArray(items).find(item => String(item.id) === String(id)); }
+  function isAdmin() {
+    const role = String(session()?.role || '').toLowerCase();
+    return role === 'admin' || role === 'super_admin';
+  }
+
+  function emit(domain) {
+    window.dispatchEvent(new CustomEvent('mendaki-data-access-state', { detail: snapshot(domain) }));
+  }
 
   function setLoading(domain, loading) {
     if (loading) state.loading.add(domain);
     else state.loading.delete(domain);
-    window.dispatchEvent(new CustomEvent('mendaki-data-access-state', { detail: snapshot(domain) }));
+    emit(domain);
   }
 
   function setError(domain, error) {
@@ -50,9 +44,7 @@
     else state.lastError.delete(domain);
   }
 
-  function markRefreshed(domain) {
-    state.lastRefreshedAt.set(domain, now());
-  }
+  function markRefreshed(domain) { state.lastRefreshedAt.set(domain, now()); }
 
   function snapshot(domain = '') {
     return {
@@ -65,8 +57,8 @@
     };
   }
 
-  async function runRefresh(domain, refresher, fallbackReader) {
-    if (typeof refresher !== 'function') return asArray(fallbackReader?.());
+  async function runRefresh(domain, refresher) {
+    if (typeof refresher !== 'function') throw new Error(`${domain} refresh is not configured.`);
     setLoading(domain, true);
     setError(domain, null);
     try {
@@ -75,8 +67,7 @@
       return asArray(result);
     } catch (error) {
       setError(domain, error);
-      console.warn(`Could not refresh ${domain}.`, error);
-      return asArray(fallbackReader?.());
+      throw error;
     } finally {
       setLoading(domain, false);
     }
@@ -87,46 +78,45 @@
     setError(domain, null);
     try {
       const result = await operation();
-      if (result?.ok === false && !result?.transactional) throw new Error(result.reason || 'Mutation failed.');
       markRefreshed(domain);
       return result || { ok: true };
     } catch (error) {
       setError(domain, error);
-      console.warn(`Could not mutate ${domain}.`, error);
       return { ok: false, reason: error.message || String(error) };
     } finally {
       setLoading(domain, false);
     }
   }
 
-  function listOpportunitySignups() {
-    return asArray(store()?.getOpportunitySignups?.());
-  }
+  function listOpportunitySignups() { return asArray(store()?.getOpportunitySignups?.()); }
+  function listAttendanceClaims() { return asArray(store()?.getAttendanceClaims?.()); }
+  function listTrainingSignups() { return asArray(store()?.getTrainingSignups?.()); }
 
-  function listAttendanceClaims() {
-    return asArray(store()?.getAttendanceClaims?.());
-  }
-
-  function listTrainingSignups() {
-    return asArray(store()?.getTrainingSignups?.());
-  }
-
-  async function refreshOpportunitySignups(options = {}) {
-    if (options.adminOnly && !isAdmin()) return listOpportunitySignups();
+  async function refreshOpportunitySignups() {
     if (!session()?.email) return listOpportunitySignups();
-    return runRefresh('opportunitySignups', store()?.fetchSupabaseOpportunitySignups, listOpportunitySignups);
+    return runRefresh('opportunitySignups', store()?.fetchSupabaseOpportunitySignups);
   }
 
-  async function refreshAttendanceClaims(options = {}) {
-    if (options.adminOnly && !isAdmin()) return listAttendanceClaims();
+  async function refreshAttendanceClaims() {
     if (!session()?.email) return listAttendanceClaims();
-    return runRefresh('attendanceClaims', store()?.fetchSupabaseAttendanceClaims, listAttendanceClaims);
+    return runRefresh('attendanceClaims', store()?.fetchSupabaseAttendanceClaims);
   }
 
-  async function refreshAdminQueue(area, options = {}) {
-    if (area === 'signups') return refreshOpportunitySignups({ ...options, adminOnly: true });
-    if (area === 'attendance') return refreshAttendanceClaims({ ...options, adminOnly: true });
+  async function refreshTrainingSignups() {
+    if (!session()?.email) return listTrainingSignups();
+    return runRefresh('trainingSignups', store()?.fetchSupabaseTrainingSignups);
+  }
+
+  async function refreshAdminQueue(area) {
+    if (area === 'signups') return refreshOpportunitySignups();
+    if (area === 'attendance') return refreshAttendanceClaims();
+    if (area === 'training') return refreshTrainingSignups();
     return [];
+  }
+
+  function requireAdmin() {
+    if (!isAdmin()) throw new Error('Admin access required.');
+    if (!client()) throw new Error('Supabase is not configured.');
   }
 
   function signupFromRpcRow(row, fallback = {}) {
@@ -159,86 +149,108 @@
     };
   }
 
-  function upsertLocalSignup(signup) {
-    if (!signup?.id) return;
-    const next = listOpportunitySignups().slice();
-    const index = next.findIndex(item => String(item.id) === String(signup.id));
-    if (index >= 0) next[index] = signup;
-    else next.unshift(signup);
-    store()?.saveOpportunitySignups?.(next);
-    window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+  function trainingSignupFromRpcRow(row, fallback = {}) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      trainingId: String(row.training_id || fallback.trainingId || ''),
+      trainingSessionId: row.training_session_id || fallback.trainingSessionId || '',
+      appUserId: row.volunteer_user_id || fallback.appUserId || '',
+      email: row.email || fallback.email || '',
+      volunteerName: row.volunteer_name || fallback.volunteerName || 'Volunteer',
+      title: row.title || fallback.title || '',
+      date: row.session_date || fallback.date || '',
+      time: row.time || fallback.time || '',
+      location: row.location || fallback.location || '',
+      trainer: row.trainer || fallback.trainer || '',
+      status: row.status || fallback.status || 'registered',
+      signedUpAt: row.signed_up_at || fallback.signedUpAt || '',
+      completedAt: row.completed_at || fallback.completedAt || '',
+      cancelledAt: row.cancelled_at || fallback.cancelledAt || '',
+      reviewedBy: row.reviewed_by_email || fallback.reviewedBy || '',
+      reviewedAt: row.reviewed_at || fallback.reviewedAt || '',
+      adminNotes: row.admin_notes || fallback.adminNotes || '',
+      createdAt: row.created_at || fallback.createdAt || '',
+      updatedAt: row.updated_at || fallback.updatedAt || ''
+    };
   }
 
-  async function reviewSignupViaRpc(signup, status, options = {}) {
-    const supabase = client();
-    if (!supabase) return { ok: false, reason: 'Supabase is not configured.' };
-    const { data, error } = await supabase.rpc('review_opportunity_signup_with_capacity', {
-      p_signup_id: signup.id,
-      p_status: status,
-      p_admin_notes: options.adminNotes || signup.adminNotes || null
-    });
-    if (error) return { ok: false, reason: error.message };
-    const saved = signupFromRpcRow(data, signup);
-    if (saved) upsertLocalSignup(saved);
-    return { ok: true, signup: saved || signup, capacityAdjusted: saved?.status && saved.status !== status };
+  function upsertLocal(listReader, listWriter, eventName, item) {
+    if (!item?.id) return;
+    const next = asArray(listReader()).slice();
+    const index = next.findIndex(existing => String(existing.id) === String(item.id));
+    if (index >= 0) next[index] = item;
+    else next.unshift(item);
+    listWriter(next);
+    window.dispatchEvent(new CustomEvent(eventName));
   }
 
   async function reviewOpportunitySignup(signupId, status, options = {}) {
-    if (!isAdmin()) return { ok: false, reason: 'Admin access required.' };
-    const signup = byId(listOpportunitySignups(), signupId);
-    if (!signup) return { ok: false, reason: 'Sign-up not found.' };
-
     return runMutation('opportunitySignups', async () => {
-      let result;
-      if (typeof store()?.reviewSupabaseSignupWithCapacity === 'function') {
-        const next = {
-          ...signup,
-          status,
-          adminNotes: options.adminNotes || signup.adminNotes || '',
-          reviewedAt: now(),
-          reviewedBy: currentAdminEmail(),
-          updatedAt: now()
-        };
-        result = await store().reviewSupabaseSignupWithCapacity(next, signup.status || '');
-      } else {
-        result = await reviewSignupViaRpc(signup, status, options);
-      }
-
-      if (!result?.ok) return result || { ok: false, reason: 'Sign-up review failed.' };
-      await refreshOpportunitySignups({ adminOnly: true });
-      if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
-      return result;
+      requireAdmin();
+      const signup = byId(listOpportunitySignups(), signupId);
+      if (!signup) throw new Error('Sign-up not found.');
+      const { data, error } = await client().rpc('review_opportunity_signup_with_capacity', {
+        p_signup_id: signup.id,
+        p_status: status,
+        p_admin_notes: options.adminNotes || signup.adminNotes || null
+      });
+      if (error) throw error;
+      const saved = signupFromRpcRow(data, signup);
+      if (saved) upsertLocal(listOpportunitySignups, store().saveOpportunitySignups, 'volunteer-signups-synced', saved);
+      await refreshOpportunitySignups();
+      await store()?.fetchNotifications?.();
+      return { ok: true, signup: saved || signup, capacityAdjusted: Boolean(saved?.status && saved.status !== status) };
     });
   }
 
-  async function reviewAttendanceClaim(claimId, status, options = {}) {
-    if (!isAdmin()) return { ok: false, reason: 'Admin access required.' };
-    const claim = byId(listAttendanceClaims(), claimId);
-    if (!claim) return { ok: false, reason: 'Attendance claim not found.' };
-    if (typeof store()?.saveSupabaseAttendanceClaim !== 'function') return { ok: false, reason: 'Attendance review is unavailable.' };
+  function attendanceActionForStatus(status) {
+    if (status === 'verified') return 'verify';
+    if (status === 'adjusted') return 'adjust';
+    if (status === 'clarification_requested') return 'clarify';
+    if (status === 'rejected') return 'reject';
+    throw new Error(`Unsupported attendance status: ${status}`);
+  }
 
+  async function reviewAttendanceClaim(claimId, status, options = {}) {
     return runMutation('attendanceClaims', async () => {
-      const fallbackHours = status === 'verified'
-        ? Number(claim.verifiedHours || claim.claimedHours || options.fallbackHours || 0)
-        : Number(claim.verifiedHours || 0);
-      const verifiedHours = status === 'verified' || status === 'adjusted'
-        ? Math.max(0, Number(options.verifiedHours ?? fallbackHours))
-        : fallbackHours;
-      const next = {
-        ...claim,
-        claimStatus: status,
-        verifiedHours,
-        adminNotes: options.adminNotes || claim.adminNotes || '',
-        reviewedBy: currentAdminEmail(),
-        reviewedAt: now(),
-        updatedAt: now()
-      };
-      const result = await store().saveSupabaseAttendanceClaim(next, { mode: 'update', review: true });
-      if (!result?.ok && !result?.transactional) return result || { ok: false, reason: 'Attendance review failed.' };
-      await refreshAttendanceClaims({ adminOnly: true });
-      if (typeof store()?.fetchSupabaseOpportunitySignups === 'function') await store().fetchSupabaseOpportunitySignups();
-      if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
-      return { ...result, claim: next };
+      requireAdmin();
+      const claim = byId(listAttendanceClaims(), claimId);
+      if (!claim) throw new Error('Attendance claim not found.');
+      const fallbackHours = status === 'verified' || status === 'adjusted'
+        ? Number(options.verifiedHours ?? claim.verifiedHours ?? claim.claimedHours ?? 0)
+        : 0;
+      const { data, error } = await client().rpc('review_attendance_claim_transactional', {
+        p_claim_id: claim.id,
+        p_action: attendanceActionForStatus(status),
+        p_verified_hours: Math.max(0, Number(fallbackHours || 0)),
+        p_admin_notes: options.adminNotes || claim.adminNotes || null
+      });
+      if (error) throw error;
+      await refreshAttendanceClaims();
+      await refreshOpportunitySignups();
+      await store()?.fetchNotifications?.();
+      return { ok: true, transactional: true, result: data };
+    });
+  }
+
+  async function reviewTrainingSignup(signupId, status, options = {}) {
+    return runMutation('trainingSignups', async () => {
+      requireAdmin();
+      const signup = byId(listTrainingSignups(), signupId);
+      if (!signup) throw new Error('Training sign-up not found.');
+      const { data, error } = await client().rpc('review_training_signup_lifecycle', {
+        p_signup_id: signup.id,
+        p_status: status,
+        p_admin_notes: options.adminNotes || signup.adminNotes || null
+      });
+      if (error) throw error;
+      const saved = trainingSignupFromRpcRow(data, signup);
+      if (saved) upsertLocal(listTrainingSignups, store().saveTrainingSignups, 'volunteer-training-signups-synced', saved);
+      if (saved?.status === 'completed') await store()?.notifyTrainingCompletion?.(saved);
+      await refreshTrainingSignups();
+      await store()?.fetchNotifications?.();
+      return { ok: true, signup: saved || signup };
     });
   }
 
@@ -264,24 +276,8 @@
     document.head.appendChild(script);
   }
 
-  function loadAuthRoleHardening() {
-    if (window.__authRoleHardeningInstalled) return;
-    loadScriptOnce('assets/auth-role-hardening.js', 'data-auth-role-hardening');
-  }
-
-  function loadAdminReviewBridge() {
-    if (window.__adminReviewDataAccessBridgeInstalled) return;
-    loadScriptOnce('assets/admin-review-data-access-bridge.js', 'data-admin-review-data-access-bridge');
-  }
-
   function loadNotificationPanelPolish() {
-    if (window.__notificationPanelPolishInstalled) return;
-    loadScriptOnce('assets/notification-panel-polish.js', 'data-notification-panel-polish');
-  }
-
-  function loadTrainingLifecycleBridge() {
-    if (window.__trainingLifecycleBridgeInstalled) return;
-    loadScriptOnce('assets/training-lifecycle-bridge.js', 'data-training-lifecycle-bridge');
+    if (!window.__notificationPanelPolishInstalled) loadScriptOnce('assets/notification-panel-polish.js', 'data-notification-panel-polish');
   }
 
   window.MENDAKIDataAccess = Object.freeze({
@@ -293,15 +289,14 @@
     listTrainingSignups,
     refreshOpportunitySignups,
     refreshAttendanceClaims,
+    refreshTrainingSignups,
     refreshAdminQueue,
     reviewOpportunitySignup,
     reviewAttendanceClaim,
+    reviewTrainingSignup,
     adminQueueCounts,
     countByStatus
   });
 
-  loadAuthRoleHardening();
-  loadAdminReviewBridge();
   loadNotificationPanelPolish();
-  loadTrainingLifecycleBridge();
 })();
