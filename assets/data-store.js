@@ -275,12 +275,6 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (typeof phaseFourRender === 'function') phaseFourRender();
   }
   function upsertLocal(list, item, matcher) { const index = list.findIndex(matcher); if (index >= 0) list[index] = item; else list.push(item); return list; }
-  function defaultSessionIdForOpportunity(opportunityId) { return window.MENDAKIOpportunitySessions.defaultForOpportunity(opportunityId).id; }
-  function hoursBetween(startValue, endValue) {
-    const start = new Date(startValue); const end = new Date(endValue);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
-    return Math.round(((end - start) / 36e5) * 100) / 100;
-  }
   function trainingDraft(trainingId) {
     const training = appData().trainings.find(item => String(item.id) === String(trainingId));
     const current = session();
@@ -336,33 +330,15 @@ window.VolunteerDataStore = VolunteerDataStore;
     if (!result.ok) return window.alert(`Could not update training status: ${result.reason || 'Unknown error'}`);
     refreshAll();
   }
-  async function validateAttendanceCode(opportunityId, code) {
-    const { data, error } = await client().rpc('validate_attendance_code', { p_opportunity_id: String(opportunityId), p_code: String(code) });
-    if (error) return { ok: false, reason: error.message };
-    return data === true ? { ok: true } : { ok: false, reason: 'Invalid facilitator code.' };
-  }
   async function handleAttendancePunch(button) {
-    const signup = store().getOpportunitySignups().find(item => item.id === button.dataset.attendancePunch);
-    if (!signup) return;
+    const signupId = button.dataset.attendancePunch;
     const action = button.dataset.attendanceAction || 'checkin';
     const code = window.prompt(`Enter the 4-digit facilitator code to ${action === 'checkout' ? 'check out' : 'check in'}.`);
     if (code === null) return;
-    const normalized = code.trim();
-    if (!/^\d{4}$/.test(normalized)) return window.alert('Please enter a valid 4-digit code.');
-    const validation = await validateAttendanceCode(signup.opportunityId, normalized);
-    if (!validation.ok) return window.alert(validation.reason || 'Invalid facilitator code.');
-    const now = new Date().toISOString();
-    const existing = store().getAttendanceClaims().find(item => item.signupId === signup.id);
-    const resolvedSessionId = signup.sessionId || existing?.sessionId || defaultSessionIdForOpportunity(signup.opportunityId);
-    const row = { id: existing?.id || crypto.randomUUID(), signup_id: signup.id, opportunity_id: String(signup.opportunityId || ''), session_id: resolvedSessionId, email: signup.email || session().email || '', volunteer_name: signup.volunteerName || session().name || 'Volunteer', title: signup.title || '', claim_status: action === 'checkout' ? 'submitted' : 'checked_in', check_in_at: existing?.checkInAt || now, check_in_code: action === 'checkout' ? existing?.checkInCode || null : normalized, check_out_at: action === 'checkout' ? now : null, check_out_code: action === 'checkout' ? normalized : null, claimed_status: action === 'checkout' ? 'attended' : 'checked_in', claimed_start: existing?.checkInAt || now, claimed_end: action === 'checkout' ? now : null, claimed_hours: action === 'checkout' ? hoursBetween(existing?.checkInAt, now) : 0, verified_hours: 0, submitted_at: action === 'checkout' ? now : null, reviewed_by_email: null, reviewed_at: null, admin_notes: null, created_at: existing?.createdAt || now, updated_at: now };
-    if (action === 'checkout' && !existing?.checkInAt) return window.alert('No check-in timestamp found. Please check in first.');
     setBusy(button, true, action === 'checkout' ? 'Checking out...' : 'Checking in...');
-    const { data, error } = await client().from('app_attendance_claims').upsert(row, { onConflict: 'id' }).select('*').single();
+    const result = await dataAccess().recordAttendancePunch(signupId, action, code);
     setBusy(button, false);
-    if (error) return window.alert(`Could not save attendance: ${error.message}`);
-    const saved = dataAccess().mappers.attendanceClaimFromRow(data, existing);
-    store().saveAttendanceClaims(upsertLocal(store().getAttendanceClaims(), saved, item => item.id === saved.id));
-    await store().fetchSupabaseAttendanceClaims();
+    if (!result.ok) return window.alert(result.reason || 'Could not save attendance.');
     refreshAll();
   }
   async function handleAttendanceReview(form, submitter) {
