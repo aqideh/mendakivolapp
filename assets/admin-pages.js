@@ -5,7 +5,7 @@
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
   function adminTables() { return window.MENDAKIAdminTables; }
-  function adminTools() { return window.MENDAKIPhase42CanonicalAdminTools; }
+  function adminTools() { return window.MENDAKIAdminTools; }
   function escapeHtml(value) { return store().utils.escapeHtml(value); }
   function appData() { return window.state.data; }
   function opportunities() { return appData().opportunities || []; }
