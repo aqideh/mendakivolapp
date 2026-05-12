@@ -31,6 +31,7 @@
   };
 
   function store() { return window.VolunteerDataStore; }
+  function client() { return store()?.authState?.supabase || null; }
   function asArray(value) { return Array.isArray(value) ? value : []; }
   function session() { return store()?.getSession?.() || null; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
@@ -128,26 +129,85 @@
     return [];
   }
 
+  function signupFromRpcRow(row, fallback = {}) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      opportunityId: String(row.opportunity_id || fallback.opportunityId || ''),
+      sessionId: row.session_id || fallback.sessionId || '',
+      email: row.email || fallback.email || '',
+      volunteerName: row.volunteer_name || fallback.volunteerName || 'Volunteer',
+      title: row.title || fallback.title || '',
+      type: row.type || fallback.type || '',
+      category: row.category || fallback.category || '',
+      time: row.time || fallback.time || '',
+      location: row.location || fallback.location || '',
+      commitment: row.commitment || fallback.commitment || '',
+      hours: Number(row.hours ?? fallback.hours ?? 0),
+      status: row.status || fallback.status || 'pending_review',
+      signedUpAt: row.signed_up_at || fallback.signedUpAt || '',
+      reviewedAt: row.reviewed_at || fallback.reviewedAt || '',
+      reviewedBy: row.reviewed_by_email || fallback.reviewedBy || '',
+      adminNotes: row.admin_notes || fallback.adminNotes || '',
+      confirmedAt: row.confirmed_at || fallback.confirmedAt || '',
+      waitlistedAt: row.waitlisted_at || fallback.waitlistedAt || '',
+      declinedAt: row.declined_at || fallback.declinedAt || '',
+      cancelledAt: row.cancelled_at || fallback.cancelledAt || '',
+      completedAt: row.completed_at || fallback.completedAt || '',
+      verifiedHours: Number(row.verified_hours ?? fallback.verifiedHours ?? 0),
+      updatedAt: row.updated_at || fallback.updatedAt || ''
+    };
+  }
+
+  function upsertLocalSignup(signup) {
+    if (!signup?.id) return;
+    const next = listOpportunitySignups().slice();
+    const index = next.findIndex(item => String(item.id) === String(signup.id));
+    if (index >= 0) next[index] = signup;
+    else next.unshift(signup);
+    store()?.saveOpportunitySignups?.(next);
+    window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+  }
+
+  async function reviewSignupViaRpc(signup, status, options = {}) {
+    const supabase = client();
+    if (!supabase) return { ok: false, reason: 'Supabase is not configured.' };
+    const { data, error } = await supabase.rpc('review_opportunity_signup_with_capacity', {
+      p_signup_id: signup.id,
+      p_status: status,
+      p_admin_notes: options.adminNotes || signup.adminNotes || null
+    });
+    if (error) return { ok: false, reason: error.message };
+    const saved = signupFromRpcRow(data, signup);
+    if (saved) upsertLocalSignup(saved);
+    return { ok: true, signup: saved || signup, capacityAdjusted: saved?.status && saved.status !== status };
+  }
+
   async function reviewOpportunitySignup(signupId, status, options = {}) {
     if (!isAdmin()) return { ok: false, reason: 'Admin access required.' };
     const signup = byId(listOpportunitySignups(), signupId);
     if (!signup) return { ok: false, reason: 'Sign-up not found.' };
-    if (typeof store()?.reviewSupabaseSignupWithCapacity !== 'function') return { ok: false, reason: 'Sign-up review is unavailable.' };
 
     return runMutation('opportunitySignups', async () => {
-      const next = {
-        ...signup,
-        status,
-        adminNotes: options.adminNotes || signup.adminNotes || '',
-        reviewedAt: now(),
-        reviewedBy: currentAdminEmail(),
-        updatedAt: now()
-      };
-      const result = await store().reviewSupabaseSignupWithCapacity(next, signup.status || '');
+      let result;
+      if (typeof store()?.reviewSupabaseSignupWithCapacity === 'function') {
+        const next = {
+          ...signup,
+          status,
+          adminNotes: options.adminNotes || signup.adminNotes || '',
+          reviewedAt: now(),
+          reviewedBy: currentAdminEmail(),
+          updatedAt: now()
+        };
+        result = await store().reviewSupabaseSignupWithCapacity(next, signup.status || '');
+      } else {
+        result = await reviewSignupViaRpc(signup, status, options);
+      }
+
       if (!result?.ok) return result || { ok: false, reason: 'Sign-up review failed.' };
       await refreshOpportunitySignups({ adminOnly: true });
       if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
-      return { ...result, signup: next };
+      return result;
     });
   }
 
