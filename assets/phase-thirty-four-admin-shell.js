@@ -36,16 +36,25 @@
   const refreshState34 = { active: new Set(), completed: new Set(), errors: new Map() };
 
   function store() { return window.VolunteerDataStore; }
+  function dataAccess() { return window.MENDAKIDataAccess; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
   function layout() { return document.querySelector('.dashboard-layout'); }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
-  function signups() { return store()?.getOpportunitySignups?.() || []; }
-  function attendanceClaims() { return store()?.getAttendanceClaims?.() || []; }
-  function trainingSignups() { return store()?.getTrainingSignups?.() || []; }
+  function signups() { return dataAccess()?.listOpportunitySignups?.() || store()?.getOpportunitySignups?.() || []; }
+  function attendanceClaims() { return dataAccess()?.listAttendanceClaims?.() || store()?.getAttendanceClaims?.() || []; }
+  function trainingSignups() { return dataAccess()?.listTrainingSignups?.() || store()?.getTrainingSignups?.() || []; }
 
   function countStatus(items, statuses) {
     const set = new Set(statuses);
     return items.filter(item => set.has(String(item.status || item.claimStatus || ''))).length;
+  }
+
+  function adminCounts() {
+    return dataAccess()?.adminQueueCounts?.() || {
+      pendingSignups: countStatus(signups(), ['pending_review', 'waitlisted']),
+      attendanceQueue: countStatus(attendanceClaims(), ['checked_in', 'submitted', 'clarification_requested']),
+      trainingQueue: countStatus(trainingSignups(), ['registered', 'waitlisted'])
+    };
   }
 
   function ensureEntry() {
@@ -65,9 +74,7 @@
   }
 
   function entryMarkup() {
-    const pendingSignups = countStatus(signups(), ['pending_review', 'waitlisted']);
-    const attendanceQueue = countStatus(attendanceClaims(), ['checked_in', 'submitted', 'clarification_requested']);
-    const trainingQueue = countStatus(trainingSignups(), ['registered', 'waitlisted']);
+    const counts = adminCounts();
     return `
       <div class="section-header">
         <div>
@@ -78,9 +85,9 @@
         <button class="button button-primary" type="button" data-phase34-open-admin>Open admin workspace</button>
       </div>
       <div class="phase34-admin-entry-grid">
-        <div class="phase34-admin-entry-tile"><strong>${pendingSignups}</strong><span>Pending / waitlisted sign-ups</span></div>
-        <div class="phase34-admin-entry-tile"><strong>${attendanceQueue}</strong><span>Attendance queue</span></div>
-        <div class="phase34-admin-entry-tile"><strong>${trainingQueue}</strong><span>Training queue</span></div>
+        <div class="phase34-admin-entry-tile"><strong>${counts.pendingSignups || 0}</strong><span>Pending / waitlisted sign-ups</span></div>
+        <div class="phase34-admin-entry-tile"><strong>${counts.attendanceQueue || 0}</strong><span>Attendance queue</span></div>
+        <div class="phase34-admin-entry-tile"><strong>${counts.trainingQueue || 0}</strong><span>Training queue</span></div>
       </div>
     `;
   }
@@ -159,15 +166,13 @@
   }
 
   function homeMarkup() {
-    const pendingSignups = countStatus(signups(), ['pending_review', 'waitlisted']);
-    const attendanceQueue = countStatus(attendanceClaims(), ['checked_in', 'submitted', 'clarification_requested']);
-    const trainingQueue = countStatus(trainingSignups(), ['registered', 'waitlisted']);
+    const counts = adminCounts();
     return `
       <div class="phase34-admin-home-grid">
         <button class="phase34-admin-home-card" type="button" data-phase34-area="opportunities"><strong>Content</strong><span>Edit opportunity listings and sessions</span></button>
-        <button class="phase34-admin-home-card" type="button" data-phase34-area="signups"><strong>${pendingSignups}</strong><span>Sign-ups needing review</span></button>
-        <button class="phase34-admin-home-card" type="button" data-phase34-area="attendance"><strong>${attendanceQueue}</strong><span>Attendance items</span></button>
-        <button class="phase34-admin-home-card" type="button" data-phase34-area="training"><strong>${trainingQueue}</strong><span>Training queue</span></button>
+        <button class="phase34-admin-home-card" type="button" data-phase34-area="signups"><strong>${counts.pendingSignups || 0}</strong><span>Sign-ups needing review</span></button>
+        <button class="phase34-admin-home-card" type="button" data-phase34-area="attendance"><strong>${counts.attendanceQueue || 0}</strong><span>Attendance items</span></button>
+        <button class="phase34-admin-home-card" type="button" data-phase34-area="training"><strong>${counts.trainingQueue || 0}</strong><span>Training queue</span></button>
       </div>
       <div class="phase34-empty">Use the left navigation to open a focused admin workflow. Legacy fallback tools have been retired from this shell.</div>
     `;
@@ -183,9 +188,9 @@
     if (refreshState34.active.has(area)) return;
     if (refreshState34.completed.has(area) && options.force !== true) return;
 
-    const task = area === 'signups'
+    const task = dataAccess()?.refreshAdminQueue?.(area, options) || (area === 'signups'
       ? store()?.fetchSupabaseOpportunitySignups?.()
-      : store()?.fetchSupabaseAttendanceClaims?.();
+      : store()?.fetchSupabaseAttendanceClaims?.());
 
     if (!task || typeof task.then !== 'function') return;
 
@@ -309,4 +314,5 @@
   window.addEventListener('volunteer-signups-synced', install);
   window.addEventListener('volunteer-attendance-synced', install);
   window.addEventListener('volunteer-training-signups-synced', install);
+  window.addEventListener('mendaki-data-access-state', install);
 })();
