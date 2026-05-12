@@ -249,7 +249,7 @@
     qsa('[data-signup-opportunity]').forEach(button => {
       if (!button.dataset.uiCtaApplied && !button.disabled) {
         button.dataset.uiCtaApplied = 'true';
-        button.innerHTML = '<span class="ui-cta-emoji">📅 Sign up for this opportunity</span>';
+        button.innerHTML = '<span class="ui-cta-emoji">Sign up on YM-Hub</span>';
       }
     });
   }
@@ -268,22 +268,8 @@
     top.insertAdjacentElement('afterend', alert);
   }
 
-  function decorateTimeline() {
-    const page = qs('#page-opportunities');
-    const grid = qs('#opportunities-grid');
-    if (!page || !grid || qs('[data-ui-timeline]')) return;
-    const items = (appData()?.opportunities || []).slice(0, 8);
-    if (!items.length) return;
-    const section = document.createElement('section');
-    section.className = 'container content-section';
-    section.dataset.uiTimeline = 'true';
-    section.innerHTML = `
-      <div class="section-header"><div><h2>Upcoming timeline</h2><p class="dashboard-muted">Swipe through upcoming opportunities and choose what fits your schedule.</p></div></div>
-      <div class="ui-timeline">
-        ${items.map(opp => `<button class="ui-timeline-card" type="button" data-opp-id="${escapeHtml(opp.id)}"><div class="ui-timeline-date">${escapeHtml(opportunityLabel(opp))}</div><h3>${escapeHtml(opp.title)}</h3><p>${escapeHtml(opp.location || 'Location to be confirmed')}</p></button>`).join('')}
-      </div>
-    `;
-    grid.insertAdjacentElement('beforebegin', section);
+  function removeOpportunityTimeline() {
+    qsa('[data-ui-timeline]').forEach(node => node.remove());
   }
 
   function installMobileAffordances() {
@@ -347,7 +333,7 @@
     decorateStatusBadges();
     decorateCards();
     decorateOpportunityPage();
-    decorateTimeline();
+    removeOpportunityTimeline();
     installMobileAffordances();
     installDarkMode();
   }
