@@ -35,6 +35,8 @@
   function session() { return store()?.getSession?.() || null; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
   function now() { return new Date().toISOString(); }
+  function currentAdminEmail() { return session()?.email || store()?.$?.email?.() || 'admin'; }
+  function byId(items, id) { return asArray(items).find(item => String(item.id) === String(id)); }
 
   function setLoading(domain, loading) {
     if (loading) state.loading.add(domain);
@@ -79,6 +81,23 @@
     }
   }
 
+  async function runMutation(domain, operation) {
+    setLoading(domain, true);
+    setError(domain, null);
+    try {
+      const result = await operation();
+      if (result?.ok === false && !result?.transactional) throw new Error(result.reason || 'Mutation failed.');
+      markRefreshed(domain);
+      return result || { ok: true };
+    } catch (error) {
+      setError(domain, error);
+      console.warn(`Could not mutate ${domain}.`, error);
+      return { ok: false, reason: error.message || String(error) };
+    } finally {
+      setLoading(domain, false);
+    }
+  }
+
   function listOpportunitySignups() {
     return asArray(store()?.getOpportunitySignups?.());
   }
@@ -109,6 +128,60 @@
     return [];
   }
 
+  async function reviewOpportunitySignup(signupId, status, options = {}) {
+    if (!isAdmin()) return { ok: false, reason: 'Admin access required.' };
+    const signup = byId(listOpportunitySignups(), signupId);
+    if (!signup) return { ok: false, reason: 'Sign-up not found.' };
+    if (typeof store()?.reviewSupabaseSignupWithCapacity !== 'function') return { ok: false, reason: 'Sign-up review is unavailable.' };
+
+    return runMutation('opportunitySignups', async () => {
+      const next = {
+        ...signup,
+        status,
+        adminNotes: options.adminNotes || signup.adminNotes || '',
+        reviewedAt: now(),
+        reviewedBy: currentAdminEmail(),
+        updatedAt: now()
+      };
+      const result = await store().reviewSupabaseSignupWithCapacity(next, signup.status || '');
+      if (!result?.ok) return result || { ok: false, reason: 'Sign-up review failed.' };
+      await refreshOpportunitySignups({ adminOnly: true });
+      if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
+      return { ...result, signup: next };
+    });
+  }
+
+  async function reviewAttendanceClaim(claimId, status, options = {}) {
+    if (!isAdmin()) return { ok: false, reason: 'Admin access required.' };
+    const claim = byId(listAttendanceClaims(), claimId);
+    if (!claim) return { ok: false, reason: 'Attendance claim not found.' };
+    if (typeof store()?.saveSupabaseAttendanceClaim !== 'function') return { ok: false, reason: 'Attendance review is unavailable.' };
+
+    return runMutation('attendanceClaims', async () => {
+      const fallbackHours = status === 'verified'
+        ? Number(claim.verifiedHours || claim.claimedHours || options.fallbackHours || 0)
+        : Number(claim.verifiedHours || 0);
+      const verifiedHours = status === 'verified' || status === 'adjusted'
+        ? Math.max(0, Number(options.verifiedHours ?? fallbackHours))
+        : fallbackHours;
+      const next = {
+        ...claim,
+        claimStatus: status,
+        verifiedHours,
+        adminNotes: options.adminNotes || claim.adminNotes || '',
+        reviewedBy: currentAdminEmail(),
+        reviewedAt: now(),
+        updatedAt: now()
+      };
+      const result = await store().saveSupabaseAttendanceClaim(next, { mode: 'update', review: true });
+      if (!result?.ok && !result?.transactional) return result || { ok: false, reason: 'Attendance review failed.' };
+      await refreshAttendanceClaims({ adminOnly: true });
+      if (typeof store()?.fetchSupabaseOpportunitySignups === 'function') await store().fetchSupabaseOpportunitySignups();
+      if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
+      return { ...result, claim: next };
+    });
+  }
+
   function countByStatus(items, statuses) {
     const set = new Set(asArray(statuses).map(String));
     return asArray(items).filter(item => set.has(String(item.status || item.claimStatus || ''))).length;
@@ -132,6 +205,8 @@
     refreshOpportunitySignups,
     refreshAttendanceClaims,
     refreshAdminQueue,
+    reviewOpportunitySignup,
+    reviewAttendanceClaim,
     adminQueueCounts,
     countByStatus
   });
