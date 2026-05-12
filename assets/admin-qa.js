@@ -5,7 +5,8 @@
   const state = {
     running: false,
     results: [],
-    lastRunAt: ''
+    lastRunAt: '',
+    host: null
   };
 
   const REQUIRED_TABLES = [
@@ -28,7 +29,6 @@
   function store() { return window.VolunteerDataStore; }
   function client() { return store()?.authState?.supabase || null; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
-  function layout() { return document.querySelector('.dashboard-layout'); }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
 
   function result(status, label, detail = '') {
@@ -43,47 +43,38 @@
     }, { pass: 0, warn: 0, fail: 0 });
   }
 
-  function ensureCard() {
-    if (!isAdmin()) return null;
-    let card = document.querySelector('[data-admin-qa-card]');
-    if (card) return card;
-    card = document.createElement('section');
-    card.className = 'dashboard-card phase32-qa-card';
-    card.dataset.adminQaCard = 'true';
-    card.dataset.dashboardCardRole = 'admin';
-    card.dataset.adminUxArea = 'audit';
-    const reports = document.querySelector('[data-reports-card]');
-    if (reports) reports.insertAdjacentElement('afterend', card);
-    else layout()?.append(card);
-    return card;
+  function cardMarkup() {
+    const summary = counts();
+    return `
+      <section class="phase32-qa-card" data-admin-qa-card>
+        <div class="section-header">
+          <div>
+            <p class="eyebrow dark">Admin · QA</p>
+            <h2>QA smoke checks</h2>
+            <p class="dashboard-muted">Run read-only checks for schema, grants, and basic Supabase app contracts.</p>
+          </div>
+          <div class="phase32-qa-actions">
+            <button class="button button-primary" type="button" data-admin-qa-run ${state.running ? 'disabled' : ''}>${state.running ? 'Running...' : 'Run checks'}</button>
+            <button class="button dashboard-secondary" type="button" data-admin-qa-clear ${state.running ? 'disabled' : ''}>Clear</button>
+          </div>
+        </div>
+        <div class="phase32-qa-summary">
+          <div class="phase32-qa-tile"><strong>${summary.pass || 0}</strong><span>Passed</span></div>
+          <div class="phase32-qa-tile"><strong>${summary.warn || 0}</strong><span>Warnings</span></div>
+          <div class="phase32-qa-tile"><strong>${summary.fail || 0}</strong><span>Failures</span></div>
+        </div>
+        <p class="dashboard-muted">${state.lastRunAt ? `Last run: ${escapeHtml(state.lastRunAt)}` : 'Not run yet.'}</p>
+        <div class="phase32-qa-result-list">
+          ${state.results.length ? state.results.map(renderResult).join('') : '<div class="admin-content-item"><span>No checks run yet.</span></div>'}
+        </div>
+      </section>
+    `;
   }
 
   function render() {
-    const card = ensureCard();
-    if (!card) return;
-    const summary = counts();
-    card.innerHTML = `
-      <div class="section-header">
-        <div>
-          <p class="eyebrow dark">Admin · QA</p>
-          <h2>QA smoke checks</h2>
-          <p class="dashboard-muted">Run read-only checks for schema, grants, and basic Supabase app contracts.</p>
-        </div>
-        <div class="phase32-qa-actions">
-          <button class="button button-primary" type="button" data-admin-qa-run ${state.running ? 'disabled' : ''}>${state.running ? 'Running...' : 'Run checks'}</button>
-          <button class="button dashboard-secondary" type="button" data-admin-qa-clear ${state.running ? 'disabled' : ''}>Clear</button>
-        </div>
-      </div>
-      <div class="phase32-qa-summary">
-        <div class="phase32-qa-tile"><strong>${summary.pass || 0}</strong><span>Passed</span></div>
-        <div class="phase32-qa-tile"><strong>${summary.warn || 0}</strong><span>Warnings</span></div>
-        <div class="phase32-qa-tile"><strong>${summary.fail || 0}</strong><span>Failures</span></div>
-      </div>
-      <p class="dashboard-muted">${state.lastRunAt ? `Last run: ${escapeHtml(state.lastRunAt)}` : 'Not run yet.'}</p>
-      <div class="phase32-qa-result-list">
-        ${state.results.length ? state.results.map(renderResult).join('') : '<div class="admin-content-item"><span>No checks run yet.</span></div>'}
-      </div>
-    `;
+    if (!state.host || !isAdmin()) return false;
+    state.host.innerHTML = cardMarkup();
+    return true;
   }
 
   function renderResult(item) {
@@ -254,7 +245,6 @@
     } finally {
       state.running = false;
       render();
-      if (window.MENDAKIAdminUX?.install) window.MENDAKIAdminUX.install();
     }
   }
 
@@ -275,19 +265,17 @@
     }, true);
   }
 
-  function install() {
-    if (!isAdmin()) return;
-    ensureCard();
-    render();
+  function renderInto(host) {
+    state.host = host;
+    bind();
+    return render();
   }
 
-  window.MENDAKIAdminQA = { install, runChecks };
+  function install() { bind(); }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    bind();
-    window.setTimeout(install, 2200);
-    window.setTimeout(install, 3200);
-  });
+  window.MENDAKIAdminQA = { install, render, renderInto, runChecks };
+
+  document.addEventListener('DOMContentLoaded', install);
   window.addEventListener('volunteer-auth-ready', install);
   window.addEventListener('volunteer-auth-changed', install);
 })();
