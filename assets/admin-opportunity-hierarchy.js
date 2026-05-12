@@ -1,5 +1,6 @@
 (() => {
   const SESSION_TABLE = 'app_opportunity_sessions';
+  const OPPORTUNITY_TABLE = 'app_opportunities';
   const qs = (selector, root = document) => root.querySelector(selector);
   const qsa = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const escapeHtml = value => window.VolunteerDataStore?.utils?.escapeHtml?.(value) || String(value || '');
@@ -169,6 +170,17 @@
     return { ok: true };
   }
 
+  async function deleteOpportunity(id) {
+    const supabase = client();
+    if (!supabase || !isAdmin()) return { ok: false, reason: 'Admin Supabase session required.' };
+    if (!id) return { ok: false, reason: 'Opportunity id is required.' };
+    const { error } = await supabase.from(OPPORTUNITY_TABLE).delete().eq('id', String(id));
+    if (error) return { ok: false, reason: error.message };
+    if (typeof store()?.applySupabaseOpportunities === 'function') await store().applySupabaseOpportunities();
+    await refreshSessions();
+    return { ok: true };
+  }
+
   async function promoteNextSession(sessionId, opportunityId) {
     const supabase = client();
     if (!supabase || !isAdmin()) return { ok: false, reason: 'Admin Supabase session required.' };
@@ -218,6 +230,7 @@
         <div class="signup-admin-actions">
           <button class="button dashboard-secondary" type="button" data-opportunity-edit-details="${escapeHtml(opp.id)}">Edit details</button>
           <button class="button dashboard-secondary" type="button" data-opportunity-edit-sessions="${escapeHtml(opp.id)}">Edit sessions</button>
+          <button class="text-button" type="button" data-opportunity-delete="${escapeHtml(opp.id)}">Delete</button>
         </div>
       </div>
     `;
@@ -238,6 +251,8 @@
           <label>Type<select name="type"><option value="long-term" ${opp?.type === 'long-term' ? 'selected' : ''}>Long-term</option><option value="ad-hoc" ${opp?.type !== 'long-term' ? 'selected' : ''}>Ad-hoc</option></select></label>
           <label>Category<select name="category"><option value="befriender" ${opp?.category === 'befriender' ? 'selected' : ''}>Befriender</option><option value="mentor" ${opp?.category === 'mentor' ? 'selected' : ''}>Mentor</option><option value="facilitator" ${opp?.category === 'facilitator' ? 'selected' : ''}>Facilitator</option><option value="community-volunteering" ${!opp?.category || opp?.category === 'community-volunteering' ? 'selected' : ''}>Community volunteering</option></select></label>
           <label>Status<input name="status" value="${escapeHtml(opp?.status || 'Open')}"></label>
+          <label>Photo URL<input name="photo" type="url" value="${escapeHtml(opp?.photo || '')}" placeholder="https://... or assets/... image path"></label>
+          <label>Photo alt text<input name="photoAlt" value="${escapeHtml(opp?.photoAlt || '')}" placeholder="Describe the image for accessibility"></label>
           <label>Fallback capacity<input name="capacity" type="number" min="0" value="${escapeHtml(opp?.capacity || 0)}" placeholder="Use sessions for dated capacity"></label>
           <label class="admin-content-checkbox"><input name="waitlistEnabled" type="checkbox" ${opp?.waitlistEnabled === false ? '' : 'checked'}> Fallback waitlist enabled</label>
           <label>Fallback default hours<input name="defaultHours" type="number" min="0" max="24" step="0.25" value="${escapeHtml(opp?.defaultHours || 0)}"></label>
@@ -250,7 +265,7 @@
           <label>Requirements<textarea name="requirements">${escapeHtml(opp?.requirements || '')}</textarea></label>
           <div class="session-admin-actions">
             <button class="button button-primary" type="submit">${opp?.id ? 'Save details' : 'Create opportunity'}</button>
-            ${opp?.id ? `<button class="button dashboard-secondary" type="button" data-opportunity-edit-sessions="${escapeHtml(opp.id)}">Edit sessions</button>` : ''}
+            ${opp?.id ? `<button class="button dashboard-secondary" type="button" data-opportunity-edit-sessions="${escapeHtml(opp.id)}">Edit sessions</button><button class="text-button" type="button" data-opportunity-delete="${escapeHtml(opp.id)}">Delete opportunity</button>` : ''}
             <button class="button dashboard-secondary" type="button" data-opportunity-list-back>Back to opportunity list</button>
           </div>
           <div class="admin-content-status" data-hierarchy-opportunity-status></div>
@@ -309,6 +324,7 @@
         </div>
         <div class="session-admin-actions">
           <button class="button dashboard-secondary" type="button" data-opportunity-edit-details="${escapeHtml(opp.id)}">Edit opportunity details</button>
+          <button class="text-button" type="button" data-opportunity-delete="${escapeHtml(opp.id)}">Delete opportunity</button>
           <button class="button dashboard-secondary" type="button" data-opportunity-list-back>Back to opportunity list</button>
         </div>
       </section>
@@ -350,6 +366,8 @@
       type: formValue(form, 'type'),
       category: formValue(form, 'category'),
       status: formValue(form, 'status') || 'Open',
+      photo: formValue(form, 'photo'),
+      photoAlt: formValue(form, 'photoAlt'),
       capacity: Number(formValue(form, 'capacity') || 0),
       waitlistEnabled: Boolean(new FormData(form).get('waitlistEnabled')),
       defaultHours: Number(formValue(form, 'defaultHours') || 0),
@@ -441,6 +459,17 @@
       if (create) {
         event.preventDefault();
         renderOpportunityDetailsForm({});
+        return;
+      }
+
+      const deleteOpportunityButton = event.target.closest('[data-opportunity-delete]');
+      if (deleteOpportunityButton) {
+        event.preventDefault();
+        const id = deleteOpportunityButton.dataset.opportunityDelete;
+        if (!window.confirm('Delete this opportunity? Existing sign-ups, sessions, and attendance records may block deletion or keep historical references.')) return;
+        const result = await deleteOpportunity(id);
+        if (!result.ok) window.alert(`Could not delete opportunity: ${result.reason}`);
+        else renderOpportunityHierarchy();
         return;
       }
 
