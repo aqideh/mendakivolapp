@@ -285,12 +285,23 @@ function renderNewsList() {
   list.forEach(item => container.append(createNewsCard(item, false)));
 }
 
+function createOpportunityPhoto(opp, className = 'opp-photo') {
+  if (!opp?.photo) return null;
+  return make('img', {
+    class: className,
+    src: opp.photo,
+    alt: opp.photoAlt || `${opp.title || 'Volunteer opportunity'} photo`,
+    loading: 'lazy'
+  });
+}
+
 function createOpportunityCard(opp) {
   return make('button', {
     type: 'button',
     class: 'opp-card',
     dataset: { oppId: String(opp.id) }
   }, [
+    createOpportunityPhoto(opp),
     make('span', { class: `badge ${badgeClass(opp.type)}`, text: typeLabel(opp.type) }),
     make('h2', { text: opp.title }),
     make('p', { text: truncate(opp.description, 150) }),
@@ -392,7 +403,8 @@ function switchPage(page, updateHash = true) {
 }
 
 function findOpportunity(id) {
-  return state.data.opportunities.find(item => Number(item.id) === Number(id));
+  const targetId = String(id);
+  return state.data.opportunities.find(item => String(item.id) === targetId);
 }
 
 function findNews(id) {
@@ -417,6 +429,7 @@ function openOpportunityModal(id) {
   modal.append(
     modalHeader(opp.title, typeLabel(opp.type), badgeClass(opp.type)),
     make('div', { class: 'modal-body' }, [
+      createOpportunityPhoto(opp, 'modal-photo'),
       make('div', { class: 'modal-meta' }, [
         make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-clock'), document.createTextNode(opp.time || '')]),
         make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-location'), document.createTextNode(opp.location || '')]),
@@ -429,7 +442,7 @@ function openOpportunityModal(id) {
       make('button', {
         type: 'button',
         class: 'button button-primary',
-        text: 'Sign up for this role',
+        text: 'Sign up on YM-Hub',
         dataset: { signupOpportunity: String(opp.id) }
       }),
       make('button', { type: 'button', class: 'button', text: 'Close', dataset: { closeModal: 'true' } })
