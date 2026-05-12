@@ -51,6 +51,7 @@ The app remains pilot/beta until manual QA, Auth console settings, production po
 - Moved active opportunity, training, and attendance action routing into a responsibility-named module:
   - `assets/volunteer-actions.js`
 - Removed old direct attendance write behavior from the active UI action path.
+- Added admin training-session fetch/save/delete methods to `MENDAKIDataAccess` so the admin UX module no longer writes training rows directly.
 
 ### Admin module responsibility renames
 
@@ -65,6 +66,8 @@ The following phase-numbered admin modules were consolidated into responsibility
 | Admin review actions | `assets/admin-review-actions.js` | `assets/phase-thirty-eight-drawer-review-actions.js` |
 | Admin queue sync | `assets/admin-queue-sync.js` | `assets/phase-forty-two-admin-queue-sync.js` |
 | Admin tools | `assets/admin-tools.js` | `assets/phase-forty-two-canonical-admin-tools.js` |
+| Admin UX | `assets/admin-ux.js` | `assets/phase-thirty-one-admin-ux.js` |
+| Admin QA | `assets/admin-qa.js` | `assets/phase-thirty-two-qa-tools.js` |
 | Admin workspace CSS | `assets/admin-workspace.css` | `assets/phase-thirty-one-admin-ux.css`, `assets/phase-thirty-four-admin-shell.css` |
 | Admin pages CSS | `assets/admin-pages.css` | `assets/phase-thirty-five-canonical-admin-pages.css` |
 | Admin tables CSS | `assets/admin-tables.css` | `assets/phase-thirty-six-admin-tables.css` |
@@ -72,10 +75,12 @@ The following phase-numbered admin modules were consolidated into responsibility
 
 ### Active responsibility-named scripts
 
-`index.html` now loads these responsibility-named modules:
+`index.html` now loads these responsibility-named admin modules:
 
 ```text
 assets/volunteer-actions.js
+assets/admin-ux.js
+assets/admin-qa.js
 assets/admin-tables.js
 assets/admin-queue-sync.js
 assets/admin-review-actions.js
@@ -99,6 +104,8 @@ assets/admin-qa.css
 
 ```text
 window.MENDAKIVolunteerActions
+window.MENDAKIAdminUX
+window.MENDAKIAdminQA
 window.MENDAKIAdminTables
 window.MENDAKIAdminQueueSync
 window.MENDAKIAdminReviewActions
@@ -110,6 +117,8 @@ window.MENDAKIAdminWorkspace
 ### Removed old admin namespaces from active use
 
 ```text
+MENDAKIPhase31AdminUX
+MENDAKIPhase32QA
 MENDAKIPhase34AdminShell
 MENDAKIPhase35CanonicalAdminPages
 MENDAKIPhase36AdminTables
@@ -177,22 +186,27 @@ assets/admin-tables.css
 assets/admin-qa.css
 ```
 
-## Remaining roadmap
-
 ### Phase 17 — Final primary-path scan
 
-Target:
+Completed:
 
-- Scan JavaScript, HTML, CSS, and visible UI copy for development-process terms and stale identifiers.
-- Remove remaining phase-numbered globals from active code.
-- Ensure no old deleted file is referenced by `index.html`.
-- Ensure no admin workflow writes directly around the data access layer for sign-up, attendance, training, referrals, or notifications.
-- Confirm queue pages show loaded records after refresh:
-  - Opportunity sign-ups
-  - Attendance claims
-  - Training sign-ups
-  - Referrals
-  - Points ledger
+- Scanned active admin HTML/JS/CSS for deleted-file references and stale phase-numbered admin namespaces.
+- Replaced `assets/phase-thirty-one-admin-ux.js` with `assets/admin-ux.js`.
+- Replaced `assets/phase-thirty-two-qa-tools.js` with `assets/admin-qa.js`.
+- Updated `index.html` to load `assets/admin-ux.js` and `assets/admin-qa.js`.
+- Deleted the old phase-numbered admin UX and admin QA modules after active consumers were updated.
+- Replaced implementation-facing `data-phase31-*` and `data-phase32-*` admin attributes in the new modules with responsibility-named `data-admin-*` attributes.
+- Routed admin training-session fetch/save/delete operations through `MENDAKIDataAccess` instead of direct UI-module Supabase writes.
+- Verified no remaining references to deleted Phase 31/32 admin files or old admin phase namespaces were found by repository search.
+
+Primary namespaces:
+
+```text
+window.MENDAKIAdminUX
+window.MENDAKIAdminQA
+```
+
+## Remaining roadmap
 
 ### Phase 18 — Manual QA checklist and release readiness
 
@@ -251,7 +265,12 @@ These commits are useful reference points for the cleanup sequence:
 - `1978472` — added responsibility-named admin workspace styles.
 - `8c3c176` — loaded responsibility-named admin stylesheets.
 - `0493741` — removed phase-numbered admin table stylesheet.
+- `ffa875e` — routed admin training session writes through `MENDAKIDataAccess`.
+- `dac81c1` — added responsibility-named admin UX module.
+- `3b50e15` — added responsibility-named admin QA module.
+- `b5d0b85` — loaded responsibility-named admin UX and QA scripts.
+- `b976003` — removed phase-numbered admin QA module.
 
 ## Next recommended step
 
-Proceed with **Phase 17 — Final primary-path scan**. Focus on stale identifiers, deleted-file references, data access layer routing, and admin queue rendering checks.
+Proceed with **Phase 18 — Manual QA checklist and release readiness**. Focus on documenting the signed-in admin browser smoke process, volunteer/admin manual QA flows, required test users, sample-data assumptions, and deployment validation steps.
