@@ -3,137 +3,17 @@
   window.__mendakiAdminUxInstalled = true;
 
   const state = {
-    activeArea: 'home',
-    search: '',
-    status: '',
     selectedTrainingId: '',
     editingSessionId: '',
     trainingRows: [],
-    busy: false
+    busy: false,
+    host: null
   };
-
-  const AREAS = [
-    ['home', 'Admin home'],
-    ['content', 'Content'],
-    ['signups', 'Sign-ups'],
-    ['attendance', 'Attendance'],
-    ['training', 'Training'],
-    ['referrals', 'Referrals'],
-    ['points', 'Points'],
-    ['reports', 'Reports'],
-    ['audit', 'Audit'],
-    ['notifications', 'Notifications']
-  ];
 
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
-  function layout() { return document.querySelector('.dashboard-layout'); }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
-  function appState() { try { return typeof window.state !== 'undefined' ? window.state : null; } catch (_) { return null; } }
-  function trainings() { return state.trainingRows.length ? state.trainingRows : (appState()?.data?.trainings || []); }
-  function signups() { return dataAccess()?.listOpportunitySignups?.() || []; }
-  function attendanceClaims() { return dataAccess()?.listAttendanceClaims?.() || []; }
-  function trainingSignups() { return dataAccess()?.listTrainingSignups?.() || []; }
-
-  function ensureHub() {
-    if (!isAdmin()) return null;
-    let hub = document.querySelector('[data-admin-ux-hub]');
-    if (hub) return hub;
-    hub = document.createElement('section');
-    hub.className = 'dashboard-card admin-ux-hub';
-    hub.dataset.adminUxHub = 'true';
-    hub.dataset.dashboardCardRole = 'admin';
-    hub.innerHTML = hubMarkup();
-    const adminContent = document.querySelector('[data-admin-content-card]');
-    if (adminContent) adminContent.insertAdjacentElement('beforebegin', hub);
-    else layout()?.append(hub);
-    return hub;
-  }
-
-  function hubMarkup() {
-    return `
-      <div class="section-header">
-        <div>
-          <p class="eyebrow dark">Admin</p>
-          <h2>Admin workspace</h2>
-          <p class="dashboard-muted">Use focused work queues instead of scanning the full dashboard.</p>
-        </div>
-      </div>
-      <div class="admin-ux-tabs" role="tablist" aria-label="Admin work areas">
-        ${AREAS.map(([key, label]) => `<button class="admin-ux-tab ${key === state.activeArea ? 'active' : ''}" type="button" data-admin-ux-area="${key}">${escapeHtml(label)}</button>`).join('')}
-      </div>
-      <div class="admin-ux-summary-grid" data-admin-ux-summary></div>
-      <div class="admin-ux-toolbar">
-        <label>Search<input data-admin-ux-search placeholder="Filter visible admin cards" value="${escapeHtml(state.search)}"></label>
-        <label>Status<select data-admin-ux-status>
-          ${['', 'pending_review', 'registered', 'waitlisted', 'submitted', 'checked_in', 'completed', 'verified', 'Open', 'Closed'].map(value => `<option value="${escapeHtml(value)}" ${value === state.status ? 'selected' : ''}>${escapeHtml(value || 'Any status')}</option>`).join('')}
-        </select></label>
-        <button class="button dashboard-secondary" type="button" data-admin-ux-reset>Reset filters</button>
-      </div>
-    `;
-  }
-
-  function areaForCard(card) {
-    if (card.matches('[data-admin-content-card]')) return 'content';
-    if (card.matches('.admin-attendance-card')) return 'attendance';
-    if (card.matches('.admin-training-card, [data-admin-training-manager]')) return 'training';
-    if (card.matches('[data-reports-card]')) return 'reports';
-    if (card.matches('[data-audit-history-card], .audit-history-card')) return 'audit';
-    if (card.matches('[data-admin-referrals-card], .admin-referrals-card')) return 'referrals';
-    if (card.matches('[data-admin-points-card], .admin-points-card')) return 'points';
-    if (card.matches('[data-notification-history-card], .notification-history-card, [data-notification-settings-card]')) return 'notifications';
-    if (card.matches('[data-signup-dashboard-card="admin"], .admin-signup-card')) return 'signups';
-    if (card.dataset.dashboardCardRole === 'admin') return 'content';
-    return '';
-  }
-
-  function classifyCards() {
-    document.querySelectorAll('.dashboard-card').forEach(card => {
-      if (card.dataset.adminUxHub === 'true') return;
-      const area = areaForCard(card);
-      if (area) card.dataset.adminUxArea = area;
-    });
-  }
-
-  function textMatches(card) {
-    const term = state.search.trim().toLowerCase();
-    const status = state.status.trim().toLowerCase();
-    const text = card.textContent.toLowerCase();
-    if (term && !text.includes(term)) return false;
-    if (status && !text.includes(status)) return false;
-    return true;
-  }
-
-  function applyAreaVisibility() {
-    classifyCards();
-    document.querySelectorAll('[data-admin-ux-area]').forEach(card => {
-      const area = card.dataset.adminUxArea;
-      const visibleByArea = state.activeArea === 'home' || state.activeArea === area;
-      card.classList.toggle('admin-ux-hidden', !(visibleByArea && textMatches(card)));
-    });
-    document.querySelectorAll('[data-admin-ux-area].admin-ux-tab').forEach(button => {
-      button.classList.toggle('active', button.dataset.adminUxArea === state.activeArea);
-    });
-    renderSummary();
-  }
-
-  function countStatus(items, statuses) {
-    const set = new Set(statuses);
-    return items.filter(item => set.has(String(item.status || item.claimStatus || ''))).length;
-  }
-
-  function renderSummary() {
-    const host = document.querySelector('[data-admin-ux-summary]');
-    if (!host) return;
-    const tiles = [
-      ['Active sign-ups', countStatus(signups(), ['pending_review', 'confirmed', 'registered', 'waitlisted'])],
-      ['Attendance queue', countStatus(attendanceClaims(), ['checked_in', 'submitted', 'clarification_requested'])],
-      ['Training sign-ups', countStatus(trainingSignups(), ['registered', 'waitlisted'])],
-      ['Training sessions', state.trainingRows.length || trainings().length]
-    ];
-    host.innerHTML = tiles.map(([label, value]) => `<div class="admin-ux-summary-tile"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join('');
-  }
 
   function formatDate(value) {
     if (!value) return 'Date unset';
@@ -180,46 +60,33 @@
     return state.trainingRows;
   }
 
-  function ensureTrainingManager() {
-    if (!isAdmin()) return null;
-    let card = document.querySelector('[data-admin-training-manager]');
-    if (card) return card;
-    card = document.createElement('section');
-    card.className = 'dashboard-card phase31-training-card';
-    card.dataset.adminTrainingManager = 'true';
-    card.dataset.dashboardCardRole = 'admin';
-    card.dataset.adminUxArea = 'training';
-    const adminTraining = document.querySelector('.admin-training-card');
-    if (adminTraining) adminTraining.insertAdjacentElement('afterend', card);
-    else layout()?.append(card);
-    return card;
-  }
-
   function trainingManagerMarkup() {
     const selected = state.selectedTrainingId || parentTrainingRows()[0]?.id || '';
     state.selectedTrainingId = selected;
     const parent = state.trainingRows.find(row => row.id === selected) || {};
     const editing = state.trainingRows.find(row => row.id === state.editingSessionId) || null;
     return `
-      <div class="section-header">
-        <div>
-          <p class="eyebrow dark">Admin · Training</p>
-          <h2>Training session management</h2>
-          <p class="dashboard-muted">Manage parent training rows and child session instances.</p>
+      <section class="phase31-training-card" data-admin-training-manager>
+        <div class="section-header">
+          <div>
+            <p class="eyebrow dark">Admin · Training</p>
+            <h2>Training session management</h2>
+            <p class="dashboard-muted">Manage parent training opportunities and child session instances from the primary admin workspace.</p>
+          </div>
+          <button class="text-button" type="button" data-admin-training-refresh>${state.busy ? 'Loading...' : 'Refresh'}</button>
         </div>
-        <button class="text-button" type="button" data-admin-training-refresh>${state.busy ? 'Loading...' : 'Refresh'}</button>
-      </div>
-      <div class="phase31-training-grid">
-        <div class="phase31-training-list">
-          ${parentTrainingRows().length ? parentTrainingRows().map(renderTrainingParent).join('') : '<div class="signup-empty">No training rows loaded.</div>'}
+        <div class="phase31-training-grid">
+          <div class="phase31-training-list">
+            ${parentTrainingRows().length ? parentTrainingRows().map(renderTrainingParent).join('') : '<div class="signup-empty">No training rows loaded.</div>'}
+          </div>
+          <div>
+            <h3>${escapeHtml(parent.title || 'Select a training')}</h3>
+            <p class="dashboard-muted">${escapeHtml(parent.description || 'Choose a parent training row, then create or edit dated child sessions.')}</p>
+            ${selected ? renderTrainingSessionForm(parent, editing) : ''}
+          </div>
         </div>
-        <div>
-          <h3>${escapeHtml(parent.title || 'Select a training')}</h3>
-          <p class="dashboard-muted">${escapeHtml(parent.description || 'Choose a parent training row, then create or edit dated child sessions.')}</p>
-          ${selected ? renderTrainingSessionForm(parent, editing) : ''}
-        </div>
-      </div>
-      <div class="phase31-training-status" data-admin-training-status></div>
+        <div class="phase31-training-status" data-admin-training-status></div>
+      </section>
     `;
   }
 
@@ -295,7 +162,7 @@
   }
 
   function setTrainingStatus(text) {
-    const node = document.querySelector('[data-admin-training-status]');
+    const node = state.host?.querySelector?.('[data-admin-training-status]') || document.querySelector('[data-admin-training-status]');
     if (node) node.textContent = text || '';
   }
 
@@ -364,40 +231,22 @@
     renderTrainingManager();
   }
 
-  async function renderTrainingManager() {
-    const card = ensureTrainingManager();
-    if (!card) return;
+  async function renderTrainingManager(host = state.host) {
+    if (!host || !isAdmin()) return false;
+    state.host = host;
     if (!state.trainingRows.length) await fetchTrainingRows();
-    card.innerHTML = trainingManagerMarkup();
-    renderSummary();
-    applyAreaVisibility();
+    host.innerHTML = trainingManagerMarkup();
+    return true;
   }
 
-  async function install() {
-    if (!isAdmin()) return;
-    ensureHub();
-    classifyCards();
-    await fetchTrainingRows();
-    await renderTrainingManager();
-    const hub = ensureHub();
-    if (hub) hub.innerHTML = hubMarkup();
-    applyAreaVisibility();
+  async function renderTrainingManagerInto(host) {
+    return renderTrainingManager(host);
   }
 
   function bind() {
     if (window.__mendakiAdminUxBound) return;
     window.__mendakiAdminUxBound = true;
     document.addEventListener('click', async event => {
-      const area = event.target.closest('.admin-ux-tab[data-admin-ux-area]');
-      if (area) { state.activeArea = area.dataset.adminUxArea || 'home'; applyAreaVisibility(); return; }
-      if (event.target.closest('[data-admin-ux-reset]')) {
-        state.search = '';
-        state.status = '';
-        const hub = ensureHub();
-        if (hub) hub.innerHTML = hubMarkup();
-        applyAreaVisibility();
-        return;
-      }
       const selectTraining = event.target.closest('[data-admin-select-training]');
       if (selectTraining) { state.selectedTrainingId = selectTraining.dataset.adminSelectTraining || ''; state.editingSessionId = ''; renderTrainingManager(); return; }
       const newSession = event.target.closest('[data-admin-new-training-session]');
@@ -409,16 +258,6 @@
       if (event.target.closest('[data-admin-training-refresh]')) { await fetchTrainingRows(); renderTrainingManager(); }
     }, true);
 
-    document.addEventListener('input', event => {
-      const search = event.target.closest('[data-admin-ux-search]');
-      if (search) { state.search = search.value || ''; applyAreaVisibility(); }
-    }, true);
-
-    document.addEventListener('change', event => {
-      const status = event.target.closest('[data-admin-ux-status]');
-      if (status) { state.status = status.value || ''; applyAreaVisibility(); }
-    }, true);
-
     document.addEventListener('submit', event => {
       const form = event.target.closest('[data-admin-training-session-form]');
       if (!form) return;
@@ -428,15 +267,16 @@
     }, true);
   }
 
-  window.MENDAKIAdminUX = { install, renderTrainingManager, fetchTrainingRows };
-
-  document.addEventListener('DOMContentLoaded', () => {
+  function install() {
     bind();
-    window.setTimeout(install, 1600);
-    window.setTimeout(install, 2600);
-  });
+  }
+
+  window.MENDAKIAdminUX = { install, renderTrainingManager, renderTrainingManagerInto, fetchTrainingRows };
+
+  document.addEventListener('DOMContentLoaded', install);
   window.addEventListener('volunteer-auth-ready', install);
   window.addEventListener('volunteer-auth-changed', install);
-  window.addEventListener('volunteer-training-sessions-synced', () => { fetchTrainingRows().then(renderTrainingManager); });
-  window.addEventListener('volunteer-signups-synced', install);
+  window.addEventListener('volunteer-training-sessions-synced', () => {
+    fetchTrainingRows().then(() => renderTrainingManager());
+  });
 })();
