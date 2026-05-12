@@ -58,11 +58,57 @@
   function listOpportunitySignups() { return asArray(store().getOpportunitySignups()); }
   function listAttendanceClaims() { return asArray(store().getAttendanceClaims()); }
   function listTrainingSignups() { return asArray(store().getTrainingSignups()); }
+  function listTrainingSessions() { return asArray(appData().trainings); }
   function listNotifications() { return state.notifications.slice(); }
   async function refreshOpportunitySignups() { return session()?.email ? runRefresh('opportunitySignups', store().fetchSupabaseOpportunitySignups) : listOpportunitySignups(); }
   async function refreshAttendanceClaims() { return session()?.email ? runRefresh('attendanceClaims', store().fetchSupabaseAttendanceClaims) : listAttendanceClaims(); }
   async function refreshTrainingSignups() { return session()?.email ? runRefresh('trainingSignups', store().fetchSupabaseTrainingSignups) : listTrainingSignups(); }
   async function refreshAdminQueue(area) { if (area === 'signups') return refreshOpportunitySignups(); if (area === 'attendance') return refreshAttendanceClaims(); if (area === 'training') return refreshTrainingSignups(); return []; }
+
+  async function fetchAdminTrainingSessions() {
+    return runRefresh('trainingSessions', async () => {
+      requireAdmin();
+      const { data, error } = await client()
+        .from(canonicalTables.trainingSessions)
+        .select('id,title,description,trainer,session_date,time,location,capacity,waitlist_enabled,status,required_for,parent_training_id,session_title,starts_at,ends_at,default_hours,is_session_instance')
+        .order('parent_training_id', { ascending: true })
+        .order('starts_at', { ascending: true, nullsFirst: false })
+        .order('session_date', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return asArray(data);
+    });
+  }
+
+  async function refreshTrainingSessions() {
+    return runRefresh('trainingSessions', async () => {
+      requireAdmin();
+      if (typeof store().applySupabaseTrainingSessions === 'function') await store().applySupabaseTrainingSessions();
+      window.dispatchEvent(new CustomEvent('volunteer-training-sessions-synced'));
+      return listTrainingSessions();
+    });
+  }
+
+  async function saveAdminTrainingSession(row) {
+    return runMutation('trainingSessions', async () => {
+      requireAdmin();
+      if (!row?.id) throw new Error('Training session id is required.');
+      const { data, error } = await client().from(canonicalTables.trainingSessions).upsert(row, { onConflict: 'id' }).select('*').single();
+      if (error) throw error;
+      await refreshTrainingSessions();
+      return { ok: true, row: data };
+    });
+  }
+
+  async function deleteAdminTrainingSession(id) {
+    return runMutation('trainingSessions', async () => {
+      requireAdmin();
+      if (!id) throw new Error('Training session id is required.');
+      const { error } = await client().from(canonicalTables.trainingSessions).delete().eq('id', id);
+      if (error) throw error;
+      await refreshTrainingSessions();
+      return { ok: true };
+    });
+  }
 
   function opportunitySignupFromRow(row, previous = {}) {
     if (!row) return null;
@@ -202,5 +248,5 @@
   function countByStatus(items, statuses) { const set = new Set(asArray(statuses).map(String)); return asArray(items).filter(item => set.has(String(item.status || item.claimStatus || ''))).length; }
   function adminQueueCounts() { return { pendingSignups: countByStatus(listOpportunitySignups(), ['pending_review', 'waitlisted']), attendanceQueue: countByStatus(listAttendanceClaims(), ['checked_in', 'submitted', 'clarification_requested']), trainingQueue: countByStatus(listTrainingSignups(), ['registered', 'waitlisted']) }; }
 
-  window.MENDAKIDataAccess = Object.freeze({ canonicalTables, deprecatedTables, mappers, snapshot, listOpportunitySignups, listAttendanceClaims, listTrainingSignups, listNotifications, refreshOpportunitySignups, refreshAttendanceClaims, refreshTrainingSignups, refreshAdminQueue, fetchNotifications, createNotification, updateNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications, refreshAdminTaskNotifications, createOpportunitySignup, cancelOpportunitySignup, createTrainingSignup, cancelTrainingSignup, validateAttendanceCode, recordAttendancePunch, reviewOpportunitySignup, reviewAttendanceClaim, reviewTrainingSignup, notifyOpportunityStatusChange, notifyAttendanceReview, notifyTrainingCompletion, notifyReferralAccepted, notifyPointsAwarded, notifyAchievementUnlocked, adminQueueCounts, countByStatus });
+  window.MENDAKIDataAccess = Object.freeze({ canonicalTables, deprecatedTables, mappers, snapshot, listOpportunitySignups, listAttendanceClaims, listTrainingSignups, listTrainingSessions, listNotifications, refreshOpportunitySignups, refreshAttendanceClaims, refreshTrainingSignups, refreshTrainingSessions, refreshAdminQueue, fetchAdminTrainingSessions, saveAdminTrainingSession, deleteAdminTrainingSession, fetchNotifications, createNotification, updateNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications, refreshAdminTaskNotifications, createOpportunitySignup, cancelOpportunitySignup, createTrainingSignup, cancelTrainingSignup, validateAttendanceCode, recordAttendancePunch, reviewOpportunitySignup, reviewAttendanceClaim, reviewTrainingSignup, notifyOpportunityStatusChange, notifyAttendanceReview, notifyTrainingCompletion, notifyReferralAccepted, notifyPointsAwarded, notifyAchievementUnlocked, adminQueueCounts, countByStatus });
 })();
