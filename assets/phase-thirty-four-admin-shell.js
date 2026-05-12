@@ -29,7 +29,7 @@
     reports: ['Reports', 'Run admin reports and export CSV files.'],
     audit: ['Audit', 'Inspect audit history and operational changes.'],
     notifications: ['Notifications', 'Review notifications, preferences, and history.'],
-    system: ['System / QA', 'Run smoke checks and review production-readiness tools.']
+    system: ['System / QA', 'Run smoke checks and review readiness tools.']
   };
 
   const state34 = { activeArea: 'home', open: false };
@@ -80,7 +80,7 @@
         <div>
           <p class="eyebrow dark">Admin</p>
           <h2>Admin workspace</h2>
-          <p class="dashboard-muted">Open the single admin interface. Legacy dashboard cards are no longer mounted into this shell.</p>
+          <p class="dashboard-muted">Open the admin interface to manage queues, content, reporting, and operations.</p>
         </div>
         <button class="button button-primary" type="button" data-phase34-open-admin>Open admin workspace</button>
       </div>
@@ -114,8 +114,8 @@
       <header class="phase34-admin-header">
         <div>
           <p class="eyebrow dark">Admin workspace</p>
-          <h2>Single admin interface</h2>
-          <p class="dashboard-muted">Canonical admin pages now own the workflows. Hidden legacy cards are not moved into this shell.</p>
+          <h2>Admin interface</h2>
+          <p class="dashboard-muted">Use the focused admin pages below to manage operational workflows.</p>
         </div>
         <button class="button dashboard-secondary" type="button" data-phase34-close-admin>Back to dashboard</button>
       </header>
@@ -174,12 +174,12 @@
         <button class="phase34-admin-home-card" type="button" data-phase34-area="attendance"><strong>${counts.attendanceQueue || 0}</strong><span>Attendance items</span></button>
         <button class="phase34-admin-home-card" type="button" data-phase34-area="training"><strong>${counts.trainingQueue || 0}</strong><span>Training queue</span></button>
       </div>
-      <div class="phase34-empty">Use the left navigation to open a focused admin workflow. Legacy fallback tools have been retired from this shell.</div>
+      <div class="phase34-empty">Use the left navigation to open a focused admin workflow.</div>
     `;
   }
 
   function retiredLegacyMarkup(host) {
-    host.insertAdjacentHTML('beforeend', '<div class="phase34-empty">Legacy fallback tools are retired from this admin shell. Use the canonical tools on this page.</div>');
+    host.insertAdjacentHTML('beforeend', '<div class="phase34-empty">This area is available from the focused admin pages.</div>');
   }
 
   function refreshAdminAreaData(area, options = {}) {
