@@ -3,11 +3,9 @@
   window.__phaseThirtyEightDrawerReviewActionsInstalled = true;
 
   function store() { return window.VolunteerDataStore; }
+  function dataAccess() { return window.MENDAKIDataAccess; }
   function client() { return store()?.authState?.supabase || null; }
-  function session() { return store()?.getSession?.() || store()?.$?.session?.() || {}; }
   function isAdmin() { return Boolean(store()?.isAdmin?.()); }
-  function byId(items, id) { return (items || []).find(item => String(item.id) === String(id)); }
-  function now() { return new Date().toISOString(); }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
 
   function button(action, label, primary = false) {
@@ -59,7 +57,7 @@
   }
 
   function renderTraining(record) {
-    if (record?.__type !== 'Training sign-up') return '<span class="dashboard-muted">Use existing tools to edit training session details.</span>';
+    if (record?.__type !== 'Training sign-up') return '<span class="dashboard-muted">Use training session tools to edit programme/session details.</span>';
     const current = String(record?.status || '');
     return [
       fieldBlock(record),
@@ -88,7 +86,7 @@
     if (record?.__type === 'Training sign-up' || record?.__type === 'Training programme/session') return renderTraining(record);
     if (record?.__type === 'Referral') return renderReferral(record);
     if (record?.__type === 'Points ledger entry') return '<span class="dashboard-muted">Points adjustment is policy-gated and remains read-only in this phase.</span>';
-    return '<span class="dashboard-muted">No drawer review actions for this record type yet.</span>';
+    return '<span class="dashboard-muted">No review actions for this record type.</span>';
   }
 
   function drawer() { return document.querySelector('.phase36-drawer'); }
@@ -122,68 +120,49 @@
     return false;
   }
 
-  async function refresh(message = 'Review action saved.') {
-    if (typeof store()?.fetchSupabaseOpportunitySignups === 'function') await store().fetchSupabaseOpportunitySignups();
-    if (typeof store()?.fetchSupabaseAttendanceClaims === 'function') await store().fetchSupabaseAttendanceClaims();
-    if (typeof store()?.fetchSupabaseTrainingSignups === 'function') await store().fetchSupabaseTrainingSignups();
-    if (typeof window.MENDAKIReferrals?.sync === 'function') await window.MENDAKIReferrals.sync();
-    if (typeof window.MENDAKIGamification?.sync === 'function') await window.MENDAKIGamification.sync({ award: false });
-    if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
+  function signupResultMessage(requestedStatus, result) {
+    const finalStatus = result?.signup?.status || requestedStatus;
+    if (requestedStatus === 'confirmed' && finalStatus === 'waitlisted') return 'The sign-up could not be confirmed because the session is full. It was moved to the waitlist automatically.';
+    if (requestedStatus === 'confirmed' && finalStatus === 'declined') return 'The sign-up could not be confirmed because the session is full and waitlist is disabled. It was declined automatically.';
+    if (requestedStatus !== finalStatus) return `Requested ${requestedStatus}, but the final status is ${finalStatus}.`;
+    return `Sign-up updated to ${finalStatus}.`;
+  }
+
+  async function refreshAfterReview(message = 'Review action saved.') {
     showNotice(message);
     window.setTimeout(() => {
       window.MENDAKIPhase36AdminTables?.closeDrawer?.();
       window.MENDAKIPhase34AdminShell?.mountArea?.();
-    }, 450);
+    }, 700);
   }
 
   async function updateSignup(record, status) {
-    const signup = byId(store()?.getOpportunitySignups?.(), record.__id);
-    if (!signup || typeof store()?.reviewSupabaseSignupWithCapacity !== 'function') throw new Error('Sign-up review is unavailable.');
     if (!window.confirm(`Set sign-up status to ${status}?`)) return;
-    const next = { ...signup, status, adminNotes: notesValue() || signup.adminNotes || '', reviewedAt: now(), reviewedBy: session().email || 'admin', updatedAt: now() };
-    const result = await store().reviewSupabaseSignupWithCapacity(next, signup.status || '');
+    const result = await dataAccess().reviewOpportunitySignup(record.__id, status, { adminNotes: notesValue() });
     if (!result?.ok) throw new Error(result?.reason || 'Sign-up review failed.');
-    await refresh(`Sign-up updated to ${status}.`);
+    await refreshAfterReview(signupResultMessage(status, result));
   }
 
   async function updateAttendance(record, status) {
-    const claim = byId(store()?.getAttendanceClaims?.(), record.__id);
-    if (!claim || typeof store()?.saveSupabaseAttendanceClaim !== 'function') throw new Error('Attendance review is unavailable.');
     if (!requireClarificationMessage(status)) return;
     if (!window.confirm(`Set attendance status to ${status}?`)) return;
-    const fallbackHours = status === 'verified' ? Number(claim.verifiedHours || claim.claimedHours || record.hours || 0) : Number(claim.verifiedHours || 0);
-    const verifiedHours = status === 'verified' || status === 'adjusted' ? verifiedHoursValue(fallbackHours) : fallbackHours;
-    const next = {
-      ...claim,
-      claimStatus: status,
-      verifiedHours,
-      adminNotes: notesValue() || claim.adminNotes || '',
-      reviewedBy: session().email || 'admin',
-      reviewedAt: now(),
-      updatedAt: now()
-    };
-    const result = await store().saveSupabaseAttendanceClaim(next, { mode: 'update', review: true });
-    if (!result?.ok && !result?.transactional) throw new Error(result?.reason || 'Attendance review failed.');
-    await refresh(status === 'clarification_requested' ? 'Clarification request sent to volunteer.' : `Attendance claim updated to ${status}.`);
+    const raw = record.raw || {};
+    const fallbackHours = status === 'verified' || status === 'adjusted'
+      ? Number(raw.verifiedHours || raw.verified_hours || raw.claimedHours || raw.claimed_hours || record.hours || 0)
+      : 0;
+    const result = await dataAccess().reviewAttendanceClaim(record.__id, status, {
+      verifiedHours: status === 'verified' || status === 'adjusted' ? verifiedHoursValue(fallbackHours) : 0,
+      adminNotes: notesValue()
+    });
+    if (!result?.ok) throw new Error(result?.reason || 'Attendance review failed.');
+    await refreshAfterReview(status === 'clarification_requested' ? 'Clarification request sent to volunteer.' : `Attendance claim updated to ${status}.`);
   }
 
   async function updateTraining(record, status) {
-    const signup = byId(store()?.getTrainingSignups?.(), record.__id);
-    if (!signup || typeof store()?.saveSupabaseTrainingSignup !== 'function') throw new Error('Training review is unavailable.');
     if (!window.confirm(`Set training sign-up status to ${status}?`)) return;
-    const next = {
-      ...signup,
-      status,
-      adminNotes: notesValue() || signup.adminNotes || '',
-      completedAt: status === 'completed' ? (signup.completedAt || now()) : signup.completedAt || '',
-      cancelledAt: status === 'cancelled' ? (signup.cancelledAt || now()) : signup.cancelledAt || '',
-      reviewedBy: session().email || 'admin',
-      reviewedAt: now(),
-      updatedAt: now()
-    };
-    const result = await store().saveSupabaseTrainingSignup(next, { mode: 'update', lifecycleReview: true, previousStatus: signup.status || '' });
+    const result = await dataAccess().reviewTrainingSignup(record.__id, status, { adminNotes: notesValue() });
     if (!result?.ok) throw new Error(result?.reason || 'Training review failed.');
-    await refresh(`Training sign-up updated to ${status}.`);
+    await refreshAfterReview(`Training sign-up updated to ${result.signup?.status || status}.`);
   }
 
   async function updateReferral(record, status) {
@@ -196,7 +175,9 @@
     });
     if (error) throw error;
     if (!data?.ok) throw new Error(data?.reason || 'Referral review failed.');
-    await refresh(`Referral updated to ${status}.`);
+    if (typeof window.MENDAKIReferrals?.sync === 'function') await window.MENDAKIReferrals.sync();
+    if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
+    await refreshAfterReview(`Referral updated to ${status}.`);
   }
 
   async function handleAction(action) {
