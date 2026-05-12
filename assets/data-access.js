@@ -119,7 +119,7 @@
     if (!client()) throw new Error('Supabase is not configured.');
   }
 
-  function signupFromRpcRow(row, fallback = {}) {
+  function opportunitySignupFromRow(row, fallback = {}) {
     if (!row) return null;
     return {
       id: row.id,
@@ -149,7 +149,7 @@
     };
   }
 
-  function trainingSignupFromRpcRow(row, fallback = {}) {
+  function trainingSignupFromRow(row, fallback = {}) {
     if (!row) return null;
     return {
       id: row.id,
@@ -175,6 +175,43 @@
     };
   }
 
+  function attendanceClaimFromRow(row, fallback = {}) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      signupId: row.signup_id || fallback.signupId || '',
+      opportunityId: String(row.opportunity_id || fallback.opportunityId || ''),
+      sessionId: row.session_id || fallback.sessionId || '',
+      email: row.email || fallback.email || '',
+      volunteerName: row.volunteer_name || fallback.volunteerName || 'Volunteer',
+      title: row.title || fallback.title || '',
+      claimStatus: row.claim_status || fallback.claimStatus || 'pending_submission',
+      checkInAt: row.check_in_at || fallback.checkInAt || '',
+      checkInCode: row.check_in_code || fallback.checkInCode || '',
+      checkOutAt: row.check_out_at || fallback.checkOutAt || '',
+      checkOutCode: row.check_out_code || fallback.checkOutCode || '',
+      claimedStatus: row.claimed_status || fallback.claimedStatus || '',
+      claimedStart: row.claimed_start || fallback.claimedStart || '',
+      claimedEnd: row.claimed_end || fallback.claimedEnd || '',
+      claimedHours: Number(row.claimed_hours ?? fallback.claimedHours ?? 0),
+      verifiedHours: Number(row.verified_hours ?? fallback.verifiedHours ?? 0),
+      submittedAt: row.submitted_at || fallback.submittedAt || '',
+      reviewedBy: row.reviewed_by_email || fallback.reviewedBy || '',
+      reviewedAt: row.reviewed_at || fallback.reviewedAt || '',
+      adminNotes: row.admin_notes || fallback.adminNotes || '',
+      clarificationResponse: row.clarification_response || fallback.clarificationResponse || '',
+      clarificationRespondedAt: row.clarification_responded_at || fallback.clarificationRespondedAt || '',
+      createdAt: row.created_at || fallback.createdAt || '',
+      updatedAt: row.updated_at || fallback.updatedAt || ''
+    };
+  }
+
+  const mappers = Object.freeze({
+    opportunitySignupFromRow,
+    trainingSignupFromRow,
+    attendanceClaimFromRow
+  });
+
   function upsertLocal(listReader, listWriter, eventName, item) {
     if (!item?.id) return;
     const next = asArray(listReader()).slice();
@@ -196,7 +233,7 @@
         p_admin_notes: options.adminNotes || signup.adminNotes || null
       });
       if (error) throw error;
-      const saved = signupFromRpcRow(data, signup);
+      const saved = opportunitySignupFromRow(data, signup);
       if (saved) upsertLocal(listOpportunitySignups, store().saveOpportunitySignups, 'volunteer-signups-synced', saved);
       await refreshOpportunitySignups();
       await store()?.fetchNotifications?.();
@@ -245,7 +282,7 @@
         p_admin_notes: options.adminNotes || signup.adminNotes || null
       });
       if (error) throw error;
-      const saved = trainingSignupFromRpcRow(data, signup);
+      const saved = trainingSignupFromRow(data, signup);
       if (saved) upsertLocal(listTrainingSignups, store().saveTrainingSignups, 'volunteer-training-signups-synced', saved);
       if (saved?.status === 'completed') await store()?.notifyTrainingCompletion?.(saved);
       await refreshTrainingSignups();
@@ -283,6 +320,7 @@
   window.MENDAKIDataAccess = Object.freeze({
     canonicalTables,
     deprecatedTables,
+    mappers,
     snapshot,
     listOpportunitySignups,
     listAttendanceClaims,
