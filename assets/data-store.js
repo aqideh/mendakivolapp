@@ -68,9 +68,8 @@ const VolunteerDataStore = (() => {
     return normalized ? `${keys.profilePrefix}${encodeURIComponent(normalized)}.v1` : keys.profile;
   }
 
-  function roleForEmail(email) {
-    const normalized = normaliseEmail(email);
-    return normalized.startsWith('admin@') || normalized.includes('+admin@') ? 'admin' : 'volunteer';
+  function roleForEmail() {
+    return 'volunteer';
   }
 
   function clearAuthState() {
@@ -172,6 +171,7 @@ const VolunteerDataStore = (() => {
     authState.supabase = createSupabaseClient();
     authState.usingSupabase = Boolean(authState.supabase);
     if (!authState.supabase) {
+      normaliseSessionRole();
       authState.ready = true;
       return { usingSupabase: false };
     }
@@ -288,16 +288,15 @@ const VolunteerDataStore = (() => {
   function isAdmin() {
     const session = getSession() || {};
     const role = String(session.role || '').toLowerCase();
-    return role === 'admin' || role === 'super_admin' || (!authState.usingSupabase && roleForEmail(currentEmail()) === 'admin');
+    return authState.usingSupabase && (role === 'admin' || role === 'super_admin');
   }
 
   function normaliseSessionRole() {
     const session = getSession();
     if (!session?.email) return session;
     if (authState.usingSupabase) return session;
-    const nextRole = roleForEmail(session.email);
-    if (session.role === nextRole) return session;
-    return saveSession({ ...session, role: nextRole });
+    if (session.role === 'volunteer') return session;
+    return saveSession({ ...session, role: 'volunteer' });
   }
 
   function escapeHtml(value) {
