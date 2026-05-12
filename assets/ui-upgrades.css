@@ -179,6 +179,11 @@ body.dark-mode .auth-modal {
   background: var(--ui-yellow-soft);
 }
 
+#page-opportunities > .ui-inline-alert {
+  width: min(var(--container), calc(100% - 2rem));
+  margin: 1rem auto;
+}
+
 .ui-inline-alert button { white-space: nowrap; }
 
 .ui-next-meta {
@@ -395,4 +400,5 @@ body.dark-mode .profile-stats-merged {
   .ui-mobile-back { display: inline-flex; }
   .page:not(#page-home).active .page-topper { padding-top: 3.2rem; }
   .ui-inline-alert { align-items: flex-start; flex-direction: column; }
+  #page-opportunities > .ui-inline-alert { width: min(100% - 1.1rem, var(--container)); }
 }
