@@ -24,7 +24,7 @@
   function client() { return store().authState.supabase; }
   function appData() { return window.state.data; }
   function escapeHtml(value) { return store().utils.escapeHtml(value); }
-  function mountArea() { window.MENDAKIPhase34AdminShell.mountArea(); }
+  function mountArea() { window.MENDAKIAdminWorkspace.mountArea(); }
   function adminTables() { return window.MENDAKIAdminTables; }
 
   function fmt(value) {
