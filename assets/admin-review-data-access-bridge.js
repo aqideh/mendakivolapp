@@ -49,6 +49,20 @@
     return false;
   }
 
+  function signupResultMessage(requestedStatus, result) {
+    const finalStatus = result?.signup?.status || requestedStatus;
+    if (requestedStatus === 'confirmed' && finalStatus === 'waitlisted') {
+      return 'The sign-up could not be confirmed because the session is full. It was moved to the waitlist automatically.';
+    }
+    if (requestedStatus === 'confirmed' && finalStatus === 'declined') {
+      return 'The sign-up could not be confirmed because the session is full and waitlist is disabled. It was declined automatically.';
+    }
+    if (requestedStatus !== finalStatus) {
+      return `Requested ${requestedStatus}, but the final status is ${finalStatus}.`;
+    }
+    return `Sign-up updated to ${finalStatus}.`;
+  }
+
   async function refreshQueues(message) {
     if (typeof dataAccess()?.refreshOpportunitySignups === 'function') await dataAccess().refreshOpportunitySignups({ adminOnly: true });
     else if (typeof store()?.fetchSupabaseOpportunitySignups === 'function') await store().fetchSupabaseOpportunitySignups();
@@ -61,7 +75,7 @@
     window.setTimeout(() => {
       window.MENDAKIPhase36AdminTables?.closeDrawer?.();
       window.MENDAKIPhase34AdminShell?.mountArea?.();
-    }, 450);
+    }, 900);
   }
 
   async function reviewSignup(record, status) {
@@ -69,7 +83,7 @@
     if (!window.confirm(`Set sign-up status to ${status}?`)) return true;
     const result = await dataAccess().reviewOpportunitySignup(record.__id, status, { adminNotes: notesValue() });
     if (!result?.ok) throw new Error(result?.reason || 'Sign-up review failed.');
-    await refreshQueues(`Sign-up updated to ${status}.`);
+    await refreshQueues(signupResultMessage(status, result));
     return true;
   }
 
