@@ -4,11 +4,11 @@
   let lastError = '';
 
   const qs = (selector, root = document) => root.querySelector(selector);
-  const escapeHtml = value => window.VolunteerDataStore?.utils?.escapeHtml?.(value) || String(value ?? '');
+  const escapeHtml = value => window.VolunteerDataStore.utils.escapeHtml(value);
 
   function store() { return window.VolunteerDataStore; }
-  function isAdmin() { return Boolean(store()?.isAdmin?.()); }
-  function signedIn() { return Boolean(store()?.getSession?.()?.email); }
+  function isAdmin() { return store().isAdmin(); }
+  function signedIn() { return Boolean(store().getSession()?.email); }
 
   function formatDate(value) {
     if (!value) return 'Not scheduled';
@@ -45,7 +45,7 @@
         <div class="phase36-table-head">
           <div>
             <h4>Session attendance validation</h4>
-            <p class="dashboard-muted">Session-specific facilitator codes are preferred for attendance check-in/out.</p>
+            <p class="dashboard-muted">Session-specific facilitator codes are required for reliable attendance check-in and check-out.</p>
           </div>
           <button class="text-button" type="button" data-session-code-warning-refresh>${loading ? 'Loading...' : 'Refresh'}</button>
         </div>
@@ -54,7 +54,7 @@
           <div class="dashboard-stat"><strong>${escapeHtml(warnings.length)}</strong><span>Open sessions checked</span></div>
           <div class="dashboard-stat"><strong>${escapeHtml(missing.length)}</strong><span>Missing session code</span></div>
         </div>
-        <p class="dashboard-muted">Sessions without a facilitator code may fall back to the opportunity-level code only when fallback is allowed.</p>
+        <p class="dashboard-muted">Set a facilitator code for each open session before volunteers check in.</p>
         <div class="admin-content-list page-list">
           ${missing.length ? missing.map(renderWarning).join('') : '<div class="admin-content-item"><span>All loaded open sessions have session facilitator codes.</span></div>'}
         </div>
@@ -84,7 +84,7 @@
     lastError = '';
     if (options.render !== false) render();
     try {
-      warnings = await store()?.fetchSessionCodeWarnings?.() || [];
+      warnings = await store().fetchSessionCodeWarnings();
     } catch (error) {
       lastError = error.message || 'Could not load session code warnings.';
       warnings = [];
@@ -103,12 +103,7 @@
     }, true);
   }
 
-  window.MENDAKISessionAttendanceValidation = {
-    sync,
-    render,
-    renderInto,
-    getWarnings: () => warnings.slice()
-  };
+  window.MENDAKISessionAttendanceValidation = { sync, render, renderInto, getWarnings: () => warnings.slice() };
 
   document.addEventListener('DOMContentLoaded', () => {
     bind();
