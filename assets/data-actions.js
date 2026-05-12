@@ -71,13 +71,45 @@
     refreshAll();
   }
 
+  async function punchAttendance(button) {
+    const signupId = button.dataset.attendancePunch;
+    const action = button.dataset.attendanceAction || 'checkin';
+    const code = window.prompt(`Enter the 4-digit facilitator code to ${action === 'checkout' ? 'check out' : 'check in'}.`);
+    if (code === null) return;
+    setBusy(button, true, action === 'checkout' ? 'Checking out...' : 'Checking in...');
+    const result = await dataAccess().recordAttendancePunch(signupId, action, code);
+    setBusy(button, false);
+    if (!result.ok) return window.alert(result.reason || 'Could not save attendance.');
+    refreshAll();
+  }
+
+  async function reviewAttendance(form, submitter) {
+    if (!store().isAdmin()) return;
+    const claimId = form.dataset.attendanceReview;
+    const claim = store().getAttendanceClaims().find(item => item.id === claimId);
+    if (!claim || !claimId) return;
+    const formData = new FormData(form);
+    const enteredHours = Number(formData.get('verifiedHours') || claim.claimedHours || 0);
+    const systemHours = Number(form.querySelector('input[name="verifiedHours"]').dataset.systemHours || claim.claimedHours || 0);
+    const status = submitter.value === 'reject' ? 'rejected' : submitter.value === 'clarify' ? 'clarification_requested' : enteredHours !== systemHours ? 'adjusted' : 'verified';
+    setBusy(submitter, true, 'Saving...');
+    const result = await dataAccess().reviewAttendanceClaim(claimId, status, {
+      verifiedHours: enteredHours,
+      adminNotes: String(formData.get('adminNotes') || '').trim() || null
+    });
+    setBusy(submitter, false);
+    if (!result.ok) return window.alert(`Could not review attendance: ${result.reason || 'Unknown error'}`);
+    refreshAll();
+  }
+
   document.addEventListener('click', event => {
     if (!ready()) return;
     const opportunityCancel = event.target.closest('[data-cancel-signup]');
     const trainingSignup = event.target.closest('[data-signup-training]');
     const trainingCancel = event.target.closest('[data-cancel-training]');
     const trainingReview = event.target.closest('[data-training-status], [data-complete-training]');
-    const target = opportunityCancel || trainingSignup || trainingCancel || trainingReview;
+    const attendancePunch = event.target.closest('[data-attendance-punch]');
+    const target = opportunityCancel || trainingSignup || trainingCancel || trainingReview || attendancePunch;
     if (!target) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -85,6 +117,16 @@
     else if (trainingSignup) signupTraining(trainingSignup);
     else if (trainingCancel) cancelTraining(trainingCancel);
     else if (trainingReview) reviewTraining(trainingReview);
+    else if (attendancePunch) punchAttendance(attendancePunch);
+  }, true);
+
+  document.addEventListener('submit', event => {
+    if (!ready()) return;
+    const form = event.target.closest('[data-attendance-review]');
+    if (!form) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    reviewAttendance(form, event.submitter);
   }, true);
 
   window.MENDAKIDataActions = Object.freeze({ refreshAll });
