@@ -6,6 +6,8 @@
   function dataAccess() { return window.MENDAKIDataAccess; }
   function adminTables() { return window.MENDAKIAdminTables; }
   function adminTools() { return window.MENDAKIAdminTools; }
+  function adminUX() { return window.MENDAKIAdminUX; }
+  function adminQA() { return window.MENDAKIAdminQA; }
   function escapeHtml(value) { return store().utils.escapeHtml(value); }
   function appData() { return window.state.data; }
   function opportunities() { return appData().opportunities || []; }
@@ -33,6 +35,24 @@
     return true;
   }
 
+  function renderTraining(host) {
+    host.innerHTML = '<div class="phase35-page" data-admin-training-workspace><div data-admin-training-tool-host></div><div data-admin-training-manager-host></div></div>';
+    const toolHost = host.querySelector('[data-admin-training-tool-host]');
+    const managerHost = host.querySelector('[data-admin-training-manager-host]');
+    adminTools().render('training', toolHost);
+    adminUX().renderTrainingManagerInto(managerHost);
+    return true;
+  }
+
+  function renderSystem(host) {
+    host.innerHTML = '<div class="phase35-page" data-admin-system-workspace><div data-admin-system-tool-host></div><div data-admin-qa-host></div></div>';
+    const toolHost = host.querySelector('[data-admin-system-tool-host]');
+    const qaHost = host.querySelector('[data-admin-qa-host]');
+    adminTools().render('system', toolHost);
+    adminQA().renderInto(qaHost);
+    return true;
+  }
+
   function renderTable(area, host) {
     return adminTables().render(area, host);
   }
@@ -47,13 +67,13 @@
     opportunities: renderOpportunities,
     signups: host => renderTable('signups', host),
     attendance: host => renderTable('attendance', host),
-    training: host => renderTool('training', host),
+    training: renderTraining,
     referrals: host => renderTable('referrals', host),
     points: host => renderTool('points', host),
     reports: host => renderTool('reports', host),
     audit: host => renderTool('audit', host),
     notifications: host => renderTool('notifications', host),
-    system: host => renderTool('system', host)
+    system: renderSystem
   };
 
   function render(area, host) {
