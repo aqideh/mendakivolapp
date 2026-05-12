@@ -186,6 +186,26 @@ body.dark-mode .auth-modal {
 
 .ui-inline-alert button { white-space: nowrap; }
 
+.opp-photo {
+  width: calc(100% + 2.2rem);
+  height: 150px;
+  object-fit: cover;
+  margin: -1.1rem -1.1rem 1rem;
+  border-radius: 17px 17px 0 0;
+  background: var(--ui-card-soft);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.modal-photo {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 18px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-card);
+}
+
 .ui-next-meta {
   display: inline-flex;
   align-items: center;
