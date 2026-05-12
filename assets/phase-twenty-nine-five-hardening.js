@@ -1,6 +1,6 @@
 (() => {
-  if (window.__mendakiPrimaryDataActionsInstalled) return;
-  window.__mendakiPrimaryDataActionsInstalled = true;
+  if (window.__mendakiDataActionsInstalled) return;
+  window.__mendakiDataActionsInstalled = true;
 
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
