@@ -37,11 +37,10 @@
 
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
-  function pages() { return window.MENDAKIPhase35CanonicalAdminPages; }
+  function pages() { return window.MENDAKIAdminPages; }
   function isAdmin() { return store().isAdmin(); }
   function layout() { return document.querySelector('.dashboard-layout'); }
   function escapeHtml(value) { return store().utils.escapeHtml(value); }
-
   function adminCounts() { return dataAccess().adminQueueCounts(); }
 
   function ensureEntry() {
@@ -75,8 +74,7 @@
     shell.dataset.dashboardCardRole = 'admin';
     shell.hidden = !workspaceState.open;
     shell.innerHTML = shellMarkup();
-    const entry = ensureEntry();
-    entry.insertAdjacentElement('afterend', shell);
+    ensureEntry().insertAdjacentElement('afterend', shell);
     return shell;
   }
 
@@ -87,24 +85,7 @@
 
   function hideOwnedAdminCards() {
     document.querySelectorAll([
-      '[data-admin-content-card]',
-      '.admin-attendance-card',
-      '.admin-training-card',
-      '[data-reports-card]',
-      '[data-audit-history-card]',
-      '.audit-history-card',
-      '[data-admin-referrals-card]',
-      '.admin-referrals-card',
-      '[data-admin-points-card]',
-      '.admin-points-card',
-      '[data-notification-history-card]',
-      '.notification-history-card',
-      '[data-notification-settings-card]',
-      '[data-phase32-qa-card]',
-      '[data-signup-dashboard-card="admin"]',
-      '.admin-signup-card',
-      '[data-phase31-training-manager]',
-      '[data-phase31-admin-hub]'
+      '[data-admin-content-card]', '.admin-attendance-card', '.admin-training-card', '[data-reports-card]', '[data-audit-history-card]', '.audit-history-card', '[data-admin-referrals-card]', '.admin-referrals-card', '[data-admin-points-card]', '.admin-points-card', '[data-notification-history-card]', '.notification-history-card', '[data-notification-settings-card]', '[data-phase32-qa-card]', '[data-signup-dashboard-card="admin"]', '.admin-signup-card', '[data-phase31-training-manager]', '[data-phase31-admin-hub]'
     ].join(',')).forEach(card => {
       if (card.dataset.adminWorkspaceEntry === 'true' || card.dataset.adminWorkspaceShell === 'true') return;
       card.dataset.adminOwned = 'true';
@@ -133,9 +114,7 @@
     }).catch(error => {
       refreshState.errors.set(area, error.message || `Could not refresh ${area} data.`);
       console.warn(`Could not refresh ${area} admin data`, error);
-    }).finally(() => {
-      refreshState.active.delete(area);
-    });
+    }).finally(() => refreshState.active.delete(area));
   }
 
   function mountArea() {
@@ -149,7 +128,7 @@
       host.innerHTML = homeMarkup();
       return;
     }
-    const handled = pages().render(workspaceState.activeArea, host, { matchingCards: [], homeMarkup, openShell, escapeHtml });
+    const handled = pages().render(workspaceState.activeArea, host);
     if (!handled) host.innerHTML = '<div class="phase34-empty">This admin area is not configured yet.</div>';
   }
 
