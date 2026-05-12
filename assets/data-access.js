@@ -255,14 +255,23 @@
     };
   }
 
+  function loadScriptOnce(src, attributeName) {
+    if (document.querySelector(`script[${attributeName}]`)) return;
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = true;
+    script.setAttribute(attributeName, 'true');
+    document.head.appendChild(script);
+  }
+
+  function loadAuthRoleHardening() {
+    if (window.__authRoleHardeningInstalled) return;
+    loadScriptOnce('assets/auth-role-hardening.js', 'data-auth-role-hardening');
+  }
+
   function loadAdminReviewBridge() {
     if (window.__adminReviewDataAccessBridgeInstalled) return;
-    if (document.querySelector('script[data-admin-review-data-access-bridge]')) return;
-    const script = document.createElement('script');
-    script.src = 'assets/admin-review-data-access-bridge.js';
-    script.defer = true;
-    script.dataset.adminReviewDataAccessBridge = 'true';
-    document.head.appendChild(script);
+    loadScriptOnce('assets/admin-review-data-access-bridge.js', 'data-admin-review-data-access-bridge');
   }
 
   window.MENDAKIDataAccess = Object.freeze({
@@ -281,5 +290,6 @@
     countByStatus
   });
 
+  loadAuthRoleHardening();
   loadAdminReviewBridge();
 })();
