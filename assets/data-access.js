@@ -274,6 +274,11 @@
     loadScriptOnce('assets/admin-review-data-access-bridge.js', 'data-admin-review-data-access-bridge');
   }
 
+  function loadNotificationPanelPolish() {
+    if (window.__notificationPanelPolishInstalled) return;
+    loadScriptOnce('assets/notification-panel-polish.js', 'data-notification-panel-polish');
+  }
+
   window.MENDAKIDataAccess = Object.freeze({
     canonicalTables,
     deprecatedTables,
@@ -292,4 +297,5 @@
 
   loadAuthRoleHardening();
   loadAdminReviewBridge();
+  loadNotificationPanelPolish();
 })();
