@@ -3,6 +3,7 @@
   window.__attendanceClarificationFlowInstalled = true;
 
   function store() { return window.VolunteerDataStore; }
+  function client() { return store()?.authState?.supabase || null; }
   function escapeHtml(value) { return store()?.utils?.escapeHtml?.(value) || String(value ?? ''); }
   function currentEmail() { return store()?.currentEmail?.() || store()?.getSession?.()?.email || ''; }
   function claims() { return store()?.getAttendanceClaims?.() || []; }
@@ -108,6 +109,20 @@
     return true;
   }
 
+  async function notifyAdminsOfClarificationResponse(claim, response) {
+    const supabase = client();
+    if (!supabase || !claim?.id) return { ok: false, skipped: true };
+    const { data, error } = await supabase.rpc('notify_admins_attendance_clarification_response', {
+      p_claim_id: claim.id,
+      p_response: response || claim.clarificationResponse || ''
+    });
+    if (error) {
+      console.warn('Could not notify admins of attendance clarification response.', error);
+      return { ok: false, reason: error.message };
+    }
+    return data || { ok: true };
+  }
+
   async function submitClarification(form) {
     const claimId = form.dataset.attendanceClarificationResponse;
     const textarea = form.querySelector('textarea[name="clarificationResponse"]');
@@ -148,7 +163,9 @@
         const result = await store().saveSupabaseAttendanceClaim(next, { mode: 'update', clarificationResponse: true });
         if (!result?.ok) throw new Error(result?.reason || 'Could not save clarification.');
       }
+      await notifyAdminsOfClarificationResponse(next, response);
       if (typeof store()?.fetchSupabaseAttendanceClaims === 'function') await store().fetchSupabaseAttendanceClaims();
+      if (typeof store()?.fetchNotifications === 'function') await store().fetchNotifications();
       if (typeof window.phaseThreeRender === 'function') window.phaseThreeRender();
       window.alert('Your clarification was sent for admin review.');
     } catch (error) {
