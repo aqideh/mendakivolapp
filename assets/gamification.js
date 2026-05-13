@@ -97,6 +97,14 @@
     return Number(summary?.total_points || 0);
   }
 
+  function recentFeedItems(recent, achievements) {
+    const pointItems = recent.map(item => ({ type: 'points', date: item.created_at || '', item }));
+    const achievementItems = achievements.map(item => ({ type: 'achievement', date: item.awarded_at || '', item }));
+    return pointItems.concat(achievementItems)
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      .slice(0, 10);
+  }
+
   function renderVolunteerCardBody() {
     if (!signedIn()) {
       return `
@@ -114,6 +122,7 @@
     const next = summary?.next_achievement && summary.next_achievement !== null ? summary.next_achievement : null;
     const recent = Array.isArray(summary?.recent_ledger) ? summary.recent_ledger : [];
     const achievements = Array.isArray(summary?.achievements) ? summary.achievements : [];
+    const feed = recentFeedItems(recent, achievements);
     const nextCopy = next?.points_required
       ? `${Math.max(Number(next.points_required) - totalPoints(), 0)} points to ${next.title}`
       : 'All current point milestones reached.';
@@ -136,8 +145,8 @@
         ${achievements.length ? achievements.map(renderAchievementChip).join('') : '<span class="milestone-chip muted">No achievements yet</span>'}
       </div>
       <div class="points-ledger-list">
-        <h3>Recent points</h3>
-        ${recent.length ? recent.map(renderLedgerItem).join('') : '<p class="dashboard-muted">No point activity yet.</p>'}
+        <h3>Recent points and achievements</h3>
+        ${feed.length ? feed.map(renderFeedItem).join('') : '<p class="dashboard-muted">No point activity yet.</p>'}
       </div>
     `;
   }
@@ -146,10 +155,30 @@
     return `<span class="milestone-chip">${escapeHtml(item.badge_label || item.title)}${item.awarded_at ? ` · ${escapeHtml(formatDate(item.awarded_at))}` : ''}</span>`;
   }
 
+  function renderFeedItem(feedItem) {
+    return feedItem.type === 'achievement'
+      ? renderAchievementFeedItem(feedItem.item)
+      : renderLedgerItem(feedItem.item);
+  }
+
+  function renderAchievementFeedItem(item) {
+    const meta = `Achievement unlocked${item.awarded_at ? ` · ${formatDate(item.awarded_at)}` : ''}`;
+    return `
+      <div class="admin-content-item points-feed-item achievement">
+        <span class="points-feed-icon" aria-hidden="true">🏆</span>
+        <span>
+          <strong>${escapeHtml(item.title || item.badge_label || 'Achievement unlocked')}</strong>
+          <span>${escapeHtml(meta)}</span>
+        </span>
+      </div>
+    `;
+  }
+
   function renderLedgerItem(item) {
     const meta = `${reasonLabel(item.reason)}${item.created_at ? ` · ${formatDate(item.created_at)}` : ''}`;
     return `
-      <div class="admin-content-item">
+      <div class="admin-content-item points-feed-item points">
+        <span class="points-feed-icon" aria-hidden="true">+${escapeHtml(item.points || 0)}</span>
         <span>
           <strong>${Number(item.points || 0) > 0 ? '+' : ''}${escapeHtml(item.points || 0)} points</strong>
           <span>${escapeHtml(meta)}</span>
