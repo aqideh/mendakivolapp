@@ -66,6 +66,13 @@ function dashboardMetric(selector, fallback = '0') {
   return document.querySelector(selector)?.textContent?.trim() || fallback;
 }
 
+function dashboardTrainingMetric() {
+  const count = window.VolunteerDataStore?.getTrainingSignups?.()
+    ?.filter(item => item.email === window.VolunteerDataStore?.currentEmail?.() && !['cancelled', 'declined', 'no_show'].includes(item.status))
+    ?.length || 0;
+  return count ? `${count} training sign-up${count === 1 ? '' : 's'}` : 'Sign-ups and completion status';
+}
+
 function dashboardTile(view, icon, title, copy) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -114,7 +121,7 @@ function dashboardRenderHomeTiles() {
 
   const tiles = [
     dashboardTile('opportunities', '🤝', 'My volunteering opportunities', `${upcoming} upcoming · ${completed} completed`),
-    dashboardTile('training', '🎓', 'My training', 'Sign-ups and completion status'),
+    dashboardTile('training', '🎓', 'My training', dashboardTrainingMetric()),
     dashboardTile('attendance', '🕒', 'My attendance', `${hours} verified hours logged`),
     dashboardTile('settings', '⚙️', 'Settings', 'Profile, availability, and account actions')
   ];
@@ -148,6 +155,10 @@ function dashboardBuildModuleShell() {
   return shell;
 }
 
+function dashboardRefreshTrainingSections() {
+  if (typeof window.phaseFourRender === 'function') window.phaseFourRender();
+}
+
 function dashboardSetView(view = 'home') {
   const nextView = dashboardViews[view] ? view : 'home';
   if (nextView === 'admin' && !dashboardIsAdmin()) return dashboardSetView('home');
@@ -158,6 +169,7 @@ function dashboardSetView(view = 'home') {
 
   layout.classList.add('dashboard-paged');
   layout.dataset.dashboardView = nextView;
+  dashboardRefreshTrainingSections();
   dashboardApplyCardRoles();
   dashboardRenderHomeTiles();
 
@@ -181,6 +193,7 @@ function dashboardInstall() {
   if (!layout) return;
 
   layout.classList.add('dashboard-paged');
+  dashboardRefreshTrainingSections();
   dashboardApplyCardRoles();
   dashboardBuildHome();
   dashboardBuildModuleShell();
@@ -205,6 +218,8 @@ function dashboardBind() {
   window.addEventListener('volunteer-auth-ready', dashboardInstall);
   window.addEventListener('volunteer-auth-changed', () => dashboardSetView('home'));
   window.addEventListener('volunteer-signups-synced', dashboardInstall);
+  window.addEventListener('volunteer-training-signups-synced', dashboardInstall);
+  window.addEventListener('volunteer-training-sessions-synced', dashboardInstall);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
