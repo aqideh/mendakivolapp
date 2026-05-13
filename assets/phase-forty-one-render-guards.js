@@ -2,6 +2,8 @@
   if (window.__phaseFortyOneRenderGuardsInstalled) return;
   window.__phaseFortyOneRenderGuardsInstalled = true;
 
+  const pendingWraps = new Map();
+
   function appState() {
     try { return typeof state !== 'undefined' ? state : null; }
     catch (_) { return null; }
@@ -31,7 +33,12 @@
 
   function wrap(name, fallback) {
     const original = window[name];
-    if (typeof original !== 'function' || original.__phase41Guarded) return;
+    if (typeof original !== 'function') {
+      pendingWraps.set(name, fallback || null);
+      console.warn(`phase-forty-one-render-guards: ${name} is not available yet; will retry after dependent scripts load.`);
+      return false;
+    }
+    if (original.__phase41Guarded) return true;
     const guarded = function phaseFortyOneGuardedRender(...args) {
       if (!opportunitiesReady()) {
         fallback?.();
@@ -42,6 +49,8 @@
     guarded.__phase41Guarded = true;
     guarded.__phase41Original = original;
     window[name] = guarded;
+    pendingWraps.delete(name);
+    return true;
   }
 
   function install() {
@@ -49,7 +58,13 @@
     wrap('renderHomeOpportunities', null);
   }
 
+  function retryPendingWraps() {
+    if (!pendingWraps.size) return;
+    Array.from(pendingWraps.entries()).forEach(([name, fallback]) => wrap(name, fallback));
+  }
+
   install();
-  document.addEventListener('DOMContentLoaded', install);
-  window.addEventListener('volunteer-opportunities-synced', install);
+  document.addEventListener('DOMContentLoaded', retryPendingWraps);
+  window.addEventListener('load', retryPendingWraps);
+  window.addEventListener('volunteer-opportunities-synced', retryPendingWraps);
 })();
