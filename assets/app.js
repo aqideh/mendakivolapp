@@ -121,10 +121,6 @@ function make(tag, attrs = {}, children = []) {
   return node;
 }
 
-function truncate(text = '', length = 130) {
-  return text.length > length ? `${text.slice(0, length).trim()}...` : text;
-}
-
 function formatDate(dateString, options = { day: 'numeric', month: 'short', year: 'numeric' }) {
   if (!dateString) return '';
   const date = new Date(`${dateString}T00:00:00`);
@@ -229,22 +225,6 @@ function renderSiteChrome() {
   });
 }
 
-function renderHomeOpportunities() {
-  const container = qs('#home-opportunities');
-  clear(container);
-  state.data.opportunities.slice(0, 4).forEach(opp => {
-    container.append(make('button', {
-      type: 'button',
-      class: 'mini-card',
-      dataset: { oppId: String(opp.id) }
-    }, [
-      make('span', { class: `badge ${badgeClass(opp.type)}`, text: typeLabel(opp.type) }),
-      make('h3', { text: opp.title }),
-      make('p', { text: opp.time })
-    ]));
-  });
-}
-
 function renderHomeNews() {
   const container = qs('#home-news');
   clear(container);
@@ -283,48 +263,6 @@ function renderNewsList() {
     : state.data.news.filter(item => item.category === state.newsFilter);
   list.sort((a, b) => new Date(b.date) - new Date(a.date));
   list.forEach(item => container.append(createNewsCard(item, false)));
-}
-
-function createOpportunityPhoto(opp, className = 'opp-photo') {
-  if (!opp?.photo) return null;
-  return make('img', {
-    class: className,
-    src: opp.photo,
-    alt: opp.photoAlt || `${opp.title || 'Volunteer opportunity'} photo`,
-    loading: 'lazy'
-  });
-}
-
-function createOpportunityCard(opp) {
-  return make('button', {
-    type: 'button',
-    class: 'opp-card',
-    dataset: { oppId: String(opp.id) }
-  }, [
-    createOpportunityPhoto(opp),
-    make('span', { class: `badge ${badgeClass(opp.type)}`, text: typeLabel(opp.type) }),
-    make('h2', { text: opp.title }),
-    make('p', { text: truncate(opp.description, 150) }),
-    make('div', { class: 'opp-meta' }, [
-      make('span', {}, [iconFromTemplate('icon-clock'), document.createTextNode(opp.time || '')]),
-      make('span', {}, [iconFromTemplate('icon-location'), document.createTextNode(opp.location || '')])
-    ])
-  ]);
-}
-
-function renderOpportunities() {
-  const grid = qs('#opportunities-grid');
-  const empty = qs('#opportunities-empty');
-  clear(grid);
-  const query = state.oppQuery.trim().toLowerCase();
-  const list = state.data.opportunities.filter(opp => {
-    const matchesType = state.oppFilter === 'all' || opp.type === state.oppFilter;
-    const haystack = [opp.title, opp.description, opp.location, opp.time, opp.commitment, opp.requirements].join(' ').toLowerCase();
-    return matchesType && (!query || haystack.includes(query));
-  });
-
-  empty.hidden = list.length > 0;
-  list.forEach(opp => grid.append(createOpportunityCard(opp)));
 }
 
 function renderAbout() {
@@ -372,9 +310,9 @@ function renderAbout() {
 
 function renderEverything() {
   renderSiteChrome();
-  renderHomeOpportunities();
+  if (typeof renderHomeOpportunities === 'function') renderHomeOpportunities();
   renderHomeNews();
-  renderOpportunities();
+  if (typeof renderOpportunities === 'function') renderOpportunities();
   renderNewsList();
   renderAbout();
 }
@@ -404,12 +342,12 @@ function switchPage(page, updateHash = true) {
 
 function findOpportunity(id) {
   const targetId = String(id);
-  return state.data.opportunities.find(item => String(item.id) === targetId);
+  return state.data?.opportunities?.find(item => String(item.id) === targetId) || null;
 }
 
 function findNews(id) {
   const targetId = String(id);
-  return state.data.news.find(item => String(item.id) === targetId);
+  return state.data?.news?.find(item => String(item.id) === targetId) || null;
 }
 
 function modalHeader(title, badgeText, badgeStyleClass) {
@@ -419,36 +357,6 @@ function modalHeader(title, badgeText, badgeStyleClass) {
     make('span', { class: `badge ${badgeStyleClass}`, text: badgeText }),
     make('h2', { id: 'modal-title', text: title })
   ]);
-}
-
-function openOpportunityModal(id) {
-  const opp = findOpportunity(id);
-  if (!opp) return;
-  const modal = qs('#modal');
-  clear(modal);
-  modal.append(
-    modalHeader(opp.title, typeLabel(opp.type), badgeClass(opp.type)),
-    make('div', { class: 'modal-body' }, [
-      createOpportunityPhoto(opp, 'modal-photo'),
-      make('div', { class: 'modal-meta' }, [
-        make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-clock'), document.createTextNode(opp.time || '')]),
-        make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-location'), document.createTextNode(opp.location || '')]),
-        make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-calendar'), document.createTextNode(opp.commitment || '')])
-      ]),
-      make('section', { class: 'modal-section' }, [make('h3', { text: 'About this role' }), make('p', { text: opp.description })]),
-      make('section', { class: 'modal-section' }, [make('h3', { text: 'Requirements' }), make('p', { text: opp.requirements })])
-    ]),
-    make('div', { class: 'modal-actions' }, [
-      make('button', {
-        type: 'button',
-        class: 'button button-primary',
-        text: 'Sign up on YM-Hub',
-        dataset: { signupOpportunity: String(opp.id) }
-      }),
-      make('button', { type: 'button', class: 'button', text: 'Close', dataset: { closeModal: 'true' } })
-    ])
-  );
-  openModal();
 }
 
 function openNewsModal(id) {
@@ -469,6 +377,7 @@ function openNewsModal(id) {
 function openModal() {
   const layer = qs('#modal-layer');
   const modal = qs('#modal');
+  if (!layer || !modal) return;
   state.lastFocus = document.activeElement;
   layer.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -503,7 +412,7 @@ function bindEvents() {
     if (oppFilter) {
       state.oppFilter = oppFilter.dataset.oppFilter;
       setFilterActive('#opp-filters', oppFilter);
-      renderOpportunities();
+      if (typeof renderOpportunities === 'function') renderOpportunities();
       return;
     }
 
@@ -517,7 +426,8 @@ function bindEvents() {
 
     const oppCard = event.target.closest('[data-opp-id]');
     if (oppCard) {
-      openOpportunityModal(oppCard.dataset.oppId);
+      if (typeof openOpportunityModal === 'function') openOpportunityModal(oppCard.dataset.oppId);
+      else console.error('app: openOpportunityModal is not available; check opportunity script load order.');
       return;
     }
 
@@ -545,7 +455,7 @@ function bindEvents() {
 
   qs('#opp-search')?.addEventListener('input', event => {
     state.oppQuery = event.target.value || '';
-    renderOpportunities();
+    if (typeof renderOpportunities === 'function') renderOpportunities();
   });
 
   window.addEventListener('hashchange', () => switchPage(window.location.hash.replace('#', ''), false));
