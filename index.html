@@ -6,6 +6,7 @@
   <title>MENDAKI Volunteer Hub</title>
   <meta name="description" content="Find MENDAKI volunteer opportunities, news, and community updates.">
   <meta name="theme-color" content="#373A36">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; upgrade-insecure-requests">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23373A36'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='32' font-weight='700' fill='white'%3EM%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,18 +26,20 @@
   <link rel="stylesheet" href="assets/admin-pages.css">
   <link rel="stylesheet" href="assets/admin-tables.css">
   <link rel="stylesheet" href="assets/admin-qa.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="assets/supabase-config.js" defer></script>
   <script src="assets/data-store.js" defer></script>
   <script src="assets/data-access.js" defer></script>
   <script src="assets/app.js" defer></script>
   <script src="assets/opportunities-swipe.js" defer></script>
+  <script src="assets/phase-forty-one-render-guards.js" defer></script>
   <script src="assets/app-managed-signups.js" defer></script>
   <script src="assets/volunteer-quiz-router.js" defer></script>
   <script src="assets/quiz-confetti.js" defer></script>
   <script src="assets/phase-one-auth.js" defer></script>
   <script src="assets/phase-nineteen-sessions.js" defer></script>
   <script src="assets/session-selection.js" defer></script>
+  <script src="assets/session-management.js" defer></script>
   <script src="assets/phase-eight-supabase.js" defer></script>
   <script src="assets/auth-password-field.js" defer></script>
   <script src="assets/attendance-code-validation.js" defer></script>
@@ -51,6 +54,7 @@
   <script src="assets/phase-three-attendance.js" defer></script>
   <script src="assets/phase-nine-attendance-sync.js" defer></script>
   <script src="assets/attendance-clarification-flow.js" defer></script>
+  <script src="assets/attendance-completion-bridge.js" defer></script>
   <script src="assets/phase-four-training.js" defer></script>
   <script src="assets/phase-ten-training-sync.js" defer></script>
   <script src="assets/phase-thirty-training-session-parity.js" defer></script>
@@ -179,19 +183,19 @@
           </div>
         </section>
 
-        <section class="dashboard-card" aria-labelledby="stats-title">
+        <section class="dashboard-card" aria-labelledby="stats-title" aria-busy="true">
           <h2 id="stats-title">Volunteer statistics</h2>
           <div class="dashboard-stat-grid">
-            <div class="dashboard-stat"><strong data-stat-hours>0</strong><span>Verified hours</span></div>
-            <div class="dashboard-stat"><strong data-stat-upcoming>0</strong><span>Upcoming confirmed opportunities</span></div>
-            <div class="dashboard-stat"><strong data-stat-completed>0</strong><span>Completed opportunities</span></div>
+            <div class="dashboard-stat"><strong data-stat-hours>—</strong><span>Verified hours</span></div>
+            <div class="dashboard-stat"><strong data-stat-upcoming>—</strong><span>Upcoming confirmed opportunities</span></div>
+            <div class="dashboard-stat"><strong data-stat-completed>—</strong><span>Completed opportunities</span></div>
           </div>
           <p class="dashboard-muted">Pending review and waitlisted sign-ups do not count as confirmed opportunities.</p>
         </section>
 
         <section class="dashboard-card" aria-labelledby="profile-form-title">
           <h2 id="profile-form-title">Profile setup</h2>
-          <form class="profile-form" data-profile-form>
+          <form class="profile-form" data-profile-form novalidate>
             <label>Full name<input name="name" autocomplete="name" placeholder="Your name" required></label>
             <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
             <label>Preferred volunteer type<select name="interest"><option value="">Choose one</option><option value="mentor">Mentor</option><option value="facilitator">Facilitator</option><option value="befriender">Befriender</option><option value="community-volunteering">Community volunteer</option></select></label>
@@ -240,7 +244,7 @@
       <p class="eyebrow dark">Volunteer account</p>
       <h2 id="auth-title">Sign in to your volunteer dashboard</h2>
       <p class="dashboard-muted" data-auth-copy>Sign in with your email and password.</p>
-      <form class="profile-form" data-auth-form>
+      <form class="profile-form" data-auth-form novalidate>
         <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
         <button class="button button-primary" type="submit">Continue</button>
       </form>
