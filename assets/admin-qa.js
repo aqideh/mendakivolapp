@@ -1,3 +1,5 @@
+import './demo-dashboard-ui.js';
+
 (() => {
   if (window.__mendakiAdminQaInstalled) return;
   window.__mendakiAdminQaInstalled = true;
