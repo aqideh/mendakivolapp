@@ -36,6 +36,14 @@ const VolunteerDataStore = (() => {
   }
   function roleForEmail() { return 'volunteer'; }
 
+  function withTimeout(promise, label, timeoutMs = 12000) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error(`${label} timed out. Please check the Supabase connection and RLS policies.`)), timeoutMs);
+    });
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+  }
+
   function getSupabaseConfig() {
     const config = window.MENDAKI_SUPABASE_CONFIG || null;
     if (!config?.url || !config?.anonKey) return null;
@@ -84,10 +92,40 @@ const VolunteerDataStore = (() => {
     return data || null;
   }
 
+  async function fetchAppUserByEmail(authUser) {
+    const email = normaliseEmail(authUser?.email);
+    if (!authState.supabase || !email) return null;
+    const { data, error } = await authState.supabase
+      .from('app_users')
+      .select('id, auth_user_id, email, full_name, role')
+      .ilike('email', email)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  }
+
+  async function linkExistingAppUser(authUser, existing) {
+    if (!authState.supabase || !authUser?.id || !existing?.id) return existing || null;
+    if (existing.auth_user_id === authUser.id) return existing;
+    if (existing.auth_user_id && existing.auth_user_id !== authUser.id) {
+      throw new Error('This app profile is linked to a different authentication user.');
+    }
+    const { data, error } = await authState.supabase
+      .from('app_users')
+      .update({ auth_user_id: authUser.id, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .select('id, auth_user_id, email, full_name, role')
+      .single();
+    if (error) throw error;
+    return data || existing;
+  }
+
   async function ensureAppUser(authUser, fullName = '') {
     if (!authState.supabase || !authUser?.id) return null;
-    const existing = await fetchAppUser(authUser);
-    if (existing) return existing;
+    const existingByAuth = await fetchAppUser(authUser);
+    if (existingByAuth) return existingByAuth;
+    const existingByEmail = await fetchAppUserByEmail(authUser);
+    if (existingByEmail) return linkExistingAppUser(authUser, existingByEmail);
     const email = authUser.email || '';
     const name = fullName || authUser.user_metadata?.full_name || authUser.user_metadata?.name || email;
     const { data, error } = await authState.supabase
@@ -123,10 +161,10 @@ const VolunteerDataStore = (() => {
 
   async function refreshSupabaseSession() {
     if (!authState.supabase) return getSession();
-    const { data, error } = await authState.supabase.auth.getUser();
+    const { data, error } = await withTimeout(authState.supabase.auth.getUser(), 'Supabase session refresh');
     if (error || !data?.user) { clearAuthState(); return null; }
     authState.user = data.user;
-    authState.profile = await ensureAppUser(data.user);
+    authState.profile = await withTimeout(ensureAppUser(data.user), 'App profile load');
     const session = sessionFromAuthUser(data.user, authState.profile);
     if (session) { saveSession(session); saveProfileFromSession(session); }
     return session;
@@ -136,10 +174,19 @@ const VolunteerDataStore = (() => {
     authState.supabase = createSupabaseClient();
     authState.usingSupabase = Boolean(authState.supabase);
     if (!authState.supabase) { normaliseSessionRole(); authState.ready = true; return { usingSupabase: false }; }
-    await refreshSupabaseSession();
+    try {
+      await refreshSupabaseSession();
+    } catch (error) {
+      console.warn('Supabase session refresh failed during init', error);
+      clearAuthState();
+    }
     authState.supabase.auth.onAuthStateChange(async event => {
-      if (event === 'SIGNED_OUT') clearAuthState();
-      else await refreshSupabaseSession();
+      try {
+        if (event === 'SIGNED_OUT') clearAuthState();
+        else await refreshSupabaseSession();
+      } catch (error) {
+        console.warn('Supabase auth state refresh failed', error);
+      }
       window.dispatchEvent(new CustomEvent('volunteer-auth-changed'));
     });
     authState.ready = true;
@@ -149,21 +196,31 @@ const VolunteerDataStore = (() => {
   async function signInWithMagicLink(email, fullName = '') {
     if (!authState.supabase) return { ok: false, reason: 'supabase_not_configured' };
     const config = getSupabaseConfig() || {};
-    const { error } = await authState.supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: config.authRedirectTo || window.location.href, data: { full_name: fullName } } });
+    const { error } = await withTimeout(
+      authState.supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: config.authRedirectTo || window.location.href, data: { full_name: fullName } } }),
+      'Magic-link sign-in'
+    );
     return error ? { ok: false, reason: error.message } : { ok: true };
   }
 
   async function signInWithPassword(email, password, fullName = '') {
     if (!authState.supabase) return { ok: false, reason: 'supabase_not_configured' };
-    const { data, error } = await authState.supabase.auth.signInWithPassword({ email, password });
-    if (error) return { ok: false, reason: error.message };
-    if (data?.user) {
-      authState.user = data.user;
-      authState.profile = await ensureAppUser(data.user, fullName);
-      const session = sessionFromAuthUser(data.user, authState.profile);
-      if (session) { saveSession(session); saveProfileFromSession(session); }
+    try {
+      const { data, error } = await withTimeout(
+        authState.supabase.auth.signInWithPassword({ email, password }),
+        'Password sign-in'
+      );
+      if (error) return { ok: false, reason: error.message };
+      if (data?.user) {
+        authState.user = data.user;
+        authState.profile = await withTimeout(ensureAppUser(data.user, fullName), 'App profile load');
+        const session = sessionFromAuthUser(data.user, authState.profile);
+        if (session) { saveSession(session); saveProfileFromSession(session); }
+      }
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, reason: error.message || String(error) };
     }
-    return { ok: true };
   }
 
   async function signOut() {
