@@ -1,0 +1,404 @@
+/* Polished dashboard demo treatment inspired by the approved renders. */
+:root {
+  --demo-ink: #373A36;
+  --demo-muted: #6F736D;
+  --demo-border: rgba(55, 58, 54, 0.13);
+  --demo-card: rgba(255, 255, 255, 0.94);
+  --demo-cream: #FFFBE8;
+  --demo-green: #14804A;
+  --demo-green-soft: #E8F7EE;
+  --demo-teal: #127C91;
+  --demo-teal-soft: #E3F8FB;
+  --demo-gold-soft: #FFF0BE;
+  --demo-shadow: 0 24px 70px rgba(55, 58, 54, 0.13);
+}
+
+body:has(#page-dashboard.active) {
+  background:
+    radial-gradient(circle at 0 0, rgba(255, 215, 0, 0.2), transparent 30rem),
+    linear-gradient(90deg, #FFFBEA 0%, #FFFFFF 42%, #F7F7F5 100%);
+}
+
+body:has(#page-dashboard.active) .site-header {
+  position: sticky;
+  top: 1.45rem;
+  width: min(1160px, calc(100% - 2rem));
+  margin: 0 auto;
+  border: 1px solid var(--demo-border);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 16px 42px rgba(55, 58, 54, 0.08);
+}
+
+body:has(#page-dashboard.active) .header-inner {
+  width: 100%;
+  min-height: 64px;
+}
+
+body:has(#page-dashboard.active) .desktop-nav {
+  background: transparent;
+  border: 0;
+  gap: 0.45rem;
+}
+
+body:has(#page-dashboard.active) .nav-link {
+  padding: 0.64rem 0.95rem;
+}
+
+body:has(#page-dashboard.active) .nav-link.active {
+  background: var(--demo-ink);
+  color: #fff;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.12);
+}
+
+body:has(#page-dashboard.active) .app-shell {
+  padding-top: 3rem;
+}
+
+#page-dashboard .container {
+  width: min(1160px, calc(100% - 2rem));
+}
+
+#page-dashboard .page-topper {
+  margin-top: 0.5rem;
+  margin-bottom: 1.85rem;
+}
+
+#page-dashboard .page-topper .eyebrow {
+  color: #74786F;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+}
+
+#page-dashboard .page-topper h1 {
+  font-size: clamp(3rem, 6vw, 5.2rem);
+  letter-spacing: -0.085em;
+  line-height: 0.9;
+}
+
+#page-dashboard .page-topper p:not(.eyebrow) {
+  font-size: 1.12rem;
+  color: var(--demo-muted);
+}
+
+#page-dashboard .dashboard-layout.dashboard-paged {
+  gap: 1.15rem;
+}
+
+#page-dashboard .dashboard-card,
+#page-dashboard .dashboard-module-header {
+  border: 1px solid var(--demo-border);
+  border-radius: 26px;
+  background: var(--demo-card);
+  box-shadow: var(--demo-shadow);
+}
+
+#page-dashboard .dashboard-card {
+  padding: clamp(1.15rem, 2.5vw, 1.55rem);
+}
+
+#page-dashboard .dashboard-profile-card {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.55fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+#page-dashboard .dashboard-profile-card > div:first-child {
+  align-self: stretch;
+  border: 1px solid var(--demo-border);
+  border-radius: 24px;
+  padding: 1.25rem;
+  background: #fff;
+}
+
+#page-dashboard .dashboard-profile-card .dashboard-actions {
+  align-self: end;
+}
+
+#page-dashboard .profile-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-content: center;
+  border: 1px solid var(--demo-border);
+  border-radius: 24px;
+  padding: 1.25rem;
+  background: #fff;
+}
+
+#page-dashboard .profile-pill {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  border: 1px solid var(--demo-border);
+  border-radius: 18px;
+  padding: 1rem;
+  background: #fff;
+}
+
+#page-dashboard .profile-pill span {
+  color: var(--demo-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  order: 2;
+}
+
+#page-dashboard .profile-pill strong {
+  display: block;
+  color: var(--demo-ink);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  order: 1;
+}
+
+#page-dashboard .profile-pill:nth-child(1),
+#page-dashboard .profile-pill:nth-child(2),
+#page-dashboard .profile-pill:nth-child(4),
+#page-dashboard .profile-pill:nth-child(5) {
+  display: none;
+}
+
+#page-dashboard .dashboard-card[aria-labelledby="stats-title"] {
+  display: none !important;
+}
+
+#page-dashboard .dashboard-app-home {
+  grid-column: 1 / -1;
+}
+
+#page-dashboard .dashboard-app-home .dashboard-hub-header {
+  margin-bottom: 0.75rem;
+}
+
+#page-dashboard .dashboard-module-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+#page-dashboard .dashboard-module-tile {
+  min-height: 132px;
+  border-radius: 22px;
+  box-shadow: none;
+  background: #fff;
+}
+
+#page-dashboard .dashboard-module-tile strong {
+  font-size: 1.05rem;
+}
+
+#page-dashboard .dashboard-module-shell {
+  margin-bottom: 0.2rem;
+}
+
+#page-dashboard .dashboard-module-header {
+  display: none;
+}
+
+#page-dashboard .signup-row,
+#page-dashboard .attendance-row,
+#page-dashboard .admin-content-item {
+  border: 1px solid var(--demo-border);
+  border-radius: 18px;
+  background: #fff;
+  padding: 1rem;
+  box-shadow: none;
+}
+
+#page-dashboard .signup-list,
+#page-dashboard .attendance-list,
+#page-dashboard .admin-content-list,
+#page-dashboard .points-ledger-list,
+#page-dashboard .referral-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+#page-dashboard .attendance-row,
+#page-dashboard .signup-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+#page-dashboard .badge,
+#page-dashboard .referral-status-pill,
+#page-dashboard .milestone-chip {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: none;
+}
+
+#page-dashboard .badge-success,
+#page-dashboard .badge-verified,
+#page-dashboard .referral-status-pill.converted {
+  background: var(--demo-green-soft);
+  color: var(--demo-green);
+}
+
+#page-dashboard .badge-warning,
+#page-dashboard .badge-adjusted,
+#page-dashboard .milestone-chip {
+  background: var(--demo-gold-soft);
+  color: #A06500;
+}
+
+#page-dashboard .badge-info,
+#page-dashboard .badge-submitted,
+#page-dashboard .referral-status-pill.accepted {
+  background: var(--demo-teal-soft);
+  color: var(--demo-teal);
+}
+
+#page-dashboard .dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+#page-dashboard .dashboard-stat {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  border: 1px solid var(--demo-border);
+  border-radius: 18px;
+  background: #fff;
+  padding: 1rem;
+}
+
+#page-dashboard .dashboard-stat strong {
+  font-size: clamp(1.7rem, 3.5vw, 2.2rem);
+  letter-spacing: -0.055em;
+  color: var(--demo-ink);
+}
+
+#page-dashboard .dashboard-stat span {
+  color: var(--demo-muted);
+  font-weight: 800;
+}
+
+#page-dashboard .referral-code-panel {
+  display: grid;
+  gap: 0.4rem;
+  border: 1px solid var(--demo-border);
+  border-radius: 24px;
+  background: #fff;
+  padding: 1.25rem;
+  margin: 1rem 0;
+}
+
+#page-dashboard .referral-code-panel span {
+  color: var(--demo-muted);
+  font-weight: 800;
+}
+
+#page-dashboard .referral-code-panel strong {
+  color: var(--demo-ink);
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  letter-spacing: -0.08em;
+  line-height: 0.95;
+}
+
+#page-dashboard .referral-link-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+#page-dashboard .referral-link-field input {
+  border: 1px solid var(--demo-border);
+  border-radius: 999px;
+  min-height: 48px;
+  padding: 0 1rem;
+  background: #fff;
+}
+
+#page-dashboard .points-card .dashboard-stat-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+#page-dashboard .points-feed-item,
+#page-dashboard .referral-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+#page-dashboard .points-feed-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  font-size: 1rem;
+}
+
+#page-dashboard .milestone-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 1rem 0;
+}
+
+#page-dashboard .dashboard-muted {
+  color: var(--demo-muted);
+  line-height: 1.45;
+}
+
+#page-dashboard[data-demo-dashboard-view="referrals"] .dashboard-layout,
+#page-dashboard[data-demo-dashboard-view="gamification"] .dashboard-layout,
+#page-dashboard[data-demo-dashboard-view="attendance"] .dashboard-layout {
+  grid-template-columns: minmax(300px, 0.42fr) minmax(0, 1fr);
+}
+
+#page-dashboard[data-demo-dashboard-view="referrals"] .referral-card,
+#page-dashboard[data-demo-dashboard-view="gamification"] .points-card,
+#page-dashboard[data-demo-dashboard-view="attendance"] .attendance-card:not(.admin-attendance-card) {
+  grid-column: 1 / -1;
+}
+
+#page-dashboard[data-demo-dashboard-view="gamification"] .points-card,
+#page-dashboard[data-demo-dashboard-view="referrals"] .referral-card {
+  display: grid !important;
+}
+
+@media (max-width: 1100px) {
+  #page-dashboard .dashboard-module-grid,
+  #page-dashboard .profile-summary,
+  #page-dashboard .dashboard-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #page-dashboard .dashboard-profile-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  body:has(#page-dashboard.active) .site-header {
+    top: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  #page-dashboard .page-topper h1 {
+    font-size: clamp(2.5rem, 14vw, 4rem);
+  }
+
+  #page-dashboard .dashboard-module-grid,
+  #page-dashboard .profile-summary,
+  #page-dashboard .dashboard-stat-grid,
+  #page-dashboard[data-demo-dashboard-view="referrals"] .dashboard-layout,
+  #page-dashboard[data-demo-dashboard-view="gamification"] .dashboard-layout,
+  #page-dashboard[data-demo-dashboard-view="attendance"] .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  #page-dashboard .attendance-row,
+  #page-dashboard .signup-row,
+  #page-dashboard .points-feed-item,
+  #page-dashboard .referral-row {
+    grid-template-columns: 1fr;
+  }
+}
