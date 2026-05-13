@@ -97,13 +97,6 @@
     return labels[status] || status || 'Unknown';
   }
 
-  function formatDate(value) {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return '';
-  }
-
   function displayDate(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -179,7 +172,7 @@
         <h3>Your referrals</h3>
         ${myReferrals.length ? myReferrals.map(renderMyReferral).join('') : '<p class="dashboard-muted">No accepted referrals yet.</p>'}
       </div>
-      <p class="dashboard-muted">Referral tracking prepares the future points system. Points are not awarded yet.</p>
+      <p class="dashboard-muted">Accepted referrals contribute to your volunteer points when referral rewards are enabled.</p>
     `;
   }
 
