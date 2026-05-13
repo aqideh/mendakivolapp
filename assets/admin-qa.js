@@ -1,14 +1,4 @@
 (() => {
-  if (!document.querySelector('script[data-demo-dashboard-ui]')) {
-    const script = document.createElement('script');
-    script.src = 'assets/demo-dashboard-ui.js';
-    script.defer = true;
-    script.dataset.demoDashboardUi = 'true';
-    document.head.appendChild(script);
-  }
-})();
-
-(() => {
   if (window.__mendakiAdminQaInstalled) return;
   window.__mendakiAdminQaInstalled = true;
 
