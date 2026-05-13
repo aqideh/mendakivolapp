@@ -47,12 +47,15 @@
         .from('app_opportunity_signups')
         .select('*')
         .order('updated_at', { ascending: false });
-      if (error) return store()?.getOpportunitySignups?.() || [];
+      if (error) throw error;
       const signups = Array.isArray(data) ? data.map(rowToSignup) : [];
       store()?.saveOpportunitySignups?.(signups);
       if (typeof phaseTwoRenderDashboardSignups === 'function') phaseTwoRenderDashboardSignups();
       if (typeof phaseThreeRender === 'function') phaseThreeRender();
       return signups;
+    } catch (error) {
+      console.warn('Could not refresh opportunity sign-ups with session ids.', error);
+      return store()?.getOpportunitySignups?.() || [];
     } finally {
       signupSessionSyncing = false;
     }
@@ -65,14 +68,21 @@
     if (typeof originalFetch !== 'function') return;
     api.__sessionIdFetchPatched = true;
     api.fetchSupabaseOpportunitySignups = async function patchedFetchSupabaseOpportunitySignups(...args) {
-      await originalFetch.apply(this, args).catch(() => []);
+      await originalFetch.apply(this, args).catch(error => {
+        console.warn('Original opportunity signup fetch failed before session-id refresh.', error);
+        return [];
+      });
       return fetchSignupsWithSessionIds();
     };
   }
 
   function installFindOpportunityPatch() {
     try {
-      if (typeof findOpportunity !== 'function' || window.__stringOpportunityIdPatchInstalled) return;
+      if (window.__stringOpportunityIdPatchInstalled) return;
+      if (typeof findOpportunity !== 'function') {
+        console.error('pre-phase-urgent-fixes: findOpportunity not found; check script load order before installing the string-id lookup patch.');
+        return;
+      }
       window.__stringOpportunityIdPatchInstalled = true;
       findOpportunity = function patchedFindOpportunity(id) {
         const currentState = appState();
