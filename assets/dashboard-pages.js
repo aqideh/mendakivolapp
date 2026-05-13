@@ -66,6 +66,15 @@ function dashboardMetric(selector, fallback = '0') {
   return document.querySelector(selector)?.textContent?.trim() || fallback;
 }
 
+function dashboardUpdateStatsLoadingState() {
+  const statsCard = document.querySelector('[aria-labelledby="stats-title"]');
+  if (!statsCard) return;
+  const values = ['[data-stat-hours]', '[data-stat-upcoming]', '[data-stat-completed]']
+    .map(selector => dashboardMetric(selector, '—'));
+  const loading = values.some(value => !value || value === '—');
+  statsCard.setAttribute('aria-busy', String(loading));
+}
+
 function dashboardTrainingMetric() {
   const count = window.VolunteerDataStore?.getTrainingSignups?.()
     ?.filter(item => item.email === window.VolunteerDataStore?.currentEmail?.() && !['cancelled', 'declined', 'no_show'].includes(item.status))
@@ -115,9 +124,9 @@ function dashboardRenderHomeTiles() {
   const grid = home.querySelector('[data-dashboard-module-grid]');
   if (!grid) return;
 
-  const upcoming = dashboardMetric('[data-stat-upcoming]');
-  const completed = dashboardMetric('[data-stat-completed]');
-  const hours = dashboardMetric('[data-stat-hours]');
+  const upcoming = dashboardMetric('[data-stat-upcoming]', '—');
+  const completed = dashboardMetric('[data-stat-completed]', '—');
+  const hours = dashboardMetric('[data-stat-hours]', '—');
 
   const tiles = [
     dashboardTile('opportunities', '🤝', 'My volunteering opportunities', `${upcoming} upcoming · ${completed} completed`),
@@ -131,6 +140,7 @@ function dashboardRenderHomeTiles() {
   }
 
   grid.replaceChildren(...tiles);
+  dashboardUpdateStatsLoadingState();
 }
 
 function dashboardBuildModuleShell() {
@@ -185,6 +195,7 @@ function dashboardSetView(view = 'home') {
     button.classList.toggle('active', button.dataset.dashboardViewTarget === nextView);
   });
 
+  dashboardUpdateStatsLoadingState();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -198,6 +209,7 @@ function dashboardInstall() {
   dashboardBuildHome();
   dashboardBuildModuleShell();
   dashboardSetView(dashboardPageState.activeView || 'home');
+  dashboardUpdateStatsLoadingState();
 }
 
 function dashboardBind() {
