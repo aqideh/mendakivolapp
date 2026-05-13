@@ -12,7 +12,19 @@
   function currentEmail() { return window.VolunteerDataStore?.currentEmail?.() || session()?.email || ''; }
   function displayName() { return profile()?.name || session()?.name || 'Volunteer'; }
 
+  function parseHours(value) {
+    const match = String(value || '').match(/\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : 0;
+  }
+
+  function renderedVerifiedHours() {
+    const node = qs('[data-stat-hours]');
+    return node ? parseHours(node.textContent) : 0;
+  }
+
   function verifiedHours() {
+    const rendered = renderedVerifiedHours();
+    if (rendered > 0) return rendered;
     const email = currentEmail();
     const fromClaims = claims()
       .filter(item => item.email === email && ['verified', 'adjusted'].includes(item.claimStatus))
