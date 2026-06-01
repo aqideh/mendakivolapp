@@ -37,58 +37,32 @@ function managedSignupTypeLabel(type = '') {
   return type === 'long-term' ? 'Long-term' : 'Ad-hoc';
 }
 
-function managedSignupStatusLabel(status) {
-  return typeof phaseTwoStatusLabel === 'function' ? phaseTwoStatusLabel(status) : status;
-}
-
-function managedSignupStatusBadgeClass(status) {
-  return typeof phaseTwoStatusBadgeClass === 'function' ? phaseTwoStatusBadgeClass(status) : 'badge-volunteer';
-}
-
-function managedSignupCurrentSignup(id) {
-  return typeof phaseTwoUserSignupForOpportunity === 'function' ? phaseTwoUserSignupForOpportunity(id) : null;
-}
-
 function managedSignupOpenOpportunityModal(id) {
   const opp = managedSignupOpportunity(id);
   const modal = document.querySelector('#modal');
   const layer = document.querySelector('#modal-layer');
   if (!opp || !modal || !layer) return;
 
-  const signup = managedSignupCurrentSignup(id);
-  const active = signup && !['cancelled', 'declined', 'completed'].includes(signup.status);
   const actions = [
     managedSignupMake('button', {
       type: 'button',
       class: 'button button-primary',
-      text: active ? managedSignupStatusLabel(signup.status) : 'Sign up for this role',
-      dataset: { signupOpportunity: String(id) },
-      disabled: active ? 'true' : null
+      text: 'Sign up on YM-Hub',
+      dataset: { ymhubSignup: String(id) }
+    }),
+    managedSignupMake('button', {
+      type: 'button',
+      class: 'button',
+      text: 'Close',
+      dataset: { closeModal: 'true' }
     })
   ];
-
-  if (active) {
-    actions.push(managedSignupMake('button', {
-      type: 'button',
-      class: 'button dashboard-secondary',
-      text: 'Cancel sign-up',
-      dataset: { cancelSignup: String(id) }
-    }));
-  }
-
-  actions.push(managedSignupMake('button', {
-    type: 'button',
-    class: 'button',
-    text: 'Close',
-    dataset: { closeModal: 'true' }
-  }));
 
   modal.replaceChildren(
     managedSignupMake('div', { class: 'modal-hero' }, [
       managedSignupMake('button', { type: 'button', class: 'close-button', 'aria-label': 'Close dialog', text: '×', dataset: { closeModal: 'true' } }),
       managedSignupMake('div', { class: 'hero-orb hero-orb-one' }),
       managedSignupMake('span', { class: `badge ${managedSignupBadgeClass(opp.type)}`, text: managedSignupTypeLabel(opp.type) }),
-      signup ? managedSignupMake('span', { class: `badge ${managedSignupStatusBadgeClass(signup.status)}`, text: managedSignupStatusLabel(signup.status) }) : null,
       managedSignupMake('h2', { id: 'modal-title', text: opp.title })
     ]),
     managedSignupMake('div', { class: 'modal-body' }, [
