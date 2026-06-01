@@ -1,9 +1,11 @@
 # MENDAKI Volunteer Hub — Manual QA and Release Readiness
 
-Last updated: 2026-05-12
-Branch: `expansion`
+> Supersession note: This checklist describes earlier Supabase-backed prototype behavior and is superseded by the YM Hub/Salesforce product boundary in `docs/product-intent.md`. Opportunity sign-up creation, lifecycle state, final capacity decisions, and final waitlist decisions belong to YM Hub/Salesforce. Any opportunity sign-up QA below is retained as historical prototype context unless the product boundary is explicitly changed and documented.
 
-This checklist is the release gate for the current Supabase-backed pilot. Do not mark the app production-ready until every required check is completed or explicitly accepted as a known risk.
+Last updated: 2026-06-02
+Branch: `main`
+
+This checklist is a release gate for the current app-owned surfaces. Do not mark the app production-ready until every required check is completed or explicitly accepted as a known risk.
 
 ## Scope
 
@@ -16,10 +18,17 @@ Signed-in app dashboard
 → Admin pages
 → Admin tables / tools
 → Admin review actions
-→ MENDAKIDataAccess / Supabase RPCs
+→ MENDAKIDataAccess / prototype backend or approved integrations
 ```
 
 It does not validate removed Sveltia CMS or phase-numbered admin paths.
+
+Current product boundary checks must include:
+
+- Volunteer opportunity CTAs route to YM Hub/Salesforce.
+- The app does not create authoritative volunteer opportunity sign-ups.
+- Supabase opportunity sign-up tables are not treated as production source of truth.
+- Training registrations remain distinguishable from volunteer opportunity sign-ups.
 
 ## Required accounts
 
@@ -28,18 +37,16 @@ Use separate accounts. Do not test admin and volunteer behavior from the same si
 | Role | Required state | Notes |
 |---|---|---|
 | Admin | Authenticated app user with `admin` or `super_admin` role | Must open admin workspace and run QA checks. |
-| Volunteer A | Authenticated non-admin volunteer | Used for opportunity sign-up, attendance, clarification response, training sign-up, referrals, notifications, and points visibility. |
-| Volunteer B | Authenticated non-admin volunteer | Used for waitlist/capacity and referral conversion checks. |
+| Volunteer A | Authenticated non-admin volunteer | Used for attendance, clarification response, training sign-up, referrals, notifications, points visibility, and opportunity CTA checks. |
+| Volunteer B | Authenticated non-admin volunteer | Used for referral conversion checks and any non-authoritative mirror/read-only opportunity display checks. |
 
 ## Required sample data
 
-Before manual QA, confirm the database has at least:
+Before manual QA, confirm the database or approved integration has at least:
 
-- One open opportunity with at least one configured session.
-- One opportunity session with finite capacity for waitlist/capacity behavior.
-- One valid facilitator attendance code linked to the target opportunity/session.
-- One pending opportunity sign-up.
-- One waitlisted or capacity-sensitive opportunity sign-up scenario.
+- One open opportunity display record with a YM Hub/Salesforce CTA target or approved external sign-up URL.
+- One opportunity session or display record suitable for attendance-support testing where applicable.
+- One valid facilitator attendance code linked to the target opportunity/session if attendance code validation is in scope.
 - One attendance claim in each relevant state, or enough data to create them during the test: `checked_in`, `submitted`, and `clarification_requested`.
 - One training session open for registration.
 - One training sign-up to review.
@@ -47,24 +54,29 @@ Before manual QA, confirm the database has at least:
 - At least one notification row after triggering admin or volunteer actions.
 - At least one audit log row after triggering admin review actions.
 
+Historical sample-data note: old checks for pending/waitlisted opportunity sign-ups are prototype-only unless those records are read-only mirrors from YM Hub/Salesforce or explicitly approved test data.
+
 ## Pre-test setup
 
-- [ ] Confirm branch under test is `expansion`.
+- [ ] Confirm branch under test is the intended release branch.
 - [ ] Deploy or open the build that includes the target commit.
 - [ ] Open the app with cache busting: `?v=<commit>`.
 - [ ] Clear browser storage or use a fresh browser profile before starting role-specific tests.
-- [ ] Confirm Supabase project is the intended pilot project.
-- [ ] Confirm leaked-password protection setting has been reviewed in Supabase Auth console.
-- [ ] Confirm production Auth redirect URLs and email templates have been reviewed.
+- [ ] Confirm Supabase project, if used, is the intended prototype/pilot project.
+- [ ] Confirm YM Hub/Salesforce opportunity CTA target is configured where needed.
+- [ ] Confirm leaked-password protection setting has been reviewed in Supabase Auth console if Supabase Auth is used.
+- [ ] Confirm production Auth redirect URLs and email templates have been reviewed if Supabase Auth is used.
+- [ ] Confirm `docs/product-intent.md` and `docs/ai-development-guide.md` match the tested behavior.
 
 ## Database and smoke checks
 
 ### SQL validation
 
-- [ ] Run latest SQL validation checks against the Supabase project.
-- [ ] Confirm required `app_*` tables exist.
+- [ ] Run latest SQL validation checks against the Supabase project if Supabase is used.
+- [ ] Confirm required `app_*` tables exist for in-scope prototype/app-owned areas.
 - [ ] Confirm sensitive RPCs are not executable by `anon`.
 - [ ] Confirm admin report and audit RPCs are callable by an admin context.
+- [ ] Confirm no SQL/RPC behavior is treated as authoritative for volunteer opportunity sign-up production records unless approved integration docs say so.
 - [ ] Record validation date, operator, and result.
 
 Result notes:
@@ -87,9 +99,10 @@ As admin:
 - [ ] Open admin workspace.
 - [ ] Open System / QA area.
 - [ ] Run QA smoke checks from the in-app admin QA panel.
-- [ ] Confirm required table access passes.
+- [ ] Confirm required table access passes for in-scope app-owned areas.
 - [ ] Confirm grant audit has no targeted `anon` exposure.
-- [ ] Confirm training, opportunity, attendance, reports, audit, and operational count checks complete without failures.
+- [ ] Confirm training, attendance, reports, audit, and operational count checks complete without failures.
+- [ ] Confirm opportunity sign-up checks are either removed, read-only, or explicitly labelled prototype/non-authoritative.
 - [ ] Record warnings separately; do not ignore them.
 
 Result notes:
@@ -113,53 +126,43 @@ As Volunteer A:
 - [ ] Confirm profile details persist after refresh.
 - [ ] Confirm admin workspace is not visible.
 - [ ] Browse opportunities.
-- [ ] Sign up for an open opportunity session.
-- [ ] Confirm sign-up appears in the volunteer dashboard.
-- [ ] Confirm status is pending/review state until admin action.
+- [ ] Select an opportunity CTA.
+- [ ] Confirm the CTA routes to YM Hub/Salesforce or the approved authoritative sign-up destination.
+- [ ] Confirm the app does not create an in-app volunteer opportunity sign-up as a side effect of the CTA.
 - [ ] Browse training.
 - [ ] Sign up for an open training session.
 - [ ] Confirm training sign-up appears in dashboard.
 - [ ] Open notifications panel/history if available.
 
-## Admin sign-up queue load and search
+## Historical admin sign-up queue load and search
 
-As admin:
+This section is retained only for prototype regression context. Do not use it as evidence that this app owns production opportunity sign-ups.
+
+As admin, if a prototype or read-only mirror sign-up queue still exists:
 
 - [ ] Open Admin workspace.
 - [ ] Open Sign-ups queue.
 - [ ] Use Refresh queue.
-- [ ] Confirm pending/waitlisted sign-up rows load.
+- [ ] Confirm rows are labelled as prototype, legacy, or read-only mirror where appropriate.
 - [ ] Search by volunteer name.
 - [ ] Search by email.
 - [ ] Search by opportunity title.
 - [ ] Filter by status if available.
 - [ ] Open a sign-up row.
 - [ ] Confirm drawer/details are human-readable and do not expose raw JSON as primary UI.
+- [ ] Confirm no production sign-up creation or final lifecycle decision is made inside this app unless approved and documented.
 
-## Sign-up review actions
+## Historical sign-up review actions
 
-For at least one pending sign-up:
+This section is retained only for prototype regression context. Current product QA should prefer YM Hub/Salesforce redirect and read-only mirror validation.
 
-- [ ] Confirm the sign-up.
-- [ ] Confirm status updates to `confirmed`.
-- [ ] Confirm capacity behavior is respected.
-- [ ] Confirm volunteer dashboard updates after refresh/sign-in.
-- [ ] Confirm volunteer notification is created where applicable.
-- [ ] Confirm audit log row is created.
+For at least one pending prototype or read-only mirror record, where applicable:
 
-For at least one sign-up suitable for waitlist:
-
-- [ ] Waitlist the sign-up.
-- [ ] Confirm status updates to `waitlisted`.
-- [ ] Confirm volunteer dashboard reflects waitlist status.
-- [ ] Confirm notification/audit rows are created where applicable.
-
-For at least one sign-up suitable for decline:
-
-- [ ] Decline the sign-up.
-- [ ] Confirm status updates to `declined`.
-- [ ] Confirm volunteer dashboard reflects declined status.
-- [ ] Confirm notification/audit rows are created where applicable.
+- [ ] Confirm the UI does not imply this app is the final authority for opportunity participation.
+- [ ] Confirm any review action is either disabled, prototype-only, or explicitly approved.
+- [ ] Confirm capacity behavior is not represented as final production capacity unless sourced from YM Hub/Salesforce.
+- [ ] Confirm volunteer dashboard state is not presented as official unless sourced from YM Hub/Salesforce.
+- [ ] Confirm notification/audit rows are created only for in-scope app-owned actions.
 
 ## Attendance verification actions
 
@@ -177,8 +180,8 @@ Verify action:
 
 - [ ] Verify a submitted claim.
 - [ ] Confirm claim status updates to `verified`.
-- [ ] Confirm verified hours are reflected in volunteer statistics.
-- [ ] Confirm associated sign-up/completion state updates as expected.
+- [ ] Confirm verified hours are reflected in volunteer statistics where this app owns the display.
+- [ ] Confirm associated completion state updates only where that behavior is approved for this app.
 - [ ] Confirm notification and audit rows are created.
 
 Adjustment action:
@@ -278,7 +281,7 @@ As admin:
 - [ ] Open Reports area.
 - [ ] Run Volunteer hours report.
 - [ ] Run Attendance verification report.
-- [ ] Run Opportunity participation report.
+- [ ] Run Opportunity participation report only if its data is sourced from YM Hub/Salesforce, an approved read-only mirror, or clearly labelled non-authoritative prototype data.
 - [ ] Run Training completion report.
 - [ ] Run Referrals report.
 - [ ] Run Points report.
@@ -313,7 +316,7 @@ As admin:
 As Volunteer A:
 
 - [ ] Open notifications panel/history.
-- [ ] Confirm relevant opportunity, attendance, training, referral, or points notifications are visible.
+- [ ] Confirm relevant opportunity redirect/status, attendance, training, referral, or points notifications are visible.
 - [ ] Mark notifications read where supported.
 - [ ] Confirm read state persists after refresh.
 
@@ -328,10 +331,12 @@ https://aqideh.github.io/mendakivolapp/?v=<commit>
 Required deployment checks:
 
 - [ ] Confirm app loads without console errors on initial page load.
-- [ ] Confirm Supabase client initializes.
+- [ ] Confirm Supabase client initializes if configured.
 - [ ] Confirm sign-in flow opens.
 - [ ] Confirm volunteer dashboard loads after sign-in.
 - [ ] Confirm admin workspace loads after admin sign-in.
+- [ ] Confirm opportunity CTAs route to YM Hub/Salesforce or approved authoritative destination.
+- [ ] Confirm opportunity CTAs do not create localStorage or Supabase opportunity sign-ups unless explicitly approved.
 - [ ] Confirm `index.html` loads responsibility-named admin scripts:
   - `assets/admin-ux.js`
   - `assets/admin-qa.js`
@@ -371,9 +376,11 @@ Follow-up issues:
 
 These require console/policy decisions and cannot be closed only by repository changes:
 
-- Supabase leaked-password protection setting reviewed/enabled.
-- Production Auth redirect URLs verified.
-- Production email templates verified.
-- Authenticated `SECURITY DEFINER` RPC warning handling decision recorded.
+- YM Hub/Salesforce CTA destination and ownership confirmed.
+- Opportunity reporting source-of-truth decision recorded.
+- Supabase leaked-password protection setting reviewed/enabled if Supabase Auth is used.
+- Production Auth redirect URLs verified if Supabase Auth is used.
+- Production email templates verified if Supabase Auth is used.
+- Authenticated `SECURITY DEFINER` RPC warning handling decision recorded where relevant.
 - Decision recorded for old non-`app_*` tables and derived views.
 - Decision recorded for manual points adjustment policy.
