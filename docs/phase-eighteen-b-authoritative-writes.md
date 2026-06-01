@@ -1,5 +1,7 @@
 # Phase 18B — Authoritative Supabase write path cleanup
 
+> Supersession note: This phase describes earlier prototype behavior and is superseded by the YM Hub/Salesforce product boundary in `docs/product-intent.md`. Opportunity sign-up creation, lifecycle state, capacity, and waitlist authority belong to YM Hub/Salesforce. Supabase opportunity sign-up writes described here are historical prototype behavior unless explicitly reapproved and documented.
+
 This phase starts removing production-risky local-first writes. In Supabase mode, high-impact volunteer lifecycle actions should wait for the database/RPC response before the UI treats the action as successful.
 
 ## Implemented in this slice
@@ -13,6 +15,8 @@ This phase starts removing production-risky local-first writes. In Supabase mode
 - admin sign-up review decisions
 
 When Supabase Auth is ready, these actions are handled before the older local-first handlers. The database/RPC result is treated as authoritative, then local cached state is refreshed from Supabase.
+
+Historical note: this Supabase authority model is no longer the product boundary for volunteer opportunity sign-ups. YM Hub/Salesforce is the authoritative production source of truth. Do not restore or extend these writes as production behavior without updating `docs/product-intent.md`, `docs/ai-development-guide.md`, `docs/architecture.md`, and README.
 
 This avoids the previous production-risk pattern where the UI wrote localStorage first and only later attempted to persist to Supabase.
 
@@ -38,6 +42,8 @@ This avoids the previous production-risk pattern where the UI wrote localStorage
 9. Temporarily remove or break the capacity RPC in a test database and verify the UI shows an error instead of silently creating a local successful sign-up.
 10. Disable Supabase config and confirm local demo sign-up still works.
 
+Historical QA note: this checklist is retained for prototype regression context only. Current product QA should verify that volunteer opportunity CTAs route to YM Hub/Salesforce and do not create in-app opportunity sign-ups unless the product boundary has been changed.
+
 ## Remaining Phase 18B work
 
 The same server-authoritative pattern should still be applied to:
@@ -50,4 +56,4 @@ Attendance admin review should be especially strict: if `review_attendance_claim
 
 ## Next recommended implementation slice
 
-Continue Phase 18B by making training registration/review server-authoritative, then make attendance review strictly transactional.
+Continue Phase 18B by making training registration/review server-authoritative, then make attendance review strictly transactional. Do not use this historical document to justify in-app opportunity sign-up ownership.
