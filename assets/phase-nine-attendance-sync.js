@@ -18,6 +18,7 @@
       id: claim.id,
       signup_id: claim.signupId || null,
       opportunity_id: String(claim.opportunityId || ''),
+      session_id: claim.sessionId || null,
       email: claim.email || session()?.email || '',
       volunteer_name: claim.volunteerName || session()?.name || 'Volunteer',
       title: claim.title || '',
@@ -47,6 +48,7 @@
       id: row.id,
       signupId: row.signup_id || '',
       opportunityId: String(row.opportunity_id || ''),
+      sessionId: row.session_id || '',
       email: row.email || '',
       volunteerName: row.volunteer_name || 'Volunteer',
       title: row.title || '',
@@ -79,19 +81,20 @@
     return '';
   }
 
-  async function fetchSupabaseAttendanceClaims() {
-    const supabase = client();
-    if (!supabase || !session()?.email) return [];
+  function requireSupabaseAttendance() {
+    if (!client()) throw new Error('Supabase is required for attendance persistence. No local fallback is allowed.');
+    if (!session()?.email) throw new Error('A signed-in session is required for attendance persistence.');
+  }
 
-    const { data, error } = await supabase
+  async function fetchSupabaseAttendanceClaims() {
+    requireSupabaseAttendance();
+
+    const { data, error } = await client()
       .from(ATTENDANCE_TABLE)
       .select('*')
       .order('updated_at', { ascending: false });
 
-    if (error) {
-      console.warn('Could not load Supabase attendance claims; keeping local fallback.', error);
-      return window.VolunteerDataStore.getAttendanceClaims();
-    }
+    if (error) throw new Error(`Could not load Supabase attendance claims: ${error.message}`);
 
     const claims = Array.isArray(data) ? data.map(rowToClaim) : [];
     window.VolunteerDataStore.saveAttendanceClaims(claims);
@@ -107,25 +110,21 @@
   }
 
   async function reviewAttendanceClaimTransactionally(claim) {
-    const supabase = client();
-    if (!supabase || !session()?.email || !claim?.id || !window.VolunteerDataStore?.isAdmin?.()) {
-      return { ok: false, skipped: true };
-    }
+    requireSupabaseAttendance();
+    if (!claim?.id) throw new Error('Attendance claim id is required for transactional review.');
+    if (!window.VolunteerDataStore?.isAdmin?.()) throw new Error('Admin access is required for attendance review.');
 
     const action = actionFromClaimStatus(claim.claimStatus);
-    if (!action) return { ok: false, skipped: true };
+    if (!action) throw new Error(`Unsupported attendance review status: ${claim.claimStatus || 'missing'}.`);
 
-    const { error } = await supabase.rpc('review_attendance_claim_transactional', {
+    const { error } = await client().rpc('review_attendance_claim_transactional', {
       p_claim_id: claim.id,
       p_action: action,
       p_verified_hours: Number(claim.verifiedHours || 0),
       p_admin_notes: claim.adminNotes || null
     });
 
-    if (error) {
-      console.warn('Transactional attendance review unavailable or failed; falling back to direct attendance save.', error);
-      return { ok: false, reason: error.message, fallback: true };
-    }
+    if (error) throw new Error(`Transactional attendance review failed: ${error.message}`);
 
     await fetchSupabaseAttendanceClaims();
     if (typeof window.VolunteerDataStore?.fetchSupabaseOpportunitySignups === 'function') {
@@ -138,27 +137,23 @@
   }
 
   async function saveSupabaseAttendanceClaim(claim, options = {}) {
-    const supabase = client();
-    if (!supabase || !session()?.email || !claim?.id) return { ok: false, skipped: true };
+    requireSupabaseAttendance();
+    if (!claim?.id) throw new Error('Attendance claim id is required for persistence.');
 
     const isVolunteerClarification = options.clarificationResponse === true;
     const isAdminReview = options.review === true || ['verified', 'adjusted', 'clarification_requested', 'rejected'].includes(claim.claimStatus);
     if (!isVolunteerClarification && isAdminReview && window.VolunteerDataStore?.isAdmin?.()) {
-      const reviewResult = await reviewAttendanceClaimTransactionally(claim);
-      if (reviewResult.ok) return reviewResult;
+      return reviewAttendanceClaimTransactionally(claim);
     }
 
     const row = claimToRow(claim);
     const mode = options.mode || 'upsert';
     const request = mode === 'update'
-      ? supabase.from(ATTENDANCE_TABLE).update(row).eq('id', claim.id)
-      : supabase.from(ATTENDANCE_TABLE).upsert(row, { onConflict: 'id' });
+      ? client().from(ATTENDANCE_TABLE).update(row).eq('id', claim.id)
+      : client().from(ATTENDANCE_TABLE).upsert(row, { onConflict: 'id' });
     const { data, error } = await request.select('*').single();
 
-    if (error) {
-      console.warn('Could not save Supabase attendance claim; local fallback remains active.', error);
-      return { ok: false, reason: error.message };
-    }
+    if (error) throw new Error(`Could not save Supabase attendance claim: ${error.message}`);
 
     const saved = rowToClaim(data);
     const claims = window.VolunteerDataStore.getAttendanceClaims();
@@ -179,8 +174,14 @@
     return window.VolunteerDataStore.getAttendanceClaims().find(item => item.id === claimId);
   }
 
+  function showAttendancePersistenceError(error) {
+    const message = error?.message || String(error || 'Attendance persistence failed.');
+    console.error(message, error);
+    window.alert(message);
+  }
+
   function persistClaim(claim, options = {}) {
-    if (!claim) return Promise.resolve({ ok: false, reason: 'missing_claim' });
+    if (!claim) return Promise.reject(new Error('Attendance claim is missing.'));
     return saveSupabaseAttendanceClaim(claim, options).then(result => {
       if (result?.ok && !result.transactional) return fetchSupabaseAttendanceClaims();
       return result;
@@ -190,6 +191,9 @@
   function refreshAttendanceViews() {
     if (typeof phaseThreeRender === 'function') phaseThreeRender();
     if (typeof phaseOneRenderDashboard === 'function') phaseOneRenderDashboard();
+    if (window.MENDAKIVolunteerStats?.renderVolunteerStatsFromAttendanceClaims) {
+      window.MENDAKIVolunteerStats.renderVolunteerStatsFromAttendanceClaims();
+    }
   }
 
   function installClickPersistence() {
@@ -200,7 +204,9 @@
       const punchButton = event.target.closest('[data-attendance-punch]');
       if (!punchButton) return;
       const signupId = punchButton.dataset.attendancePunch;
-      window.setTimeout(() => persistClaim(claimBySignupId(signupId), { mode: 'upsert' }), 0);
+      window.setTimeout(() => {
+        persistClaim(claimBySignupId(signupId), { mode: 'upsert' }).catch(showAttendancePersistenceError);
+      }, 0);
     }, true);
   }
 
@@ -214,7 +220,9 @@
       const form = event.target.closest('[data-attendance-review]');
       if (!form) return;
       const claimId = form.dataset.attendanceReview;
-      window.setTimeout(() => persistClaim(claimById(claimId), { mode: 'update', review: true }), 0);
+      window.setTimeout(() => {
+        persistClaim(claimById(claimId), { mode: 'update', review: true }).catch(showAttendancePersistenceError);
+      }, 0);
     }, true);
   }
 
@@ -230,14 +238,14 @@
     reviewAttendanceClaimTransactionally
   });
 
-  window.addEventListener('volunteer-auth-ready', syncAndRender);
-  window.addEventListener('volunteer-auth-changed', syncAndRender);
+  window.addEventListener('volunteer-auth-ready', () => syncAndRender().catch(showAttendancePersistenceError));
+  window.addEventListener('volunteer-auth-changed', () => syncAndRender().catch(showAttendancePersistenceError));
   window.addEventListener('volunteer-attendance-synced', refreshAttendanceViews);
-  window.addEventListener('volunteer-signups-synced', syncAndRender);
+  window.addEventListener('volunteer-signups-synced', () => syncAndRender().catch(showAttendancePersistenceError));
 
   document.addEventListener('DOMContentLoaded', () => {
     installClickPersistence();
     installSubmitPersistence();
-    window.setTimeout(syncAndRender, 220);
+    window.setTimeout(() => syncAndRender().catch(showAttendancePersistenceError), 220);
   });
 })();
