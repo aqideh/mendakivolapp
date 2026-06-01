@@ -184,7 +184,7 @@
 
   function decorateCards() {
     qsa('[data-ui-next-meta]').forEach(node => node.remove());
-    qsa('[data-signup-opportunity]').forEach(button => {
+    qsa('[data-signup-opportunity], [data-ymhub-signup]').forEach(button => {
       if (!button.dataset.uiCtaApplied && !button.disabled) {
         button.dataset.uiCtaApplied = 'true';
         button.innerHTML = '<span class="ui-cta-emoji">Sign up on YM-Hub</span>';
