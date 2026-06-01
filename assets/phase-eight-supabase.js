@@ -1,5 +1,6 @@
 (() => {
   const OPPORTUNITY_TABLE = 'app_opportunities';
+  const YM_HUB_SIGNUP_URL = 'https://www.mendaki.org.sg/login';
 
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
@@ -12,6 +13,11 @@
     const activeClient = client();
     if (!activeClient) throw new Error('Supabase is not configured. Check assets/supabase-config.js.');
     return activeClient;
+  }
+
+  function openYmHubSignup() {
+    const target = window.open(YM_HUB_SIGNUP_URL, '_blank', 'noopener');
+    if (target) target.opener = null;
   }
 
   function rowToOpportunity(row) {
@@ -139,27 +145,6 @@
     else if (variant === 'error') window.alert(message);
   }
 
-  function labelForStatus(status) {
-    return typeof phaseTwoStatusLabel === 'function' ? phaseTwoStatusLabel(status) : status || 'Pending review';
-  }
-
-  async function createAuthoritativeSignup(button) {
-    if (!session()?.email) {
-      phaseOneOpenAuth();
-      return;
-    }
-    setButtonBusy(button, true, 'Signing up...');
-    const result = await dataAccess().createOpportunitySignup(button.dataset.signupOpportunity);
-    setButtonBusy(button, false);
-    if (!result.ok) {
-      showSignupNotice(`Could not create this sign-up: ${result.reason || 'Please try again.'}`, 'error');
-      return;
-    }
-    button.textContent = labelForStatus(result.signup.status);
-    button.disabled = true;
-    showSignupNotice(`Your sign-up is ${labelForStatus(result.signup.status).toLowerCase()}. It will appear in your dashboard.`);
-  }
-
   async function cancelAuthoritativeSignup(button) {
     setButtonBusy(button, true, 'Cancelling...');
     const result = await dataAccess().cancelOpportunitySignup(button.dataset.cancelSignup);
@@ -201,16 +186,22 @@
     if (window.__opportunityLifecycleHandlersInstalled) return;
     window.__opportunityLifecycleHandlersInstalled = true;
     document.addEventListener('click', event => {
+      const signupButton = event.target.closest('[data-signup-opportunity], [data-ymhub-signup]');
+      if (signupButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openYmHubSignup();
+        return;
+      }
+
       if (!isSupabaseReady()) return;
-      const signupButton = event.target.closest('[data-signup-opportunity]');
       const cancelButton = event.target.closest('[data-cancel-signup]');
       const adminStatusButton = event.target.closest('[data-admin-signup-status]');
-      const target = signupButton || cancelButton || adminStatusButton;
+      const target = cancelButton || adminStatusButton;
       if (!target) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (signupButton) createAuthoritativeSignup(signupButton);
-      else if (cancelButton) cancelAuthoritativeSignup(cancelButton);
+      if (cancelButton) cancelAuthoritativeSignup(cancelButton);
       else reviewAuthoritativeSignup(adminStatusButton);
     }, true);
   }
