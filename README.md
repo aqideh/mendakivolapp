@@ -1,28 +1,34 @@
 # MENDAKI Volunteer Hub
 
-A static, mobile-first volunteer web app converted from the supplied HTML prototype. It is designed for GitHub Pages and uses a Git-based CMS so editors can update site copy, opportunities, events, news, FAQs, and contact details without touching the app code.
+A mobile-first MENDAKI volunteer web app. The project is expanding from a static content prototype into an in-app volunteer platform with sign-in, dashboard workflows, Supabase-backed data, training, sign-ups, attendance, notifications, reports, and admin tools.
+
+Sveltia CMS has been removed. Content and admin updates should be handled through the app's signed-in dashboard/admin surfaces and the Supabase-backed data layer, not through the legacy `/admin/` route or Git-based CMS configuration.
 
 ## What is included
 
 ```text
 .
-├── index.html                    # Public web app
+├── index.html                    # Public web app shell
 ├── assets/
-│   ├── app.js                    # Data loading, routing, filters, modals
-│   ├── styles.css                # Responsive MENDAKI-themed UI
-│   └── uploads/                  # CMS media uploads
+│   ├── app.js                    # Data loading, routing, filters, and modals
+│   ├── data-access.js            # Data access layer used by the app
+│   ├── data-store.js             # Local/static data store helpers
+│   ├── supabase-config.js        # Supabase client configuration
+│   ├── phase-one-auth.js         # Authentication and profile flow
+│   ├── session-management.js     # Session/admin session tools
+│   ├── dashboard-pages.js        # Volunteer dashboard screens
+│   └── styles.css                # Responsive MENDAKI-themed UI
 ├── content/
-│   └── data.json                 # CMS-managed content source
-├── admin/
-│   ├── index.html                # CMS app
-│   └── config.yml                # CMS content model and GitHub backend
-├── .github/workflows/pages.yml   # GitHub Pages deployment workflow
+│   ├── data.json                 # Static baseline site content
+│   ├── news.json                 # Static baseline news content
+│   ├── opportunities.json        # Static baseline opportunity content
+│   └── trainings.json            # Static baseline training content
 └── .nojekyll                     # Disables Jekyll processing on Pages
 ```
 
 ## Local preview
 
-Run a local web server from the project root. Opening `index.html` directly may block `content/data.json` in some browsers.
+Run a local web server from the project root. Opening `index.html` directly may block JSON loading in some browsers.
 
 ```bash
 python3 -m http.server 8080
@@ -34,73 +40,28 @@ Then open:
 http://localhost:8080/
 ```
 
-## CMS setup
+## Content and admin model
 
-The admin interface is at:
+The app now treats the signed-in dashboard/admin tools as the main editing surface. Static JSON files in `content/` remain useful as baseline or seed data, but they are no longer managed by Sveltia CMS.
 
-```text
-/admin/
-```
+Current static content files include:
 
-Before publishing, edit `admin/config.yml`:
+- `content/data.json` for general site settings and about-page content
+- `content/news.json` for news items
+- `content/opportunities.json` for volunteer opportunities
+- `content/trainings.json` for training sessions
 
-```yaml
-backend:
-  name: github
-  repo: YOUR_GITHUB_USERNAME/mendaki-volunteer-hub
-  branch: main
-```
-
-Replace `YOUR_GITHUB_USERNAME/mendaki-volunteer-hub` with the real GitHub owner and repository.
-
-This project uses Sveltia CMS, a Git-based CMS compatible with the Netlify/Decap CMS configuration format. For a small technical team, the quickest GitHub Pages setup is the CMS login screen's **Sign in with Token** flow. For multiple non-technical editors, deploy an OAuth client such as Sveltia CMS Authenticator and set `backend.base_url` in `admin/config.yml`.
-
-Editable site settings, opportunities, events, and about-page content live in `content/data.json`. Newsfeed items live in `content/news.json`. When an editor saves in the CMS, the CMS commits changes to the repository, and GitHub Pages redeploys the site.
+When adding expansion features, update the main data access path directly rather than adding compatibility fallbacks around deprecated CMS behaviour.
 
 ## Publish to GitHub Pages
 
-1. Create a new GitHub repository, for example `mendaki-volunteer-hub`.
-2. Put these files in the repository root.
-3. Update `admin/config.yml` with the correct `owner/repo`.
-4. Push to the `main` branch.
-5. In GitHub: **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-6. The included workflow deploys the repository as a static site.
-
-The public URL will usually be:
-
-```text
-https://YOUR_GITHUB_USERNAME.github.io/mendaki-volunteer-hub/
-```
-
-For an organization repository, replace `YOUR_GITHUB_USERNAME` with the organization name.
-
-## Editing content
-
-In the CMS, open **Site Content -> Website Content**. You can manage:
-
-- Site title, hero text, registration link, and statistics
-- About page intro, pillars, and FAQ
-- Volunteer opportunities
-- Events
-
-For news articles and featured status, open **News Feed -> News Feed**.
+1. Push changes to the `main` branch.
+2. In GitHub, configure **Settings -> Pages** for the repository's intended deployment source.
+3. Keep public deployment data free of confidential or personal information.
 
 ## Notes
 
-- The app is static: there is no server-side database.
-- Content changes are stored as Git commits in `content/data.json` and `content/news.json`.
-- Keep opportunity IDs unique. News IDs are generated by the CMS. Event `Related opportunity ID` should match an opportunity ID when you want an event to open that opportunity's detail modal.
-- Do not put confidential or personal data in the repository. GitHub Pages content is public when published.
-
-## Editing the newsfeed
-
-The public newsfeed is managed separately in `content/news.json` and exposed in Sveltia CMS as the **News Feed** collection. In the CMS:
-
-1. Open `/admin/`.
-2. Sign in with GitHub.
-3. Open **News Feed -> News Feed**.
-4. Add, edit, reorder, feature, or remove news items.
-5. Save/publish. The CMS commits the JSON change to the repository; GitHub Pages redeploys the static site from the included workflow.
-
-Each news item includes an auto-generated ID, category, optional emoji, title, publication date, read time, featured toggle, and body paragraphs.
-
+- Do not restore the legacy Sveltia CMS `/admin/` route.
+- Do not reintroduce CMS branch configuration such as `branch: swipe` or `branch: expansion`.
+- Keep opportunity, session, training, news, and attendance data models aligned with the app data access layer.
+- Avoid putting confidential or personal data in public repository content.
