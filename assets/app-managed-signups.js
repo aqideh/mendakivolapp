@@ -49,12 +49,6 @@ function managedSignupCurrentSignup(id) {
   return typeof phaseTwoUserSignupForOpportunity === 'function' ? phaseTwoUserSignupForOpportunity(id) : null;
 }
 
-function managedSignupCounts(id) {
-  return typeof phaseTwoSignupCounts === 'function'
-    ? phaseTwoSignupCounts(id)
-    : { pending: 0, confirmed: 0, waitlisted: 0, completed: 0 };
-}
-
 function managedSignupOpenOpportunityModal(id) {
   const opp = managedSignupOpportunity(id);
   const modal = document.querySelector('#modal');
@@ -62,7 +56,6 @@ function managedSignupOpenOpportunityModal(id) {
   if (!opp || !modal || !layer) return;
 
   const signup = managedSignupCurrentSignup(id);
-  const counts = managedSignupCounts(id);
   const active = signup && !['cancelled', 'declined', 'completed'].includes(signup.status);
   const actions = [
     managedSignupMake('button', {
@@ -103,10 +96,6 @@ function managedSignupOpenOpportunityModal(id) {
         managedSignupMake('span', { class: 'modal-chip' }, [managedSignupIcon('icon-clock'), document.createTextNode(opp.time || '')]),
         managedSignupMake('span', { class: 'modal-chip' }, [managedSignupIcon('icon-location'), document.createTextNode(opp.location || '')]),
         managedSignupMake('span', { class: 'modal-chip' }, [managedSignupIcon('icon-calendar'), document.createTextNode(opp.commitment || '')])
-      ]),
-      managedSignupMake('section', { class: 'modal-section' }, [
-        managedSignupMake('h3', { text: 'Sign-up status' }),
-        managedSignupMake('p', { text: `${counts.pending} pending review · ${counts.confirmed} confirmed · ${counts.waitlisted} waitlisted · ${counts.completed} completed` })
       ]),
       managedSignupMake('section', { class: 'modal-section' }, [
         managedSignupMake('h3', { text: 'About this role' }),
