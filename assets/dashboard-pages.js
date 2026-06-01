@@ -169,9 +169,10 @@ function dashboardRefreshTrainingSections() {
   if (typeof window.phaseFourRender === 'function') window.phaseFourRender();
 }
 
-function dashboardSetView(view = 'home') {
+function dashboardSetView(view = 'home', options = {}) {
   const nextView = dashboardViews[view] ? view : 'home';
-  if (nextView === 'admin' && !dashboardIsAdmin()) return dashboardSetView('home');
+  const shouldScroll = options.scroll === true;
+  if (nextView === 'admin' && !dashboardIsAdmin()) return dashboardSetView('home', { scroll: shouldScroll });
 
   dashboardPageState.activeView = nextView;
   const layout = dashboardLayout();
@@ -196,7 +197,7 @@ function dashboardSetView(view = 'home') {
   });
 
   dashboardUpdateStatsLoadingState();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function dashboardInstall() {
@@ -208,7 +209,7 @@ function dashboardInstall() {
   dashboardApplyCardRoles();
   dashboardBuildHome();
   dashboardBuildModuleShell();
-  dashboardSetView(dashboardPageState.activeView || 'home');
+  dashboardSetView(dashboardPageState.activeView || 'home', { scroll: false });
   dashboardUpdateStatsLoadingState();
 }
 
@@ -220,15 +221,15 @@ function dashboardBind() {
     const target = event.target.closest('[data-dashboard-view-target]');
     if (!target) return;
     event.preventDefault();
-    dashboardSetView(target.dataset.dashboardViewTarget || 'home');
+    dashboardSetView(target.dataset.dashboardViewTarget || 'home', { scroll: true });
   }, true);
 
   window.addEventListener('hashchange', () => {
-    if (window.location.hash.replace('#', '') === 'dashboard') dashboardSetView('home');
+    if (window.location.hash.replace('#', '') === 'dashboard') dashboardSetView('home', { scroll: true });
   });
 
   window.addEventListener('volunteer-auth-ready', dashboardInstall);
-  window.addEventListener('volunteer-auth-changed', () => dashboardSetView('home'));
+  window.addEventListener('volunteer-auth-changed', dashboardInstall);
   window.addEventListener('volunteer-signups-synced', dashboardInstall);
   window.addEventListener('volunteer-training-signups-synced', dashboardInstall);
   window.addEventListener('volunteer-training-sessions-synced', dashboardInstall);
