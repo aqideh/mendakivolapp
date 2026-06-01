@@ -8,6 +8,12 @@
   function appState() { return state; }
   function isSupabaseReady() { return Boolean(client() && session()?.authUserId); }
 
+  function requireSupabaseClient() {
+    const activeClient = client();
+    if (!activeClient) throw new Error('Supabase is not configured. Check assets/supabase-config.js.');
+    return activeClient;
+  }
+
   function rowToOpportunity(row) {
     return {
       id: row.id,
@@ -55,8 +61,8 @@
   }
 
   async function fetchSupabaseOpportunities() {
-    if (!client()) return [];
-    const { data, error } = await client()
+    const activeClient = requireSupabaseClient();
+    const { data, error } = await activeClient
       .from(OPPORTUNITY_TABLE)
       .select('id, type, category, title, description, requirements, time, location, commitment, status, capacity, waitlist_enabled, default_hours, starts_at, ends_at, photo, photo_alt')
       .order('title', { ascending: true });
@@ -70,13 +76,34 @@
     if (typeof phaseTwoRenderDashboardSignups === 'function') phaseTwoRenderDashboardSignups();
   }
 
+  function renderOpportunitySyncError(error) {
+    console.error('Opportunity sync failed', error);
+    const message = error?.message || 'Could not load opportunities from Supabase.';
+    const shell = document.querySelector('#opportunities-grid');
+    const empty = document.querySelector('#opportunities-empty');
+    if (shell) {
+      shell.replaceChildren();
+      shell.className = 'container opportunity-swipe-shell';
+      const notice = document.createElement('div');
+      notice.className = 'empty-state';
+      notice.textContent = `Could not load opportunities from Supabase: ${message}`;
+      shell.append(notice);
+    }
+    if (empty) empty.hidden = true;
+  }
+
   async function applySupabaseOpportunities() {
     if (!appState().data) return { ok: false, count: 0 };
-    const opportunities = await fetchSupabaseOpportunities();
-    appState().data.opportunities = opportunities;
-    refreshOpportunityViews();
-    window.dispatchEvent(new CustomEvent('volunteer-opportunities-synced'));
-    return { ok: true, count: opportunities.length };
+    try {
+      const opportunities = await fetchSupabaseOpportunities();
+      appState().data.opportunities = opportunities;
+      refreshOpportunityViews();
+      window.dispatchEvent(new CustomEvent('volunteer-opportunities-synced'));
+      return { ok: true, count: opportunities.length };
+    } catch (error) {
+      renderOpportunitySyncError(error);
+      throw error;
+    }
   }
 
   async function syncOpportunityToSupabase(opp) {
@@ -198,17 +225,17 @@
   installOpportunityLifecycleHandlers();
 
   window.addEventListener('volunteer-auth-ready', () => {
-    applySupabaseOpportunities();
+    applySupabaseOpportunities().catch(() => {});
     syncSignupsAndRefresh();
   });
   window.addEventListener('volunteer-auth-changed', () => {
-    applySupabaseOpportunities();
+    applySupabaseOpportunities().catch(() => {});
     syncSignupsAndRefresh();
   });
   window.addEventListener('volunteer-signups-synced', refreshVisibleSignupViews);
 
   document.addEventListener('DOMContentLoaded', () => {
-    window.setTimeout(applySupabaseOpportunities, 120);
+    window.setTimeout(() => applySupabaseOpportunities().catch(() => {}), 120);
     window.setTimeout(syncSignupsAndRefresh, 180);
   });
 })();
