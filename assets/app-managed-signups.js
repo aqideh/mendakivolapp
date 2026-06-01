@@ -1,3 +1,5 @@
+const MANAGED_YM_HUB_SIGNUP_URL = 'https://www.mendaki.org.sg/login';
+
 function managedSignupMake(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   Object.entries(attrs).forEach(([key, value]) => {
@@ -35,6 +37,11 @@ function managedSignupBadgeClass(value = '') {
 
 function managedSignupTypeLabel(type = '') {
   return type === 'long-term' ? 'Long-term' : 'Ad-hoc';
+}
+
+function managedOpenYmHubSignup() {
+  const target = window.open(MANAGED_YM_HUB_SIGNUP_URL, '_blank', 'noopener');
+  if (target) target.opener = null;
 }
 
 function managedSignupOpenOpportunityModal(id) {
@@ -87,6 +94,14 @@ function managedSignupOpenOpportunityModal(id) {
   document.body.style.overflow = 'hidden';
   requestAnimationFrame(() => modal.focus({ preventScroll: true }));
 }
+
+document.addEventListener('click', event => {
+  const signupButton = event.target.closest('[data-signup-opportunity], [data-ymhub-signup]');
+  if (!signupButton) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  managedOpenYmHubSignup();
+}, true);
 
 document.addEventListener('click', event => {
   const oppCard = event.target.closest('[data-opp-id]');
