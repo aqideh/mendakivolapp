@@ -1,9 +1,15 @@
+# DEPRECATED: Sveltia CMS is no longer the authoritative admin surface.
+#
+# Production/admin edits should be made through the signed-in app dashboard,
+# which writes to Supabase tables and RPCs. This config is retained only as
+# historical reference for the old GitHub JSON content workflow.
+#
 # yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
 
 backend:
   name: github
   repo: aqideh/mendakivolapp
-  branch: swipe
+  branch: expansion
   # Optional: add base_url for a team OAuth flow on GitHub Pages.
   # base_url: https://YOUR-OAUTH-WORKER.example.workers.dev
 
@@ -11,11 +17,171 @@ media_folder: assets/uploads
 public_folder: assets/uploads
 
 collections:
+  - name: volunteer_opportunities
+    label: Manage Opportunities
+    files:
+      - name: opportunities
+        label: Volunteer Opportunities
+        file: content/opportunities.json
+        format: json
+        fields:
+          - label: Opportunities
+            name: opportunities
+            widget: list
+            summary: "{{fields.title}} - {{fields.status}}"
+            label_singular: Opportunity
+            minimize_collapsed: true
+            fields:
+              - label: Title
+                name: title
+                widget: string
+                hint: "Public title shown on opportunity cards."
+              - label: ID
+                name: id
+                widget: number
+                value_type: int
+                min: 0
+                hint: "Use a unique number. Existing opportunities use 0-5."
+              - label: Status
+                name: status
+                widget: select
+                required: false
+                hint: "Controls the availability label shown to volunteers."
+                options:
+                  - Open
+                  - Closed
+                  - Full
+                  - Waitlist
+                  - "4 left"
+              - label: Type
+                name: type
+                widget: select
+                hint: "Used by the opportunity filter."
+                options:
+                  - label: Long-term
+                    value: long-term
+                  - label: Ad-hoc
+                    value: ad-hoc
+              - label: Volunteer category
+                name: category
+                widget: select
+                hint: "Used by the personality quiz and category filters."
+                options:
+                  - label: Befrienders
+                    value: befriender
+                  - label: Mentors
+                    value: mentor
+                  - label: Facilitators
+                    value: facilitator
+                  - label: Community volunteering
+                    value: community-volunteering
+              - label: Time / schedule
+                name: time
+                widget: string
+                hint: "Example: Weekends, ~2 hrs/session."
+              - label: Location
+                name: location
+                widget: string
+              - label: Expected commitment
+                name: commitment
+                widget: string
+                hint: "Example: Monthly, ongoing or One-time."
+              - label: Description
+                name: description
+                widget: text
+                hint: "Public description shown in the opportunity detail view."
+              - label: Requirements
+                name: requirements
+                widget: text
+                hint: "Skills, age, availability, or suitability notes."
+              - label: Photo
+                name: photo
+                widget: image
+                required: false
+                hint: "Optional image shown on the full-page swipe card and detail view."
+              - label: Photo alt text
+                name: photoAlt
+                widget: string
+                required: false
+                hint: "Describe the photo for screen readers."
+
+  - name: training_sessions
+    label: Manage Training Sessions
+    files:
+      - name: trainings
+        label: Training Sessions
+        file: content/trainings.json
+        format: json
+        fields:
+          - label: Training sessions
+            name: trainings
+            widget: list
+            summary: "{{fields.title}} - {{fields.date}}"
+            label_singular: Training session
+            minimize_collapsed: true
+            fields:
+              - label: Title
+                name: title
+                widget: string
+              - label: ID
+                name: id
+                widget: string
+                hint: "Use a unique slug, e.g. training-orientation."
+              - label: Status
+                name: status
+                widget: select
+                required: false
+                options:
+                  - Open
+                  - Closed
+                  - Full
+                  - Waitlist
+              - label: Date
+                name: date
+                widget: datetime
+                date_format: YYYY-MM-DD
+                time_format: false
+                format: YYYY-MM-DD
+              - label: Time
+                name: time
+                widget: string
+                hint: "Example: 10:00 AM - 12:00 PM."
+              - label: Location
+                name: location
+                widget: string
+              - label: Capacity
+                name: capacity
+                widget: number
+                value_type: int
+                min: 0
+              - label: Trainer
+                name: trainer
+                widget: string
+                required: false
+              - label: Description
+                name: description
+                widget: text
+              - label: Recommended for categories
+                name: requiredFor
+                widget: select
+                multiple: true
+                required: false
+                hint: "Controls which volunteer categories this training is recommended for."
+                options:
+                  - label: Befrienders
+                    value: befriender
+                  - label: Mentors
+                    value: mentor
+                  - label: Facilitators
+                    value: facilitator
+                  - label: Community volunteering
+                    value: community-volunteering
+
   - name: news_feed
-    label: News Feed
+    label: News & Updates
     files:
       - name: news
-        label: News Feed
+        label: News & Updates
         file: content/news.json
         format: json
         fields:
@@ -26,10 +192,13 @@ collections:
             summary: "{{fields.date}} - {{fields.title}}"
             minimize_collapsed: true
             fields:
+              - label: Title
+                name: title
+                widget: string
               - label: ID
                 name: id
                 widget: uuid
-                hint: Auto-generated. Leave unchanged.
+                hint: "Auto-generated. Leave unchanged."
               - label: Category
                 name: category
                 widget: select
@@ -37,14 +206,6 @@ collections:
                   - Announcement
                   - Programme
                   - Volunteer
-              - label: Emoji
-                name: emoji
-                widget: string
-                required: false
-                hint: Optional icon shown on the public news listing.
-              - label: Title
-                name: title
-                widget: string
               - label: Publication date
                 name: date
                 widget: datetime
@@ -61,7 +222,12 @@ collections:
                 widget: boolean
                 default: false
                 required: false
-                hint: Featured stories are prioritised on the home page.
+                hint: "Featured stories are prioritised on the home page."
+              - label: Emoji
+                name: emoji
+                widget: string
+                required: false
+                hint: "Optional icon shown on the public news listing."
               - label: Body paragraphs
                 name: body
                 widget: list
@@ -71,11 +237,11 @@ collections:
                   name: paragraph
                   widget: text
 
-  - name: volunteer_hub
-    label: Site Content
+  - name: site_settings
+    label: Site Settings
     files:
       - name: data
-        label: Website Content
+        label: General Site Content
         file: content/data.json
         format: json
         fields:
@@ -83,80 +249,83 @@ collections:
             name: site
             widget: object
             fields:
-              - { label: Site title, name: title, widget: string }
-              - { label: Short title, name: shortTitle, widget: string }
-              - { label: Tagline, name: tagline, widget: string }
-              - { label: Hero title, name: heroTitle, widget: string }
-              - { label: Hero subtitle, name: heroSubtitle, widget: text }
-              - { label: Primary button label, name: primaryButtonLabel, widget: string }
-              - { label: Registration URL, name: registrationUrl, widget: string }
+              - label: Site title
+                name: title
+                widget: string
+              - label: Short title
+                name: shortTitle
+                widget: string
+              - label: Tagline
+                name: tagline
+                widget: string
+              - label: Hero title
+                name: heroTitle
+                widget: string
+              - label: Hero subtitle
+                name: heroSubtitle
+                widget: text
+              - label: Primary button label
+                name: primaryButtonLabel
+                widget: string
               - label: Statistics
                 name: stats
                 widget: list
                 summary: "{{fields.value}} {{fields.label}}"
                 fields:
-                  - { label: Value, name: value, widget: string }
-                  - { label: Label, name: label, widget: string }
+                  - label: Value
+                    name: value
+                    widget: string
+                  - label: Label
+                    name: label
+                    widget: string
               - label: Contact
                 name: contact
                 widget: object
                 fields:
-                  - { label: Email, name: email, widget: string }
-                  - { label: Phone, name: phone, widget: string }
-                  - { label: Address, name: address, widget: string }
-                  - { label: Hours, name: hours, widget: string }
+                  - label: Email
+                    name: email
+                    widget: string
+                  - label: Phone
+                    name: phone
+                    widget: string
+                  - label: Address
+                    name: address
+                    widget: string
+                  - label: Hours
+                    name: hours
+                    widget: string
           - label: About page
             name: about
             widget: object
             fields:
-              - { label: Intro title, name: introTitle, widget: string }
-              - { label: Intro, name: intro, widget: text }
-              - { label: Why volunteer, name: whyVolunteer, widget: text }
+              - label: Intro title
+                name: introTitle
+                widget: string
+              - label: Intro
+                name: intro
+                widget: text
+              - label: Why volunteer
+                name: whyVolunteer
+                widget: text
               - label: Pillars
                 name: pillars
                 widget: list
                 summary: "{{fields.name}}"
                 fields:
-                  - { label: Icon, name: icon, widget: string }
-                  - { label: Name, name: name, widget: string }
+                  - label: Icon
+                    name: icon
+                    widget: string
+                  - label: Name
+                    name: name
+                    widget: string
               - label: FAQ
                 name: faq
                 widget: list
                 summary: "{{fields.question}}"
                 fields:
-                  - { label: Question, name: question, widget: string }
-                  - { label: Answer, name: answer, widget: text }
-          - label: Opportunities
-            name: opportunities
-            widget: list
-            summary: "{{fields.title}}"
-            fields:
-              - { label: ID, name: id, widget: number, value_type: int, min: 0 }
-              - label: Type
-                name: type
-                widget: select
-                options:
-                  - { label: Long-term, value: long-term }
-                  - { label: Ad-hoc, value: ad-hoc }
-              - label: Volunteer category
-                name: category
-                widget: select
-                hint: Used by the personality quiz and category filters.
-                options:
-                  - { label: Befrienders, value: befriender }
-                  - { label: Mentors, value: mentor }
-                  - { label: Facilitators, value: facilitator }
-                  - { label: Community volunteering, value: community-volunteering }
-              - { label: Title, name: title, widget: string }
-              - label: Photo
-                name: photo
-                widget: image
-                required: false
-                hint: Upload or choose the image shown on the full-page swipe card and detail view.
-              - { label: Photo alt text, name: photoAlt, widget: string, required: false, hint: Describe the photo for screen readers. }
-              - { label: Description, name: description, widget: text }
-              - { label: Requirements, name: requirements, widget: text }
-              - { label: Time, name: time, widget: string }
-              - { label: Location, name: location, widget: string }
-              - { label: Commitment, name: commitment, widget: string }
-              - { label: Status, name: status, widget: string, required: false }
+                  - label: Question
+                    name: question
+                    widget: string
+                  - label: Answer
+                    name: answer
+                    widget: text

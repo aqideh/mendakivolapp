@@ -1,0 +1,368 @@
+.admin-ux-hub {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+}
+
+.admin-ux-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.admin-ux-tab {
+  border: 1px solid rgba(55, 58, 54, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: #373A36;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.55rem 0.85rem;
+}
+
+.admin-ux-tab.active {
+  background: #373A36;
+  color: #fff;
+}
+
+.admin-ux-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.admin-ux-summary-tile {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1rem;
+  background: rgba(55, 58, 54, 0.035);
+  padding: 1rem;
+  text-align: left;
+}
+
+.admin-ux-summary-tile strong {
+  display: block;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.admin-ux-summary-tile span {
+  color: rgba(55, 58, 54, 0.7);
+  font-size: 0.9rem;
+}
+
+.admin-ux-toolbar {
+  align-items: end;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(150px, 220px) auto;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.admin-ux-toolbar label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.admin-ux-toolbar input,
+.admin-ux-toolbar select,
+.phase31-training-grid input,
+.phase31-training-grid select,
+.phase31-training-grid textarea {
+  border: 1px solid rgba(55, 58, 54, 0.18);
+  border-radius: 0.75rem;
+  font: inherit;
+  padding: 0.7rem 0.8rem;
+  width: 100%;
+}
+
+.admin-ux-hidden {
+  display: none !important;
+}
+
+.phase31-training-card .section-header {
+  align-items: flex-start;
+}
+
+.phase31-training-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 1rem;
+}
+
+.phase31-training-list {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 680px;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.phase31-training-parent {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1rem;
+  padding: 0.9rem;
+}
+
+.phase31-training-parent header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.phase31-training-parent h3 {
+  margin: 0 0 0.25rem;
+}
+
+.phase31-training-session-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.phase31-training-session-item {
+  background: rgba(55, 58, 54, 0.035);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+}
+
+.phase31-training-session-item strong,
+.phase31-training-parent strong {
+  display: block;
+}
+
+.phase31-training-actions,
+.phase31-training-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.phase31-training-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.phase31-training-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.phase31-training-form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.phase31-training-status {
+  color: rgba(55, 58, 54, 0.72);
+  min-height: 1.25rem;
+}
+
+.phase34-admin-entry {
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  background: linear-gradient(135deg, rgba(55, 58, 54, 0.045), rgba(55, 58, 54, 0.015));
+}
+
+.phase34-admin-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.phase34-admin-entry-tile {
+  border: 1px solid rgba(55, 58, 54, 0.1);
+  border-radius: 1rem;
+  background: #fff;
+  padding: 0.9rem;
+}
+
+.phase34-admin-entry-tile strong {
+  display: block;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.phase34-admin-shell {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(55, 58, 54, 0.12);
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(55, 58, 54, 0.08);
+  overflow: hidden;
+}
+
+.phase34-admin-shell[hidden] {
+  display: none !important;
+}
+
+.phase34-admin-header {
+  align-items: center;
+  background: rgba(55, 58, 54, 0.045);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.phase34-admin-header h2 {
+  margin: 0.15rem 0 0;
+}
+
+.phase34-admin-body {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 640px;
+}
+
+.phase34-admin-nav {
+  border-right: 1px solid rgba(55, 58, 54, 0.1);
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 1rem;
+}
+
+.phase34-admin-nav button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.85rem;
+  color: #373A36;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+}
+
+.phase34-admin-nav button:hover,
+.phase34-admin-nav button.active {
+  background: rgba(55, 58, 54, 0.08);
+}
+
+.phase34-admin-page-wrap {
+  padding: 1.25rem;
+}
+
+.phase34-admin-page-head {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.phase34-admin-page-head h3 {
+  margin: 0.15rem 0 0;
+}
+
+.phase34-admin-home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.phase34-admin-home-card {
+  border: 1px solid rgba(55, 58, 54, 0.11);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.phase34-admin-home-card strong {
+  display: block;
+  font-size: 1.45rem;
+}
+
+.phase34-admin-cards {
+  display: grid;
+  gap: 1rem;
+}
+
+.phase34-admin-cards > .dashboard-card {
+  box-shadow: none;
+  margin: 0;
+}
+
+.phase34-empty {
+  border: 1px dashed rgba(55, 58, 54, 0.2);
+  border-radius: 1rem;
+  color: rgba(55, 58, 54, 0.7);
+  padding: 1rem;
+}
+
+.dashboard-layout > .dashboard-card[data-admin-owned="true"],
+.dashboard-layout > .dashboard-card[data-phase31-admin-hub="true"],
+.dashboard-layout > [data-admin-content-card],
+.dashboard-layout > .admin-attendance-card,
+.dashboard-layout > .admin-training-card,
+.dashboard-layout > [data-reports-card],
+.dashboard-layout > [data-audit-history-card],
+.dashboard-layout > .audit-history-card,
+.dashboard-layout > [data-admin-referrals-card],
+.dashboard-layout > .admin-referrals-card,
+.dashboard-layout > [data-admin-points-card],
+.dashboard-layout > .admin-points-card,
+.dashboard-layout > [data-notification-history-card],
+.dashboard-layout > .notification-history-card,
+.dashboard-layout > [data-notification-settings-card],
+.dashboard-layout > [data-phase32-qa-card],
+.dashboard-layout > [data-signup-dashboard-card="admin"],
+.dashboard-layout > .admin-signup-card,
+.dashboard-layout > [data-phase31-training-manager] {
+  display: none !important;
+}
+
+.phase34-admin-shell .dashboard-card[data-admin-owned="true"],
+.phase34-admin-shell [data-admin-content-card],
+.phase34-admin-shell .admin-attendance-card,
+.phase34-admin-shell .admin-training-card,
+.phase34-admin-shell [data-reports-card],
+.phase34-admin-shell [data-audit-history-card],
+.phase34-admin-shell .audit-history-card,
+.phase34-admin-shell [data-admin-referrals-card],
+.phase34-admin-shell .admin-referrals-card,
+.phase34-admin-shell [data-admin-points-card],
+.phase34-admin-shell .admin-points-card,
+.phase34-admin-shell [data-notification-history-card],
+.phase34-admin-shell .notification-history-card,
+.phase34-admin-shell [data-notification-settings-card],
+.phase34-admin-shell [data-phase32-qa-card],
+.phase34-admin-shell [data-signup-dashboard-card="admin"],
+.phase34-admin-shell .admin-signup-card,
+.phase34-admin-shell [data-phase31-training-manager] {
+  display: block !important;
+}
+
+@media (max-width: 900px) {
+  .phase34-admin-body {
+    grid-template-columns: 1fr;
+  }
+
+  .phase34-admin-nav {
+    border-right: 0;
+    border-bottom: 1px solid rgba(55, 58, 54, 0.1);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .phase34-admin-page-head,
+  .phase34-admin-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-ux-toolbar,
+  .phase31-training-grid,
+  .phase31-training-form-row {
+    grid-template-columns: 1fr;
+  }
+}

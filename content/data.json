@@ -6,7 +6,6 @@
     "heroTitle": "Make a Difference with MENDAKI",
     "heroSubtitle": "Join volunteers uplifting the Malay/Muslim community across Singapore.",
     "primaryButtonLabel": "Browse Opportunities",
-    "registrationUrl": "https://linktr.ee/volunteermendaki",
     "stats": [
       {
         "label": "Volunteers",
@@ -145,6 +144,44 @@
       "location": "Suntec Convention Centre",
       "commitment": "One-time",
       "status": "4 left"
+    }
+  ],
+  "trainings": [
+    {
+      "id": "training-orientation",
+      "title": "Volunteer Orientation",
+      "description": "A practical introduction to MENDAKI's volunteer standards, safeguarding expectations, and volunteer journey.",
+      "trainer": "Volunteer Management Team",
+      "date": "2026-02-07",
+      "time": "10:00 AM - 12:00 PM",
+      "location": "Wisma MENDAKI",
+      "capacity": 30,
+      "status": "Open",
+      "requiredFor": ["mentor", "facilitator", "befriender", "community-volunteering"]
+    },
+    {
+      "id": "training-youth-mentoring",
+      "title": "Youth Mentoring Essentials",
+      "description": "Learn practical mentoring techniques, boundaries, conversation prompts, and escalation pathways for youth-facing roles.",
+      "trainer": "Youth Development Team",
+      "date": "2026-02-21",
+      "time": "9:30 AM - 1:00 PM",
+      "location": "Online",
+      "capacity": 25,
+      "status": "Open",
+      "requiredFor": ["mentor"]
+    },
+    {
+      "id": "training-befriending-care",
+      "title": "Befriending and Care Basics",
+      "description": "Build confidence in active listening, empathy, safe check-ins, and reporting concerns when supporting beneficiaries.",
+      "trainer": "Community Support Team",
+      "date": "2026-03-06",
+      "time": "7:00 PM - 9:00 PM",
+      "location": "Online",
+      "capacity": 40,
+      "status": "Open",
+      "requiredFor": ["befriender"]
     }
   ]
 }

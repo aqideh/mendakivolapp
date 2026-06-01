@@ -1,0 +1,7 @@
+# Local Supabase configuration
+assets/supabase-config.js
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,56 @@
+.opportunity-session-picker {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--ui-border, rgba(55, 58, 54, 0.14));
+  border-radius: 1rem;
+  background: var(--ui-card-soft, #fff8e8);
+}
+
+.opportunity-session-picker h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.opportunity-session-options {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.opportunity-session-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border, rgba(55, 58, 54, 0.14));
+  border-radius: 0.9rem;
+  background: var(--ui-card, #fff);
+  cursor: pointer;
+}
+
+.opportunity-session-option input {
+  margin-top: 0.2rem;
+}
+
+.opportunity-session-option strong {
+  display: block;
+}
+
+.opportunity-session-option span {
+  display: block;
+  color: var(--ui-muted, #6e7168);
+  font-size: 0.9rem;
+}
+
+.opportunity-session-option:has(input:checked) {
+  border-color: rgba(31, 138, 76, 0.42);
+  box-shadow: 0 0 0 3px rgba(31, 138, 76, 0.12);
+}
+
+.session-selected-note {
+  margin-top: 0.4rem;
+  color: var(--ui-blue, #2764b8);
+  font-weight: 700;
+}

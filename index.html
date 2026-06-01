@@ -6,16 +6,74 @@
   <title>MENDAKI Volunteer Hub</title>
   <meta name="description" content="Find MENDAKI volunteer opportunities, news, and community updates.">
   <meta name="theme-color" content="#373A36">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; upgrade-insecure-requests">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23373A36'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='32' font-weight='700' fill='white'%3EM%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/opportunities-swipe.css">
   <link rel="stylesheet" href="assets/home-quiz-module.css">
+  <link rel="stylesheet" href="assets/phase-one.css">
+  <link rel="stylesheet" href="assets/ui-polish.css">
+  <link rel="stylesheet" href="assets/dashboard-pages.css">
+  <link rel="stylesheet" href="assets/content-consolidation.css">
+  <link rel="stylesheet" href="assets/notifications.css">
+  <link rel="stylesheet" href="assets/ui-upgrades.css">
+  <link rel="stylesheet" href="assets/session-management.css">
+  <link rel="stylesheet" href="assets/session-selection.css">
+  <link rel="stylesheet" href="assets/admin-workspace.css">
+  <link rel="stylesheet" href="assets/admin-pages.css">
+  <link rel="stylesheet" href="assets/admin-tables.css">
+  <link rel="stylesheet" href="assets/admin-qa.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="assets/supabase-config.js" defer></script>
+  <script src="assets/data-store.js" defer></script>
+  <script src="assets/data-access.js" defer></script>
   <script src="assets/app.js" defer></script>
   <script src="assets/opportunities-swipe.js" defer></script>
+  <script src="assets/phase-forty-one-render-guards.js" defer></script>
+  <script src="assets/app-managed-signups.js" defer></script>
   <script src="assets/volunteer-quiz-router.js" defer></script>
   <script src="assets/quiz-confetti.js" defer></script>
+  <script src="assets/phase-one-auth.js" defer></script>
+  <script src="assets/phase-nineteen-sessions.js" defer></script>
+  <script src="assets/session-selection.js" defer></script>
+  <script src="assets/session-management.js" defer></script>
+  <script src="assets/phase-eight-supabase.js" defer></script>
+  <script src="assets/auth-password-field.js" defer></script>
+  <script src="assets/attendance-code-validation.js" defer></script>
+  <script src="assets/pre-phase-urgent-fixes.js" defer></script>
+  <script src="assets/referrals.js" defer></script>
+  <script src="assets/gamification.js" defer></script>
+  <script src="assets/reports.js" defer></script>
+  <script src="assets/audit-history.js" defer></script>
+  <script src="assets/notification-polish.js" defer></script>
+  <script src="assets/session-attendance-validation.js" defer></script>
+  <script src="assets/volunteer-actions.js" defer></script>
+  <script src="assets/phase-three-attendance.js" defer></script>
+  <script src="assets/phase-nine-attendance-sync.js" defer></script>
+  <script src="assets/attendance-clarification-flow.js" defer></script>
+  <script src="assets/attendance-completion-bridge.js" defer></script>
+  <script src="assets/phase-four-training.js" defer></script>
+  <script src="assets/phase-ten-training-sync.js" defer></script>
+  <script src="assets/phase-thirty-training-session-parity.js" defer></script>
+  <script src="assets/supabase-content-admin.js" defer></script>
+  <script src="assets/admin-attendance-code-view.js" defer></script>
+  <script src="assets/notifications.js" defer></script>
+  <script src="assets/notification-panel-polish.js" defer></script>
+  <script src="assets/signup-lifecycle.js" defer></script>
+  <script src="assets/dashboard-pages.js" defer></script>
+  <script src="assets/ui-upgrades.js" defer></script>
+  <script src="assets/admin-opportunity-hierarchy.js" defer></script>
+  <script src="assets/admin-ux.js" defer></script>
+  <script src="assets/admin-qa.js" defer></script>
+  <script src="assets/admin-tables.js" defer></script>
+  <script src="assets/admin-queue-sync.js" defer></script>
+  <script src="assets/admin-review-actions.js" defer></script>
+  <script src="assets/admin-tools.js" defer></script>
+  <script src="assets/admin-pages.js" defer></script>
+  <script src="assets/admin-workspace.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -29,10 +87,14 @@
       <nav class="desktop-nav" aria-label="Primary">
         <button class="nav-link active" type="button" data-page-target="home">Home</button>
         <button class="nav-link" type="button" data-page-target="opportunities">Opportunities</button>
+        <button class="nav-link" type="button" data-expansion-page-target="training">Training</button>
         <button class="nav-link" type="button" data-page-target="news">News</button>
+        <button class="nav-link" type="button" data-expansion-page-target="dashboard" data-dashboard-nav hidden>Dashboard</button>
         <button class="nav-link" type="button" data-page-target="about">About</button>
       </nav>
-      <a class="admin-link" href="admin/" target="_blank" rel="noopener noreferrer">CMS</a>
+      <div class="header-actions">
+        <button class="admin-link auth-link" type="button" data-auth-open data-auth-entry>Sign in</button>
+      </div>
     </div>
   </header>
 
@@ -86,10 +148,71 @@
       <div class="container empty-state" id="opportunities-empty" hidden>No opportunities found.</div>
     </section>
 
+    <section class="page" id="page-training" aria-labelledby="training-title">
+      <div class="container page-topper">
+        <p class="eyebrow dark">Volunteer training</p>
+        <h1 id="training-title">Build your volunteer skills</h1>
+        <p>Browse training sessions, sign up inside the app, and track completion from your dashboard.</p>
+      </div>
+      <div class="container training-grid" id="training-grid" aria-live="polite"></div>
+    </section>
+
     <section class="page" id="page-news" aria-labelledby="news-title">
       <div class="container page-topper"><p class="eyebrow dark">Updates and stories</p><h1 id="news-title">News</h1><p>Browse announcements, programme updates, and volunteer stories.</p></div>
       <div class="container control-bar compact"><div class="filter-group" id="news-filters" aria-label="Filter news"><button class="filter active" type="button" data-news-filter="all">All</button><button class="filter" type="button" data-news-filter="Announcement">Announcements</button><button class="filter" type="button" data-news-filter="Programme">Programmes</button><button class="filter" type="button" data-news-filter="Volunteer">Volunteer</button></div></div>
       <div class="container news-grid" id="news-list"></div>
+    </section>
+
+    <section class="page" id="page-dashboard" aria-labelledby="dashboard-title">
+      <div class="container page-topper">
+        <p class="eyebrow dark">Volunteer account</p>
+        <h1 id="dashboard-title">My Dashboard</h1>
+        <p>Manage your volunteer profile, sign-ups, training, and attendance from one place.</p>
+      </div>
+      <div class="container dashboard-layout">
+        <section class="dashboard-card dashboard-profile-card" aria-labelledby="profile-title">
+          <div>
+            <p class="eyebrow dark">Profile</p>
+            <h2 id="profile-title">Volunteer profile</h2>
+            <p class="dashboard-muted" data-dashboard-profile-copy>Sign in to create your volunteer profile.</p>
+          </div>
+          <div class="profile-summary" data-profile-summary></div>
+          <div class="dashboard-actions">
+            <button class="button button-primary" type="button" data-auth-open data-auth-entry>Sign in / create profile</button>
+            <button class="button dashboard-secondary" type="button" data-auth-sign-out hidden>Sign out</button>
+          </div>
+        </section>
+
+        <section class="dashboard-card" aria-labelledby="stats-title" aria-busy="true">
+          <h2 id="stats-title">Volunteer statistics</h2>
+          <div class="dashboard-stat-grid">
+            <div class="dashboard-stat"><strong data-stat-hours>—</strong><span>Verified hours</span></div>
+            <div class="dashboard-stat"><strong data-stat-upcoming>—</strong><span>Upcoming confirmed opportunities</span></div>
+            <div class="dashboard-stat"><strong data-stat-completed>—</strong><span>Completed opportunities</span></div>
+          </div>
+          <p class="dashboard-muted">Pending review and waitlisted sign-ups do not count as confirmed opportunities.</p>
+        </section>
+
+        <section class="dashboard-card" aria-labelledby="profile-form-title">
+          <h2 id="profile-form-title">Profile setup</h2>
+          <form class="profile-form" data-profile-form novalidate>
+            <label>Full name<input name="name" autocomplete="name" placeholder="Your name" required></label>
+            <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+            <label>Preferred volunteer type<select name="interest"><option value="">Choose one</option><option value="mentor">Mentor</option><option value="facilitator">Facilitator</option><option value="befriender">Befriender</option><option value="community-volunteering">Community volunteer</option></select></label>
+            <label>Availability notes<textarea name="availability" rows="3" placeholder="Weekends, evenings, school holidays..."></textarea></label>
+            <button class="button button-primary" type="submit">Save profile</button>
+          </form>
+        </section>
+
+        <section class="dashboard-card" aria-labelledby="roadmap-title">
+          <h2 id="roadmap-title">Account settings</h2>
+          <ul class="dashboard-list">
+            <li>Update profile details and volunteer preferences.</li>
+            <li>Use Sign out to end the current session.</li>
+            <li>Admin access comes from your assigned app role.</li>
+          </ul>
+        </section>
+      </div>
     </section>
 
     <section class="page" id="page-about" aria-labelledby="about-title">
@@ -106,11 +229,27 @@
   <nav class="mobile-tabs" aria-label="Mobile primary navigation">
     <button class="mobile-tab active" type="button" data-page-target="home" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></button>
     <button class="mobile-tab" type="button" data-page-target="opportunities" aria-label="Opportunities"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 12v4m-2-2h4"></path></svg><span>Roles</span></button>
+    <button class="mobile-tab" type="button" data-expansion-page-target="training" aria-label="Training"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8M8 13h5"></path></svg><span>Train</span></button>
     <button class="mobile-tab" type="button" data-page-target="news" aria-label="News"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a1 1 0 0 1 1 1v15H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span>News</span></button>
+    <button class="mobile-tab" type="button" data-expansion-page-target="dashboard" data-dashboard-nav aria-label="Dashboard" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg><span>Me</span></button>
     <button class="mobile-tab" type="button" data-page-target="about" aria-label="About"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v5h1"></path></svg><span>About</span></button>
   </nav>
 
   <div class="modal-layer" id="modal-layer" hidden><div class="modal-backdrop" data-close-modal></div><article class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"></article></div>
+
+  <div class="modal-layer auth-layer" id="auth-layer" hidden>
+    <div class="modal-backdrop" data-auth-close></div>
+    <article class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" tabindex="-1">
+      <button class="close-button" type="button" data-auth-close aria-label="Close sign in dialog">×</button>
+      <p class="eyebrow dark">Volunteer account</p>
+      <h2 id="auth-title">Sign in to your volunteer dashboard</h2>
+      <p class="dashboard-muted" data-auth-copy>Sign in with your email and password.</p>
+      <form class="profile-form" data-auth-form novalidate>
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+        <button class="button button-primary" type="submit">Continue</button>
+      </form>
+    </article>
+  </div>
 
   <template id="icon-clock"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></template>
   <template id="icon-location"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg></template>

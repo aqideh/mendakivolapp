@@ -9,6 +9,92 @@ const state = {
 
 const pageNames = ['home', 'opportunities', 'news', 'about'];
 
+(() => {
+  if (!window.VolunteerDataStore) return;
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"]/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;'
+    }[char]));
+  }
+
+  const STATUS_LABELS = {
+    signup: {
+      pending_review: 'Pending review',
+      registered: 'Pending review',
+      confirmed: 'Confirmed',
+      waitlisted: 'Waitlisted',
+      declined: 'Not selected',
+      cancelled: 'Cancelled',
+      completed: 'Completed'
+    },
+    attendance: {
+      pending_submission: 'Not checked in',
+      checked_in: 'Checked in',
+      submitted: 'Checked out',
+      clarification_requested: 'Clarification requested',
+      verified: 'Verified',
+      adjusted: 'Adjusted',
+      rejected: 'Rejected',
+      no_show: 'No-show'
+    },
+    training: {
+      registered: 'Registered',
+      waitlisted: 'Waitlisted',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      declined: 'Declined',
+      no_show: 'No-show'
+    }
+  };
+
+  function getStatusLabel(status, type = 'signup') {
+    return STATUS_LABELS[type]?.[status] || status || 'Unknown';
+  }
+
+  const STATUS_BADGE_MAP = {
+    signup: {
+      confirmed: 'badge-open',
+      completed: 'badge-open',
+      waitlisted: 'badge-programme',
+      declined: 'badge-ad-hoc',
+      cancelled: 'badge-ad-hoc',
+      default: 'badge-volunteer'
+    },
+    attendance: {
+      verified: 'badge-open',
+      adjusted: 'badge-open',
+      rejected: 'badge-ad-hoc',
+      no_show: 'badge-ad-hoc',
+      submitted: 'badge-programme',
+      checked_in: 'badge-long-term',
+      default: 'badge-volunteer'
+    },
+    training: {
+      completed: 'badge-open',
+      registered: 'badge-open',
+      waitlisted: 'badge-programme',
+      default: 'badge-ad-hoc'
+    }
+  };
+
+  function getStatusBadgeClass(status, type = 'signup') {
+    return STATUS_BADGE_MAP[type]?.[status] || STATUS_BADGE_MAP[type]?.default || 'badge-volunteer';
+  }
+
+  window.VolunteerDataStore.utils = { escapeHtml };
+  window.VolunteerDataStore.statusLabels = { getStatusLabel, labels: STATUS_LABELS };
+  window.VolunteerDataStore.statusBadges = { getStatusBadgeClass, map: STATUS_BADGE_MAP };
+  window.VolunteerDataStore.$ = {
+    session: () => window.VolunteerDataStore.normaliseSessionRole() || {},
+    email: () => window.VolunteerDataStore.currentEmail(),
+    isAdmin: () => window.VolunteerDataStore.isAdmin()
+  };
+})();
+
 function qs(selector, root = document) {
   return root.querySelector(selector);
 }
@@ -33,10 +119,6 @@ function make(tag, attrs = {}, children = []) {
   });
   children.filter(Boolean).forEach(child => node.append(child));
   return node;
-}
-
-function truncate(text = '', length = 130) {
-  return text.length > length ? `${text.slice(0, length).trim()}...` : text;
 }
 
 function formatDate(dateString, options = { day: 'numeric', month: 'short', year: 'numeric' }) {
@@ -96,9 +178,28 @@ async function loadData() {
     fetchJson('content/news.json')
   ]);
 
+  let opportunitiesData;
+  try {
+    opportunitiesData = await fetchJson('content/opportunities.json');
+  } catch (error) {
+    opportunitiesData = { opportunities: siteData.opportunities || [] };
+  }
+
+  let trainingsData;
+  try {
+    trainingsData = await fetchJson('content/trainings.json');
+  } catch (error) {
+    trainingsData = { trainings: siteData.trainings || [] };
+  }
+
   return {
     ...siteData,
-    opportunities: Array.isArray(siteData.opportunities) ? siteData.opportunities : [],
+    opportunities: Array.isArray(opportunitiesData.opportunities)
+      ? opportunitiesData.opportunities
+      : Array.isArray(siteData.opportunities) ? siteData.opportunities : [],
+    trainings: Array.isArray(trainingsData.trainings)
+      ? trainingsData.trainings
+      : Array.isArray(siteData.trainings) ? siteData.trainings : [],
     news: Array.isArray(newsData.news) ? newsData.news : []
   };
 }
@@ -121,23 +222,6 @@ function renderSiteChrome() {
       make('strong', { text: item.value }),
       make('span', { text: item.label })
     ]));
-  });
-}
-
-function renderHomeOpportunities() {
-  const container = qs('#home-opportunities');
-  clear(container);
-  state.data.opportunities.slice(0, 4).forEach(opp => {
-    const card = make('button', {
-      type: 'button',
-      class: 'mini-card',
-      dataset: { oppId: String(opp.id) }
-    }, [
-      make('span', { class: `badge ${badgeClass(opp.type)}`, text: typeLabel(opp.type) }),
-      make('h3', { text: opp.title }),
-      make('p', { text: opp.time })
-    ]);
-    container.append(card);
   });
 }
 
@@ -181,37 +265,6 @@ function renderNewsList() {
   list.forEach(item => container.append(createNewsCard(item, false)));
 }
 
-function createOpportunityCard(opp) {
-  return make('button', {
-    type: 'button',
-    class: 'opp-card',
-    dataset: { oppId: String(opp.id) }
-  }, [
-    make('span', { class: `badge ${badgeClass(opp.type)}`, text: typeLabel(opp.type) }),
-    make('h2', { text: opp.title }),
-    make('p', { text: truncate(opp.description, 150) }),
-    make('div', { class: 'opp-meta' }, [
-      make('span', {}, [iconFromTemplate('icon-clock'), document.createTextNode(opp.time || '')]),
-      make('span', {}, [iconFromTemplate('icon-location'), document.createTextNode(opp.location || '')])
-    ])
-  ]);
-}
-
-function renderOpportunities() {
-  const grid = qs('#opportunities-grid');
-  const empty = qs('#opportunities-empty');
-  clear(grid);
-  const query = state.oppQuery.trim().toLowerCase();
-  const list = state.data.opportunities.filter(opp => {
-    const matchesType = state.oppFilter === 'all' || opp.type === state.oppFilter;
-    const haystack = [opp.title, opp.description, opp.location, opp.time, opp.commitment, opp.requirements].join(' ').toLowerCase();
-    return matchesType && (!query || haystack.includes(query));
-  });
-
-  empty.hidden = list.length > 0;
-  list.forEach(opp => grid.append(createOpportunityCard(opp)));
-}
-
 function renderAbout() {
   const { site, about } = state.data;
   const pillars = qs('#pillar-grid');
@@ -243,34 +296,31 @@ function renderAbout() {
   clear(faqList);
   (about.faq || []).forEach((item, index) => {
     const answerId = `faq-answer-${index}`;
-    const faqItem = make('div', { class: 'faq-item' }, [
+    faqList.append(make('div', { class: 'faq-item' }, [
       make('button', {
         type: 'button',
         class: 'faq-question',
         'aria-expanded': 'false',
         'aria-controls': answerId
-      }, [
-        document.createTextNode(item.question),
-        chevronIcon()
-      ]),
+      }, [document.createTextNode(item.question), chevronIcon()]),
       make('div', { id: answerId, class: 'faq-answer', hidden: '' }, [document.createTextNode(item.answer)])
-    ]);
-    faqList.append(faqItem);
+    ]));
   });
 }
 
 function renderEverything() {
   renderSiteChrome();
-  renderHomeOpportunities();
+  if (typeof renderHomeOpportunities === 'function') renderHomeOpportunities();
   renderHomeNews();
-  renderOpportunities();
+  if (typeof renderOpportunities === 'function') renderOpportunities();
   renderNewsList();
   renderAbout();
 }
 
 function setActiveControls(page) {
-  qsa('[data-page-target]').forEach(button => {
-    const active = button.dataset.pageTarget === page;
+  qsa('[data-page-target], [data-expansion-page-target]').forEach(button => {
+    const target = button.dataset.expansionPageTarget || button.dataset.pageTarget;
+    const active = target === page;
     button.classList.toggle('active', active);
     if (button.classList.contains('nav-link') || button.classList.contains('mobile-tab')) {
       button.setAttribute('aria-current', active ? 'page' : 'false');
@@ -291,12 +341,13 @@ function switchPage(page, updateHash = true) {
 }
 
 function findOpportunity(id) {
-  return state.data.opportunities.find(item => Number(item.id) === Number(id));
+  const targetId = String(id);
+  return state.data?.opportunities?.find(item => String(item.id) === targetId) || null;
 }
 
 function findNews(id) {
   const targetId = String(id);
-  return state.data.news.find(item => String(item.id) === targetId);
+  return state.data?.news?.find(item => String(item.id) === targetId) || null;
 }
 
 function modalHeader(title, badgeText, badgeStyleClass) {
@@ -306,36 +357,6 @@ function modalHeader(title, badgeText, badgeStyleClass) {
     make('span', { class: `badge ${badgeStyleClass}`, text: badgeText }),
     make('h2', { id: 'modal-title', text: title })
   ]);
-}
-
-function openOpportunityModal(id) {
-  const opp = findOpportunity(id);
-  if (!opp) return;
-  const modal = qs('#modal');
-  clear(modal);
-  modal.append(
-    modalHeader(opp.title, typeLabel(opp.type), badgeClass(opp.type)),
-    make('div', { class: 'modal-body' }, [
-      make('div', { class: 'modal-meta' }, [
-        make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-clock'), document.createTextNode(opp.time || '')]),
-        make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-location'), document.createTextNode(opp.location || '')]),
-        make('span', { class: 'modal-chip' }, [iconFromTemplate('icon-calendar'), document.createTextNode(opp.commitment || '')])
-      ]),
-      make('section', { class: 'modal-section' }, [make('h3', { text: 'About this role' }), make('p', { text: opp.description })]),
-      make('section', { class: 'modal-section' }, [make('h3', { text: 'Requirements' }), make('p', { text: opp.requirements })])
-    ]),
-    make('div', { class: 'modal-actions' }, [
-      make('a', {
-        class: 'button button-primary',
-        href: state.data.site.registrationUrl,
-        target: '_blank',
-        rel: 'noopener noreferrer',
-        text: 'Register now'
-      }),
-      make('button', { type: 'button', class: 'button', text: 'Close', dataset: { closeModal: 'true' } })
-    ])
-  );
-  openModal();
 }
 
 function openNewsModal(id) {
@@ -356,6 +377,7 @@ function openNewsModal(id) {
 function openModal() {
   const layer = qs('#modal-layer');
   const modal = qs('#modal');
+  if (!layer || !modal) return;
   state.lastFocus = document.activeElement;
   layer.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -390,7 +412,7 @@ function bindEvents() {
     if (oppFilter) {
       state.oppFilter = oppFilter.dataset.oppFilter;
       setFilterActive('#opp-filters', oppFilter);
-      renderOpportunities();
+      if (typeof renderOpportunities === 'function') renderOpportunities();
       return;
     }
 
@@ -404,7 +426,8 @@ function bindEvents() {
 
     const oppCard = event.target.closest('[data-opp-id]');
     if (oppCard) {
-      openOpportunityModal(oppCard.dataset.oppId);
+      if (typeof openOpportunityModal === 'function') openOpportunityModal(oppCard.dataset.oppId);
+      else console.error('app: openOpportunityModal is not available; check opportunity script load order.');
       return;
     }
 
@@ -432,7 +455,7 @@ function bindEvents() {
 
   qs('#opp-search')?.addEventListener('input', event => {
     state.oppQuery = event.target.value || '';
-    renderOpportunities();
+    if (typeof renderOpportunities === 'function') renderOpportunities();
   });
 
   window.addEventListener('hashchange', () => switchPage(window.location.hash.replace('#', ''), false));
