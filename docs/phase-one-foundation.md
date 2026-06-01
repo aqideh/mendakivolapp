@@ -1,5 +1,7 @@
 # Volunteer Management Expansion Foundation
 
+> Supersession note: This phase document describes earlier prototype behavior and is superseded by the YM Hub/Salesforce product boundary in `docs/product-intent.md`. In particular, the earlier in-app opportunity sign-up behavior described below is historical prototype context only. Volunteer opportunity sign-ups are owned by YM Hub/Salesforce, and Supabase sign-up tables are prototype/legacy infrastructure unless explicitly reapproved and documented.
+
 This branch introduces the first eleven expansion layers for the MENDAKI Volunteer Hub. It keeps static site copy in JSON/CMS fallback files while moving operational listings, sign-ups, attendance, training, and newsfeed content towards Supabase-backed shared persistence.
 
 ## Completed phases
@@ -20,6 +22,8 @@ This branch introduces the first eleven expansion layers for the MENDAKI Volunte
 - Volunteer dashboard sections for active and completed opportunities.
 - Admin sign-up review queue for confirming, waitlisting, or declining volunteers.
 - Lifecycle terms: `Sign up`, `Pending review`, `Confirmed`, `Waitlisted`, `Not selected`, `Cancelled`, and `Completed`.
+
+Historical note: this phase is no longer the product boundary for opportunity sign-ups. Do not restore or extend this in-app opportunity sign-up behavior unless explicitly instructed and the product-intent documentation is updated.
 
 ### Phase 3: Attendance check-in/check-out
 
@@ -81,6 +85,8 @@ This branch introduces the first eleven expansion layers for the MENDAKI Volunte
 - On sign-in/auth refresh, opportunity sign-ups are loaded from Supabase and cached locally so existing dashboard, attendance, and lifecycle UI continues to render.
 - Public opportunity listings can load from Supabase `app_opportunities`; if the Supabase table is empty or unavailable, the app keeps using CMS JSON content as a fallback.
 
+Historical note: `app_opportunity_signups` is now prototype/legacy only for opportunity sign-ups. YM Hub/Salesforce is the authoritative source of truth.
+
 ### Phase 9: Supabase-backed attendance
 
 - Added `db/phase-nine-supabase-attendance.sql` for shared attendance claim persistence.
@@ -117,14 +123,14 @@ This branch introduces the first eleven expansion layers for the MENDAKI Volunte
 
 ## Content ownership map
 
-| Content/data area | Primary source | Fallback/source-of-seed |
+| Content/data area | Historical primary source in this prototype | Fallback/source-of-seed |
 | --- | --- | --- |
-| Volunteering opportunities | `app_opportunities` | `content/opportunities.json` |
+| Volunteering opportunities | `app_opportunities` prototype table | `content/opportunities.json` |
 | Training sessions | `app_training_sessions` | `content/trainings.json` |
 | Newsfeed | `app_news_items` | `content/news.json` |
 | Site title, hero copy, contact, about, FAQ | `content/data.json` | none |
-| Sign-ups | `app_opportunity_signups` | local browser cache |
-| Attendance | `app_attendance_claims` | local browser cache |
+| Opportunity sign-ups | YM Hub/Salesforce; `app_opportunity_signups` is prototype/legacy only | none |
+| Attendance | `app_attendance_claims` prototype support table | local browser cache |
 | Training registrations | `app_training_signups` | local browser cache |
 
 ## Supabase setup order
@@ -165,8 +171,8 @@ Do not commit or document the test user's password in repository files. Set it o
 
 | Role | Purpose |
 | --- | --- |
-| volunteer | Signs up, maintains profile, checks in/out for attendance, signs up for training, requests testimonials. |
-| admin | Manages opportunities, sign-up confirmation, training, attendance validation, testimonials, reports, and Supabase-backed content. |
+| volunteer | Maintains profile, uses attendance support, signs up for training, receives engagement content, and follows YM Hub/Salesforce CTAs for volunteer opportunity sign-ups. |
+| admin | Manages in-scope app content, training, attendance validation, reports, referrals, gamification, and Supabase-backed prototype content. |
 | super_admin | Manages users, roles, system settings, and full audit access. |
 
 There is no facilitator role in the app. Facilitators only provide the 4-digit attendance code at the physical volunteering opportunity; admins verify and validate submitted attendance records.
@@ -184,7 +190,7 @@ The following keys remain in `VolunteerDataStore` as cache/fallback storage:
 - `mendaki.volunteer.attendance.v1`
 - `mendaki.volunteer.trainingSignups.v1`
 
-These local keys are not secure and should not be treated as durable production data.
+These local keys are not secure and should not be treated as durable production data. The sign-ups key is historical prototype state only and is not the authority for volunteer opportunity sign-ups.
 
 ## Development roadmap
 
@@ -213,9 +219,9 @@ These local keys are not secure and should not be treated as durable production 
 
 ### Phase 15: Capacity and waitlist enforcement
 
-- Add real opportunity/session capacity fields.
-- Automatically place excess sign-ups on waitlist.
-- Promote waitlisted volunteers when confirmed slots become available.
+- Historical prototype scope only for opportunity sign-ups.
+- Do not treat this app as owning final opportunity capacity or waitlist decisions.
+- YM Hub/Salesforce is the authoritative boundary for volunteer opportunity sign-up capacity and waitlist state.
 
 ### Phase 16: Structured opportunity sessions
 
@@ -237,9 +243,10 @@ These local keys are not secure and should not be treated as durable production 
 
 ### Phase 19: Admin reporting and audit trail
 
-- Add admin reports for sign-ups, attendance, verified hours, training completion, testimonials, and user actions.
-- Add audit logs for lifecycle changes made by admins.
+- Add admin reports for attendance, verified hours, training completion, testimonials, referrals, points, and user actions.
+- Add audit logs for lifecycle changes made inside this app.
 - Include export-ready views where useful.
+- Opportunity participation reporting must be non-authoritative unless sourced from YM Hub/Salesforce or an approved integration.
 
 ### Phase 20: QA and release hardening
 
@@ -250,14 +257,15 @@ These local keys are not secure and should not be treated as durable production 
 
 ## Recommended next phase
 
-The next highest-priority phase is Phase 12: Notification system.
+Check `docs/product-intent.md` and `docs/ai-development-guide.md` before selecting the next phase. Do not use this historical phase file alone to plan new work.
 
 ## Remaining major scopes
 
 - Notification system.
 - Real attendance-code validation.
 - Transactional attendance verification.
-- Capacity and waitlist enforcement.
-- Testimonial request workflow.
+- Training lifecycle polish.
+- Referrals and gamification.
 - Calendar view.
 - Production audit logs and notification emails.
+- YM Hub/Salesforce integration or redirect hardening for volunteer opportunity sign-ups.
