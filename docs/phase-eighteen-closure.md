@@ -1,5 +1,7 @@
 # Phase 18 closure note
 
+> Supersession note: This phase describes earlier prototype behavior and is superseded by the YM Hub/Salesforce product boundary in `docs/product-intent.md`. Opportunity sign-up creation, lifecycle state, capacity, and waitlist authority belong to YM Hub/Salesforce. Supabase opportunity sign-up writes and local/demo sign-up behavior described here are historical prototype context only unless explicitly reapproved and documented.
+
 Phase 18 is now closed for implementation on the `expansion` branch, subject to running the SQL migrations in Supabase and completing browser QA.
 
 ## Completed scope
@@ -28,6 +30,8 @@ Implemented:
 - Attendance check-in/check-out now uses Supabase-mode interception and writes before local UI success.
 - Attendance admin review now uses `review_attendance_claim_transactional` through Supabase-mode interception.
 - Failed Supabase writes no longer silently create successful local production state for these guarded flows.
+
+Historical note: Supabase opportunity sign-up writes listed above are no longer the product boundary. YM Hub/Salesforce owns authoritative volunteer opportunity sign-ups. Training and attendance support remain separate in-app capabilities unless the product-intent documentation changes.
 
 Local/demo mode remains available for non-Supabase configurations.
 
@@ -74,6 +78,8 @@ Run existing migrations in order through Phase 17, then run:
 14. Admin users can query `app_audit_logs`.
 15. Local demo mode still works when Supabase config is disabled.
 
+Historical QA note: opportunity sign-up QA in this list is prototype context. Current product QA should verify YM Hub/Salesforce redirect behavior and ensure no in-app opportunity sign-up creation is restored unless the product boundary changes.
+
 ## Deliberately deferred to later phases
 
 These are no longer Phase 18 blockers:
@@ -87,3 +93,5 @@ These are no longer Phase 18 blockers:
 ## Notes
 
 The frontend completion guard lives in `assets/data-store.js` so it is registered early, before legacy local-first phase handlers. In Supabase mode it intercepts key lifecycle click/submit events and calls the authoritative RPC/table write first. In local/demo mode it does not interfere.
+
+Do not use this historical note to justify new Supabase-backed opportunity sign-up ownership. Follow `docs/product-intent.md` and `docs/ai-development-guide.md` for current product direction.
