@@ -1,4 +1,5 @@
 const MANAGED_YM_HUB_SIGNUP_URL = 'https://www.mendaki.org.sg/login';
+const MANAGED_DEMO_ROSTER_KEY = 'mendaki.volunteer.demoAttendanceRoster.v1';
 const MANAGED_DEMO_ROSTER_NOTE = 'DEMO ATTENDANCE ROSTER - not YM-Hub/Salesforce source of truth';
 
 function managedSignupMake(tag, attrs = {}, children = []) {
@@ -108,20 +109,12 @@ function managedSignupStore() {
   return window.VolunteerDataStore || null;
 }
 
-function managedSignupDataAccess() {
-  return window.MENDAKIDataAccess || null;
-}
-
 function managedSignupCurrentSession() {
   return managedSignupStore()?.getSession?.() || null;
 }
 
 function managedSignupCurrentProfile() {
   return managedSignupStore()?.getProfile?.() || {};
-}
-
-function managedSignupIsAdmin() {
-  return Boolean(managedSignupStore()?.isAdmin?.());
 }
 
 function managedSignupCanUseDemoRoster() {
@@ -140,24 +133,64 @@ function managedSignupEstimatedHours(opp, session) {
   return opp?.type === 'long-term' ? 2 : 4;
 }
 
-function managedSignupRefreshDemoViews() {
+function managedSignupReadDemoRoster() {
+  try {
+    const value = JSON.parse(localStorage.getItem(MANAGED_DEMO_ROSTER_KEY) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    console.warn('Could not read attendance demo roster.', error);
+    return [];
+  }
+}
+
+function managedSignupWriteDemoRoster(rows) {
+  const value = Array.isArray(rows) ? rows : [];
+  localStorage.setItem(MANAGED_DEMO_ROSTER_KEY, JSON.stringify(value));
+  window.dispatchEvent(new CustomEvent('volunteer-demo-roster-synced'));
   window.dispatchEvent(new CustomEvent('volunteer-signups-synced'));
+  return value;
+}
+
+function managedSignupIsDemoSignup(signupId) {
+  return managedSignupReadDemoRoster().some(item => String(item.id) === String(signupId));
+}
+
+function managedSignupMergedAttendanceSignups() {
+  const store = managedSignupStore();
+  const realRows = store?.getOpportunitySignups?.() || [];
+  const demoRows = managedSignupReadDemoRoster();
+  const seen = new Set();
+  return [...demoRows, ...realRows].filter(row => {
+    const key = String(row?.id || '');
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function managedSignupInstallAttendanceBridge() {
+  if (typeof window.phaseThreeSignups !== 'function') return;
+  window.phaseThreeSignups = managedSignupMergedAttendanceSignups;
+  if (typeof window.phaseThreeRender === 'function') window.phaseThreeRender();
+}
+
+function managedSignupRefreshDemoViews() {
+  managedSignupInstallAttendanceBridge();
   if (typeof phaseTwoRenderDashboardSignups === 'function') phaseTwoRenderDashboardSignups();
   if (typeof phaseThreeRender === 'function') phaseThreeRender();
   if (typeof renderOpportunities === 'function') renderOpportunities();
   if (window.MENDAKIVolunteerActions?.refreshAll) window.MENDAKIVolunteerActions.refreshAll();
 }
 
-function managedSignupUpsertLocalSignup(record) {
-  const store = managedSignupStore();
-  const signups = store?.getOpportunitySignups?.() || [];
-  const index = signups.findIndex(item =>
+function managedSignupUpsertDemoRoster(record) {
+  const rows = managedSignupReadDemoRoster();
+  const index = rows.findIndex(item =>
     String(item.id) === String(record.id)
     || (item.email === record.email && String(item.opportunityId) === String(record.opportunityId))
   );
-  if (index >= 0) signups[index] = { ...signups[index], ...record };
-  else signups.unshift(record);
-  store?.saveOpportunitySignups?.(signups);
+  if (index >= 0) rows[index] = { ...rows[index], ...record, demoOnly: true };
+  else rows.unshift({ ...record, demoOnly: true });
+  managedSignupWriteDemoRoster(rows);
   managedSignupRefreshDemoViews();
 }
 
@@ -168,7 +201,7 @@ function managedSignupBuildDemoRecord(oppId) {
   const opp = managedSignupOpportunity(oppId);
   if (!store || !session?.email || !opp) return null;
 
-  const existing = (store.getOpportunitySignups?.() || []).find(item =>
+  const existing = managedSignupReadDemoRoster().find(item =>
     item.email === session.email && String(item.opportunityId) === String(opp.id)
   );
   const opportunitySession = managedSignupDefaultSession(opp.id);
@@ -205,62 +238,8 @@ function managedSignupBuildDemoRecord(oppId) {
 }
 
 async function managedSignupPersistDemoRecord(record) {
-  const store = managedSignupStore();
-  const supabase = store?.authState?.supabase;
-  if (!supabase || !managedSignupIsAdmin()) {
-    managedSignupUpsertLocalSignup(record);
-    return { ok: true, mode: 'local', signup: record };
-  }
-
-  const row = {
-    id: record.id,
-    opportunity_id: record.opportunityId,
-    session_id: record.sessionId || null,
-    volunteer_user_id: managedSignupCurrentSession()?.appUserId || null,
-    email: record.email,
-    volunteer_name: record.volunteerName,
-    title: record.title,
-    type: record.type,
-    category: record.category,
-    time: record.time,
-    location: record.location,
-    commitment: record.commitment,
-    hours: record.hours,
-    status: 'confirmed',
-    signed_up_at: record.signedUpAt,
-    reviewed_at: record.reviewedAt,
-    reviewed_by_email: record.reviewedBy,
-    admin_notes: record.adminNotes,
-    confirmed_at: record.confirmedAt,
-    waitlisted_at: null,
-    declined_at: null,
-    cancelled_at: null,
-    completed_at: null,
-    verified_hours: record.verifiedHours,
-    updated_at: record.updatedAt
-  };
-
-  const { data, error } = await supabase
-    .from('app_opportunity_signups')
-    .upsert(row, { onConflict: 'opportunity_id,email' })
-    .select('*')
-    .single();
-
-  if (error) {
-    console.warn('Supabase rejected demo roster write; using local demo storage instead.', error);
-    managedSignupUpsertLocalSignup(record);
-    return { ok: true, mode: 'local_fallback', signup: record, reason: error.message || String(error) };
-  }
-
-  const saved = managedSignupDataAccess()?.mappers?.opportunitySignupFromRow?.(data, record) || record;
-  managedSignupUpsertLocalSignup({ ...saved, demoOnly: true });
-  if (typeof store.fetchSupabaseOpportunitySignups === 'function') {
-    await store.fetchSupabaseOpportunitySignups().catch(error => {
-      console.warn('Demo roster created, but sign-up refresh failed.', error);
-    });
-  }
-  managedSignupRefreshDemoViews();
-  return { ok: true, mode: 'supabase', signup: saved };
+  managedSignupUpsertDemoRoster(record);
+  return { ok: true, mode: 'demo_roster', signup: record };
 }
 
 function managedSignupRenderDemoRosterCard() {
@@ -273,10 +252,6 @@ function managedSignupRenderDemoRosterCard() {
 
   const opportunities = managedSignupOpportunities();
   const session = managedSignupCurrentSession();
-  const canPersistToSupabase = Boolean(managedSignupStore()?.authState?.supabase && managedSignupIsAdmin());
-  const persistenceCopy = canPersistToSupabase
-    ? 'This will try Supabase first. If RLS blocks the demo write, it will fall back to this browser.'
-    : 'This will save a confirmed demo sign-up in this browser only.';
   const card = existing || document.createElement('section');
   card.className = 'dashboard-card signup-dashboard-card';
   card.dataset.demoRosterCard = 'true';
@@ -285,7 +260,7 @@ function managedSignupRenderDemoRosterCard() {
     <div class="section-header">
       <div>
         <h2>Attendance demo roster</h2>
-        <p class="dashboard-muted">Create a confirmed demo sign-up for your signed-in account. This keeps public sign-ups on YM-Hub while unlocking the attendance flow for demonstrations.</p>
+        <p class="dashboard-muted">Create a confirmed demo sign-up for your signed-in account. This stays separate from Supabase and YM-Hub sign-up data.</p>
       </div>
     </div>
     <form class="profile-form" data-demo-roster-form>
@@ -295,7 +270,7 @@ function managedSignupRenderDemoRosterCard() {
         </select>
       </label>
       <p class="dashboard-muted">Demo volunteer: ${storeEscapeHtml(session?.email || 'Not signed in')}</p>
-      <p class="dashboard-muted">${storeEscapeHtml(persistenceCopy)}</p>
+      <p class="dashboard-muted">This will save a confirmed demo sign-up in a browser-local demo roster only. Supabase refreshes will not remove it.</p>
       <p class="dashboard-muted">Records are marked: ${storeEscapeHtml(MANAGED_DEMO_ROSTER_NOTE)}</p>
       <div class="dashboard-actions">
         <button class="button button-primary" type="submit" ${opportunities.length && session?.email ? '' : 'disabled'}>Create confirmed demo roster</button>
@@ -332,10 +307,8 @@ async function managedSignupHandleDemoRosterSubmit(form) {
 
   try {
     managedSignupSetDemoRosterBusy(form, true, 'Creating confirmed demo roster...');
-    const result = await managedSignupPersistDemoRecord(record);
-    const location = result.mode === 'supabase' ? 'Supabase' : 'local browser storage';
-    const suffix = result.mode === 'local_fallback' ? ' Supabase RLS blocked the demo write, so local storage was used.' : '';
-    managedSignupSetDemoRosterBusy(form, false, `Demo roster created in ${location}. The attendance card should now show this opportunity.${suffix}`);
+    await managedSignupPersistDemoRecord(record);
+    managedSignupSetDemoRosterBusy(form, false, 'Demo roster created in local demo storage. The attendance card should now show this opportunity.');
   } catch (error) {
     console.error('Could not create demo attendance roster.', error);
     managedSignupSetDemoRosterBusy(form, false, `Could not create demo roster: ${error.message || String(error)}`);
@@ -361,6 +334,7 @@ document.addEventListener('click', event => {
 document.addEventListener('click', event => {
   if (!event.target.closest('[data-dashboard-view-target]')) return;
   window.setTimeout(managedSignupRenderDemoRosterCard, 160);
+  window.setTimeout(managedSignupInstallAttendanceBridge, 180);
 });
 
 document.addEventListener('submit', event => {
@@ -370,12 +344,20 @@ document.addEventListener('submit', event => {
   managedSignupHandleDemoRosterSubmit(form);
 });
 
-['DOMContentLoaded', 'volunteer-auth-ready', 'volunteer-auth-changed', 'volunteer-signups-synced', 'volunteer-opportunities-synced', 'volunteer-opportunity-sessions-synced'].forEach(eventName => {
-  window.addEventListener(eventName, () => window.setTimeout(managedSignupRenderDemoRosterCard, 120));
+['DOMContentLoaded', 'volunteer-auth-ready', 'volunteer-auth-changed', 'volunteer-signups-synced', 'volunteer-demo-roster-synced', 'volunteer-opportunities-synced', 'volunteer-opportunity-sessions-synced'].forEach(eventName => {
+  window.addEventListener(eventName, () => {
+    window.setTimeout(managedSignupRenderDemoRosterCard, 120);
+    window.setTimeout(managedSignupInstallAttendanceBridge, 140);
+  });
 });
 
 window.MENDAKIManagedSignups = Object.freeze({
   openYmHubSignup: managedOpenYmHubSignup,
   renderDemoRosterCard: managedSignupRenderDemoRosterCard,
-  createDemoRosterForOpportunity: async opportunityId => managedSignupPersistDemoRecord(managedSignupBuildDemoRecord(opportunityId))
+  createDemoRosterForOpportunity: async opportunityId => managedSignupPersistDemoRecord(managedSignupBuildDemoRecord(opportunityId)),
+  getDemoRoster: managedSignupReadDemoRoster,
+  saveDemoRoster: managedSignupWriteDemoRoster,
+  isDemoSignup: managedSignupIsDemoSignup,
+  mergedAttendanceSignups: managedSignupMergedAttendanceSignups,
+  installAttendanceBridge: managedSignupInstallAttendanceBridge
 });
