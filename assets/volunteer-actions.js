@@ -5,6 +5,7 @@
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
   function ready() { return Boolean(store().authState.supabase && store().getSession()?.email); }
+  function isDemoAttendanceSignup(id) { return Boolean(window.MENDAKIManagedSignups?.isDemoSignup?.(id)); }
 
   function setBusy(button, busy, label = 'Saving...') {
     if (!button) return;
@@ -103,12 +104,13 @@
   }
 
   document.addEventListener('click', event => {
+    const attendancePunch = event.target.closest('[data-attendance-punch]');
+    if (attendancePunch && isDemoAttendanceSignup(attendancePunch.dataset.attendancePunch)) return;
     if (!ready()) return;
     const opportunityCancel = event.target.closest('[data-cancel-signup]');
     const trainingSignup = event.target.closest('[data-signup-training]');
     const trainingCancel = event.target.closest('[data-cancel-training]');
     const trainingReview = event.target.closest('[data-training-status], [data-complete-training]');
-    const attendancePunch = event.target.closest('[data-attendance-punch]');
     const target = opportunityCancel || trainingSignup || trainingCancel || trainingReview || attendancePunch;
     if (!target) return;
     event.preventDefault();
