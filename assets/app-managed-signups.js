@@ -124,6 +124,10 @@ function managedSignupIsAdmin() {
   return Boolean(managedSignupStore()?.isAdmin?.());
 }
 
+function managedSignupCanUseDemoRoster() {
+  return Boolean(managedSignupCurrentSession()?.email);
+}
+
 function managedSignupDefaultSession(oppId) {
   return window.MENDAKIOpportunitySessions?.defaultForOpportunity?.(oppId) || null;
 }
@@ -187,7 +191,7 @@ function managedSignupBuildDemoRecord(oppId) {
     status: 'confirmed',
     signedUpAt: existing?.signedUpAt || now,
     reviewedAt: now,
-    reviewedBy: session.email || 'demo-admin',
+    reviewedBy: session.email || 'demo-user',
     adminNotes: MANAGED_DEMO_ROSTER_NOTE,
     confirmedAt: now,
     waitlistedAt: '',
@@ -257,21 +261,26 @@ async function managedSignupPersistDemoRecord(record) {
 function managedSignupRenderDemoRosterCard() {
   const layout = document.querySelector('#page-dashboard .dashboard-layout');
   const existing = document.querySelector('[data-demo-roster-card]');
-  if (!layout || !managedSignupIsAdmin()) {
+  if (!layout || !managedSignupCanUseDemoRoster()) {
     existing?.remove();
     return;
   }
 
   const opportunities = managedSignupOpportunities();
   const session = managedSignupCurrentSession();
+  const canPersistToSupabase = Boolean(managedSignupStore()?.authState?.supabase && managedSignupIsAdmin());
+  const persistenceCopy = canPersistToSupabase
+    ? 'This will save a confirmed demo sign-up in Supabase for this admin account.'
+    : 'This will save a confirmed demo sign-up in this browser only.';
   const card = existing || document.createElement('section');
-  card.className = 'dashboard-card admin-signup-card';
+  card.className = 'dashboard-card signup-dashboard-card';
   card.dataset.demoRosterCard = 'true';
+  card.dataset.dashboardCardRole = 'attendance';
   card.innerHTML = `
     <div class="section-header">
       <div>
         <h2>Attendance demo roster</h2>
-        <p class="dashboard-muted">Create a confirmed demo sign-up for your current admin account. This keeps public sign-ups on YM-Hub while unlocking the attendance flow for demonstrations.</p>
+        <p class="dashboard-muted">Create a confirmed demo sign-up for your signed-in account. This keeps public sign-ups on YM-Hub while unlocking the attendance flow for demonstrations.</p>
       </div>
     </div>
     <form class="profile-form" data-demo-roster-form>
@@ -281,6 +290,7 @@ function managedSignupRenderDemoRosterCard() {
         </select>
       </label>
       <p class="dashboard-muted">Demo volunteer: ${storeEscapeHtml(session?.email || 'Not signed in')}</p>
+      <p class="dashboard-muted">${storeEscapeHtml(persistenceCopy)}</p>
       <p class="dashboard-muted">Records are marked: ${storeEscapeHtml(MANAGED_DEMO_ROSTER_NOTE)}</p>
       <div class="dashboard-actions">
         <button class="button button-primary" type="submit" ${opportunities.length && session?.email ? '' : 'disabled'}>Create confirmed demo roster</button>
@@ -342,6 +352,11 @@ document.addEventListener('click', event => {
   managedSignupOpenOpportunityModal(oppCard.dataset.oppId);
 }, true);
 
+document.addEventListener('click', event => {
+  if (!event.target.closest('[data-dashboard-view-target]')) return;
+  window.setTimeout(managedSignupRenderDemoRosterCard, 160);
+});
+
 document.addEventListener('submit', event => {
   const form = event.target.closest('[data-demo-roster-form]');
   if (!form) return;
@@ -349,7 +364,7 @@ document.addEventListener('submit', event => {
   managedSignupHandleDemoRosterSubmit(form);
 });
 
-['DOMContentLoaded', 'volunteer-auth-ready', 'volunteer-auth-changed', 'volunteer-opportunities-synced', 'volunteer-opportunity-sessions-synced'].forEach(eventName => {
+['DOMContentLoaded', 'volunteer-auth-ready', 'volunteer-auth-changed', 'volunteer-signups-synced', 'volunteer-opportunities-synced', 'volunteer-opportunity-sessions-synced'].forEach(eventName => {
   window.addEventListener(eventName, () => window.setTimeout(managedSignupRenderDemoRosterCard, 120));
 });
 
