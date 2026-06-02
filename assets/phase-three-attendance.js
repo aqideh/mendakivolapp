@@ -224,6 +224,7 @@ function phaseThreeVolunteerRow(signup) {
     button.className = status === 'checked_in' ? 'button button-primary' : 'button dashboard-secondary';
     button.dataset.attendancePunch = signup.id;
     button.dataset.attendanceAction = action;
+    if (signup.demoOnly || phaseThreeIsDemoSignup(signup.id)) button.dataset.demoAttendancePunch = 'true';
     button.textContent = status === 'checked_in' ? 'Check out' : 'Check in';
     row.append(button);
   }
@@ -457,6 +458,7 @@ function phaseThreeBind() {
     const punchButton = event.target.closest('[data-attendance-punch]');
     if (punchButton) {
       event.preventDefault();
+      event.stopImmediatePropagation();
       phaseThreeHandlePunch(punchButton.dataset.attendancePunch, punchButton.dataset.attendanceAction);
     }
   }, true);
