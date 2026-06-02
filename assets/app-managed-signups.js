@@ -245,7 +245,12 @@ async function managedSignupPersistDemoRecord(record) {
     .upsert(row, { onConflict: 'opportunity_id,email' })
     .select('*')
     .single();
-  if (error) throw error;
+
+  if (error) {
+    console.warn('Supabase rejected demo roster write; using local demo storage instead.', error);
+    managedSignupUpsertLocalSignup(record);
+    return { ok: true, mode: 'local_fallback', signup: record, reason: error.message || String(error) };
+  }
 
   const saved = managedSignupDataAccess()?.mappers?.opportunitySignupFromRow?.(data, record) || record;
   managedSignupUpsertLocalSignup({ ...saved, demoOnly: true });
@@ -270,7 +275,7 @@ function managedSignupRenderDemoRosterCard() {
   const session = managedSignupCurrentSession();
   const canPersistToSupabase = Boolean(managedSignupStore()?.authState?.supabase && managedSignupIsAdmin());
   const persistenceCopy = canPersistToSupabase
-    ? 'This will save a confirmed demo sign-up in Supabase for this admin account.'
+    ? 'This will try Supabase first. If RLS blocks the demo write, it will fall back to this browser.'
     : 'This will save a confirmed demo sign-up in this browser only.';
   const card = existing || document.createElement('section');
   card.className = 'dashboard-card signup-dashboard-card';
@@ -329,7 +334,8 @@ async function managedSignupHandleDemoRosterSubmit(form) {
     managedSignupSetDemoRosterBusy(form, true, 'Creating confirmed demo roster...');
     const result = await managedSignupPersistDemoRecord(record);
     const location = result.mode === 'supabase' ? 'Supabase' : 'local browser storage';
-    managedSignupSetDemoRosterBusy(form, false, `Demo roster created in ${location}. The attendance card should now show this opportunity.`);
+    const suffix = result.mode === 'local_fallback' ? ' Supabase RLS blocked the demo write, so local storage was used.' : '';
+    managedSignupSetDemoRosterBusy(form, false, `Demo roster created in ${location}. The attendance card should now show this opportunity.${suffix}`);
   } catch (error) {
     console.error('Could not create demo attendance roster.', error);
     managedSignupSetDemoRosterBusy(form, false, `Could not create demo roster: ${error.message || String(error)}`);
