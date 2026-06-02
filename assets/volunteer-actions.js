@@ -5,7 +5,12 @@
   function store() { return window.VolunteerDataStore; }
   function dataAccess() { return window.MENDAKIDataAccess; }
   function ready() { return Boolean(store().authState.supabase && store().getSession()?.email); }
-  function isDemoAttendanceSignup(id) { return Boolean(window.MENDAKIManagedSignups?.isDemoSignup?.(id)); }
+  function isDemoAttendanceButton(button) {
+    return Boolean(
+      button?.dataset?.demoAttendancePunch === 'true'
+      || window.MENDAKIManagedSignups?.isDemoSignup?.(button?.dataset?.attendancePunch)
+    );
+  }
 
   function setBusy(button, busy, label = 'Saving...') {
     if (!button) return;
@@ -105,7 +110,7 @@
 
   document.addEventListener('click', event => {
     const attendancePunch = event.target.closest('[data-attendance-punch]');
-    if (attendancePunch && isDemoAttendanceSignup(attendancePunch.dataset.attendancePunch)) return;
+    if (attendancePunch && isDemoAttendanceButton(attendancePunch)) return;
     if (!ready()) return;
     const opportunityCancel = event.target.closest('[data-cancel-signup]');
     const trainingSignup = event.target.closest('[data-signup-training]');
