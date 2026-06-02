@@ -22,6 +22,9 @@ function phaseThreeProfile() {
 }
 
 function phaseThreeSignups() {
+  if (typeof window.MENDAKIManagedSignups?.mergedAttendanceSignups === 'function') {
+    return window.MENDAKIManagedSignups.mergedAttendanceSignups();
+  }
   return VolunteerDataStore.getOpportunitySignups();
 }
 
@@ -35,6 +38,10 @@ function phaseThreeIsSignedIn() {
 
 function phaseThreeUsesSupabase() {
   return Boolean(VolunteerDataStore?.authState?.supabase && VolunteerDataStore?.getSession?.()?.email);
+}
+
+function phaseThreeIsDemoSignup(signupId) {
+  return Boolean(window.MENDAKIManagedSignups?.isDemoSignup?.(signupId));
 }
 
 function phaseThreeClaimForSignup(signupId) {
@@ -69,6 +76,12 @@ function phaseThreeNormaliseHours(value) {
 
 function phaseThreePersistCompletedSignup(signup) {
   if (!signup) return;
+  if (signup.demoOnly || phaseThreeIsDemoSignup(signup.id)) {
+    if (typeof phaseOneRenderDashboard === 'function') phaseOneRenderDashboard();
+    if (typeof phaseThreeRender === 'function') phaseThreeRender();
+    window.dispatchEvent(new CustomEvent('volunteer-demo-roster-synced'));
+    return;
+  }
   const refresh = () => {
     if (typeof phaseOneRenderDashboard === 'function') phaseOneRenderDashboard();
     if (typeof phaseThreeRender === 'function') phaseThreeRender();
@@ -102,6 +115,10 @@ function phaseThreePersistCompletedSignup(signup) {
 async function phaseThreeValidateAttendanceCode(signup, code) {
   if (!PHASE_THREE_CODE_PATTERN.test(code)) {
     return { ok: false, reason: 'Please enter a valid 4-digit code.' };
+  }
+
+  if (signup?.demoOnly || phaseThreeIsDemoSignup(signup?.id)) {
+    return { ok: true, fallback: true, demo: true };
   }
 
   if (typeof VolunteerDataStore.validateAttendanceCode === 'function') {
@@ -192,6 +209,7 @@ function phaseThreeVolunteerRow(signup) {
     <div>
       <strong>${escapeHtml(signup.title)}</strong>
       <p>${escapeHtml(signup.time || 'Time to be confirmed')} · ${escapeHtml(signup.location || 'Location to be confirmed')}</p>
+      ${signup.demoOnly ? '<p class="attendance-note">Demo attendance roster entry. Not synced from YM-Hub/Salesforce.</p>' : ''}
       ${claim?.checkInAt ? `<p class="attendance-note">Checked in: ${escapeHtml(phaseThreeFormatTimestamp(claim.checkInAt))}</p>` : ''}
       ${claim?.checkOutAt ? `<p class="attendance-note">Checked out: ${escapeHtml(phaseThreeFormatTimestamp(claim.checkOutAt))}</p>` : ''}
       ${claim?.claimedHours ? `<p class="attendance-note">Logged hours: ${escapeHtml(claim.claimedHours)}h pending admin verification</p>` : ''}
@@ -320,6 +338,7 @@ async function phaseThreeHandlePunch(signupId, action) {
         email: signup.email,
         volunteerName: signup.volunteerName,
         title: signup.title,
+        demoOnly: Boolean(signup.demoOnly),
         createdAt: now
       };
       claims.push(claim);
@@ -341,6 +360,7 @@ async function phaseThreeHandlePunch(signupId, action) {
       reviewedBy: '',
       reviewedAt: '',
       adminNotes: '',
+      demoOnly: Boolean(signup.demoOnly),
       updatedAt: now
     });
   } else if (action === 'checkout') {
@@ -358,6 +378,7 @@ async function phaseThreeHandlePunch(signupId, action) {
       claimedStart: claim.checkInAt,
       claimedEnd: now,
       claimedHours: hours,
+      demoOnly: Boolean(signup.demoOnly),
       submittedAt: now,
       updatedAt: now
     });
@@ -393,7 +414,7 @@ function phaseThreeReviewClaim(form, submitter) {
   claim.updatedAt = new Date().toISOString();
   phaseThreeWriteClaims(claims);
 
-  const shouldUseLocalCompletion = !phaseThreeUsesSupabase();
+  const shouldUseLocalCompletion = !phaseThreeUsesSupabase() || Boolean(claim.demoOnly);
   const signups = phaseThreeSignups();
   const signup = signups.find(item => item.id === claim.signupId);
   if (shouldUseLocalCompletion && signup && (claim.claimStatus === 'verified' || claim.claimStatus === 'adjusted')) {
@@ -401,7 +422,7 @@ function phaseThreeReviewClaim(form, submitter) {
     signup.verifiedHours = claim.verifiedHours;
     signup.completedAt = new Date().toISOString();
     signup.updatedAt = new Date().toISOString();
-    phaseThreeWriteSignups(signups);
+    if (!signup.demoOnly) phaseThreeWriteSignups(signups.filter(item => !item.demoOnly));
     phaseThreePersistCompletedSignup(signup);
   }
 
@@ -455,3 +476,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('storage', phaseThreeRender);
+window.addEventListener('volunteer-demo-roster-synced', phaseThreeRender);
