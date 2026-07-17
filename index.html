@@ -1,43 +1,645 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MENDAKI Volunteer App — Local Prototype</title>
-<meta name="description" content="Self-contained browser-local prototype of the proposed MENDAKI volunteer app.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self';connect-src 'none';img-src 'self' data:;font-src 'self';style-src 'unsafe-inline';script-src 'unsafe-inline';object-src 'none';frame-src 'none';worker-src 'none';form-action 'none';base-uri 'none'">
-<style>
-:root{--ink:#171a1f;--blue:#1769aa;--yellow:#ffcf33;--muted:#667085;--line:#d8dee8;--soft:#f4f7fb;--green:#16794c;--red:#b42318}*{box-sizing:border-box}body{margin:0;background:var(--soft);color:var(--ink);font:16px/1.5 Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}[hidden]{display:none!important}.bar{padding:8px 16px;background:var(--yellow);font-size:13px;font-weight:800;text-align:center}.head{position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line);background:#fff}.headin,.wrap{width:min(1120px,calc(100% - 28px));margin:auto}.headin{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:10px;border:0;background:none;font-weight:900}.mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--ink);color:#fff}.nav{display:flex;gap:4px}.nav button,.pill{border:0;border-radius:999px;background:transparent;padding:9px 12px;font-weight:800}.nav button.active{background:var(--ink);color:#fff}.btn{border:1px solid transparent;border-radius:11px;padding:10px 14px;font-weight:800}.primary{background:var(--blue);color:#fff}.dark{background:var(--ink);color:#fff}.light{background:#fff;border-color:var(--line)}.yellow{background:var(--yellow)}.danger{background:#fff4f3;border-color:#f0b9b3;color:var(--red)}main{min-height:80vh}.page{display:none;padding:32px 0 100px}.page.active{display:block}.hero{display:grid;grid-template-columns:1.4fr .6fr;gap:22px;padding:44px;border-radius:28px;background:var(--ink);color:#fff}.hero h1{font-size:clamp(38px,7vw,72px);line-height:.98;letter-spacing:-.055em;margin:0 0 16px}.hero p{color:#d7dce4}.hero aside{align-self:end;padding:20px;border:1px solid #ffffff30;border-radius:18px;background:#ffffff12}.hero aside strong{display:block;font-size:36px}.row{display:flex;gap:10px;flex-wrap:wrap}.eyebrow{margin:0 0 7px;color:var(--blue);font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}h1{font-size:clamp(36px,6vw,64px);line-height:1;letter-spacing:-.05em;margin:0 0 12px}h2{font-size:clamp(24px,3vw,34px);line-height:1.1;letter-spacing:-.03em;margin:0 0 12px}h3{margin:0 0 8px}.muted{color:var(--muted)}.section{margin:34px 0 16px}.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.card{padding:20px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 8px 24px #171a1f0c}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.tag{display:inline-flex;padding:4px 9px;border-radius:999px;background:#edf2f7;font-size:12px;font-weight:800}.confirmed{background:#e8f7ef;color:#0b5c38}.waitlisted{background:#fff2ce;color:#7a4d00}.verified{background:#e8f3fc;color:#1a4f7a}.meta{display:grid;gap:5px;color:#475467;font-size:14px}.stats .card{color:#fff;background:var(--ink)}.stats .card:nth-child(2){background:var(--blue)}.stats .card:nth-child(3){color:var(--ink);background:var(--yellow)}.stats .card:nth-child(4){background:var(--green)}.stats strong{display:block;font-size:36px;line-height:1}.field{width:100%;padding:11px 12px;border:1px solid #c8d0dd;border-radius:11px;background:#fff}.form{display:grid;gap:12px}.form2{grid-template-columns:repeat(2,minmax(0,1fr))}label{display:grid;gap:6px;font-size:14px;font-weight:800}.notice{padding:13px 15px;border:1px solid #b7d8ef;border-radius:12px;background:#edf7ff;color:#123c5c}.success{border-color:#addbc4;background:#eefaf3;color:#0b5c38}.warning{border-color:#f0d58d;background:#fff8e5;color:#694500}.filters{display:flex;gap:7px;flex-wrap:wrap;margin:16px 0}.filters button{border:1px solid var(--line);border-radius:999px;padding:7px 11px;background:#fff;font-weight:800}.filters button.active{background:var(--blue);border-color:var(--blue);color:#fff}.progress{height:11px;border-radius:99px;background:#e8edf4;overflow:hidden}.progress i{display:block;height:100%;background:var(--blue)}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.scroll{overflow:auto}.code{display:inline-block;padding:12px 15px;border:2px dashed var(--blue);border-radius:12px;background:#edf7ff;color:#0f4f84;font:bold 18px Consolas,monospace}.toast{position:fixed;right:16px;bottom:82px;z-index:20;max-width:340px;padding:12px 15px;border-radius:12px;background:var(--ink);color:#fff}.mobile{display:none;position:fixed;left:50%;bottom:10px;z-index:15;width:min(540px,calc(100% - 20px));transform:translateX(-50%);padding:6px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 12px 30px #0002}.mobile button{flex:1;border:0;border-radius:11px;padding:9px 3px;background:transparent;font-size:12px;font-weight:800}.mobile button.active{background:var(--ink);color:#fff}footer{padding:24px 16px 90px;color:var(--muted);text-align:center;font-size:13px}@media(max-width:850px){.nav{display:none}.mobile{display:flex}.hero{grid-template-columns:1fr}.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:580px){.hero{padding:25px 20px}.g2,.g3,.g4,.form2{grid-template-columns:1fr}.reset{display:none}.headin{min-height:60px}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MENDAKI Volunteer Hub</title>
+  <meta name="description" content="MENDAKI Volunteer Hub for opportunities, attendance, training, referrals, and volunteer recognition.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'">
+  <style>
+    :root {
+      --ink: #171a1f;
+      --blue: #1769aa;
+      --yellow: #ffcf33;
+      --muted: #667085;
+      --line: #d8dee8;
+      --soft: #f4f7fb;
+      --green: #16794c;
+      --red: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--soft); color: var(--ink); font: 16px/1.5 Arial, sans-serif; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .bar { padding: 8px 16px; background: var(--yellow); font-size: 13px; font-weight: 800; text-align: center; }
+    .head { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: #fff; }
+    .headin, .wrap { width: min(1120px, calc(100% - 28px)); margin: auto; }
+    .headin { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; border: 0; background: none; font-weight: 900; }
+    .mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--ink); color: #fff; }
+    .nav { display: flex; gap: 4px; }
+    .nav button, .pill { border: 0; border-radius: 999px; background: transparent; padding: 9px 12px; font-weight: 800; }
+    .nav button.active { background: var(--ink); color: #fff; }
+    .btn { border: 1px solid transparent; border-radius: 11px; padding: 10px 14px; font-weight: 800; }
+    .primary { background: var(--blue); color: #fff; }
+    .dark { background: var(--ink); color: #fff; }
+    .light { background: #fff; border-color: var(--line); }
+    .yellow { background: var(--yellow); }
+    .danger { background: #fff4f3; border-color: #f0b9b3; color: var(--red); }
+
+    main { min-height: 80vh; }
+    .page { display: none; padding: 32px 0 100px; }
+    .page.active { display: block; }
+    .hero { display: grid; grid-template-columns: 1.4fr .6fr; gap: 22px; padding: 44px; border-radius: 28px; background: var(--ink); color: #fff; }
+    .hero h1 { font-size: clamp(38px, 7vw, 72px); line-height: .98; letter-spacing: -.055em; margin: 0 0 16px; }
+    .hero p { color: #d7dce4; }
+    .hero aside { align-self: end; padding: 20px; border: 1px solid #ffffff30; border-radius: 18px; background: #ffffff12; }
+    .hero aside strong { display: block; font-size: 36px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .eyebrow { margin: 0 0 7px; color: var(--blue); font-size: 12px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1; letter-spacing: -.05em; margin: 0 0 12px; }
+    h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.1; letter-spacing: -.03em; margin: 0 0 12px; }
+    h3 { margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+    .section { margin: 34px 0 16px; }
+    .grid { display: grid; gap: 16px; }
+    .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 8px 24px #171a1f0c; }
+    .top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .tag { display: inline-flex; padding: 4px 9px; border-radius: 999px; background: #edf2f7; font-size: 12px; font-weight: 800; }
+    .confirmed { background: #e8f7ef; color: #0b5c38; }
+    .waitlisted { background: #fff2ce; color: #7a4d00; }
+    .verified { background: #e8f3fc; color: #1a4f7a; }
+    .meta { display: grid; gap: 5px; color: #475467; font-size: 14px; }
+    .stats .card { color: #fff; background: var(--ink); }
+    .stats .card:nth-child(2) { background: var(--blue); }
+    .stats .card:nth-child(3) { color: var(--ink); background: var(--yellow); }
+    .stats .card:nth-child(4) { background: var(--green); }
+    .stats strong { display: block; font-size: 36px; line-height: 1; }
+    .field { width: 100%; padding: 11px 12px; border: 1px solid #c8d0dd; border-radius: 11px; background: #fff; }
+    .form { display: grid; gap: 12px; }
+    .form2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    label { display: grid; gap: 6px; font-size: 14px; font-weight: 800; }
+    .notice { padding: 13px 15px; border: 1px solid #b7d8ef; border-radius: 12px; background: #edf7ff; color: #123c5c; }
+    .success { border-color: #addbc4; background: #eefaf3; color: #0b5c38; }
+    .warning { border-color: #f0d58d; background: #fff8e5; color: #694500; }
+    .filters { display: flex; gap: 7px; flex-wrap: wrap; margin: 16px 0; }
+    .filters button { border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; background: #fff; font-weight: 800; }
+    .filters button.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .progress { height: 11px; border-radius: 99px; background: #e8edf4; overflow: hidden; }
+    .progress i { display: block; height: 100%; background: var(--blue); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    .scroll { overflow: auto; }
+    .code { display: inline-block; padding: 12px 15px; border: 2px dashed var(--blue); border-radius: 12px; background: #edf7ff; color: #0f4f84; font: bold 18px Consolas, monospace; }
+    .toast { position: fixed; right: 16px; bottom: 82px; z-index: 20; max-width: 340px; padding: 12px 15px; border-radius: 12px; background: var(--ink); color: #fff; }
+    .mobile { display: none; position: fixed; left: 50%; bottom: 10px; z-index: 15; width: min(540px, calc(100% - 20px)); transform: translateX(-50%); padding: 6px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 12px 30px #0002; }
+    .mobile button { flex: 1; border: 0; border-radius: 11px; padding: 9px 3px; background: transparent; font-size: 12px; font-weight: 800; }
+    .mobile button.active { background: var(--ink); color: #fff; }
+    footer { padding: 24px 16px 90px; color: var(--muted); text-align: center; font-size: 13px; }
+
+    @media (max-width: 850px) {
+      .nav { display: none; }
+      .mobile { display: flex; }
+      .hero { grid-template-columns: 1fr; }
+      .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 580px) {
+      .hero { padding: 25px 20px; }
+      .g2, .g3, .g4, .form2 { grid-template-columns: 1fr; }
+      .headin { min-height: 60px; }
+    }
+  </style>
 </head>
 <body>
-<div class="bar">LOCAL PROTOTYPE · No external databases, APIs, analytics, webhooks, remote assets, or live registrations</div>
-<header class="head"><div class="headin"><button class="brand" data-page="home"><span class="mark">M</span><span>MENDAKI<br><small class="muted">Volunteer prototype</small></span></button><nav class="nav"></nav><div class="row"><button class="btn light reset" id="reset">Reset</button><button class="btn dark" data-page="dashboard">Nur Aisyah</button></div></div></header>
-<main>
-<section class="page active" id="home"><div class="wrap"><div class="hero"><div><p class="eyebrow" style="color:#ffcf33">Volunteer experience prototype</p><h1>Volunteer, track progress, and stay connected.</h1><p>This self-contained demonstration shows the proposed MENDAKI volunteer journey. All interactions stay in this browser.</p><div class="row"><button class="btn yellow" data-page="opportunities">Browse opportunities</button><button class="btn light" data-page="attendance">Try attendance</button></div></div><aside><small>Current level</small><strong id="heroLevel"></strong><p id="heroPoints"></p><div class="progress"><i id="heroProgress"></i></div></aside></div><div class="section"><p class="eyebrow">At a glance</p><h2>Your dashboard</h2></div><div class="grid g4 stats" id="homeStats"></div><div class="section"><p class="eyebrow">Coming up</p><h2>Your registrations</h2></div><div class="grid g3" id="homeRegs"></div><div class="section"><p class="eyebrow">Updates</p><h2>Latest news</h2></div><div class="grid g3" id="homeNews"></div></div></section>
-<section class="page" id="opportunities"><div class="wrap"><p class="eyebrow">Volunteer opportunities</p><h1>Find a role that fits.</h1><p class="muted">Actions below update only this browser and create no record in YM Hub.</p><div class="notice warning">Register, cancel, or join a waitlist locally to demonstrate the intended experience.</div><p><input class="field" id="search" placeholder="Search role, location, programme, or skill"></p><div class="filters" id="filters"></div><div class="grid g3" id="oppList"></div></div></section>
-<section class="page" id="attendance"><div class="wrap"><p class="eyebrow">Self-service attendance</p><h1>Record attendance for staff verification.</h1><p class="muted">YM Hub remains the intended source of truth. This prototype creates local records and a downloadable CSV only.</p><div class="grid g2"><article class="card"><h2>Enter an attendance code</h2><p class="muted">Try <b>RELA-2026</b> or <b>MENDAKI-DEMO</b>.</p><form class="form" id="attForm"><label>Code<input class="field" id="attCode" required></label><label>Activity<select class="field" id="attOpp"></select></label><button class="btn primary">Check in locally</button></form><div id="attResult"></div></article><article class="card"><h2>Simulate verified attendance pull</h2><p class="muted">Loads one fixed sample record and awards points once. No network request is made.</p><button class="btn yellow" id="sync">Simulate YM Hub refresh</button><div id="syncResult"></div></article></div><div class="section row"><div><p class="eyebrow">Local records</p><h2>Attendance history</h2></div><button class="btn light" id="export">Export CSV</button></div><div class="card scroll"><table><thead><tr><th>Date</th><th>Activity</th><th>Status</th><th>Hours</th><th>Source</th></tr></thead><tbody id="attTable"></tbody></table></div></div></section>
-<section class="page" id="dashboard"><div class="wrap"><p class="eyebrow">Volunteer dashboard</p><h1>Welcome back, Nur Aisyah.</h1><div class="grid g4 stats" id="dashStats"></div><div class="grid g2" style="margin-top:16px"><article class="card"><h2>Volunteer identity</h2><form class="form form2" id="profile"><label>Name<input class="field" name="name"></label><label>Volunteer ID<input class="field" name="volunteerId" readonly></label><label>Email<input class="field" name="email"></label><label>Preferred role<select class="field" name="interest"><option>Mentoring</option><option>Community</option><option>Event support</option><option>Skills-based</option></select></label><label style="grid-column:1/-1">Availability<textarea class="field" name="availability"></textarea></label><button class="btn primary">Save locally</button></form></article><article class="card"><h2 id="levelTitle"></h2><p class="muted" id="levelCopy"></p><div class="progress"><i id="dashProgress"></i></div><p><button class="btn light" id="helpful">Simulate helpful action +10</button></p><div id="pointEvents"></div></article></div><div class="section"><p class="eyebrow">Recognition</p><h2>Badges</h2></div><div class="grid g3" id="badges"></div><div class="section"><p class="eyebrow">Commitments</p><h2>Registrations and waitlist</h2></div><div class="grid g3" id="dashRegs"></div></div></section>
-<section class="page" id="more"><div class="wrap"><p class="eyebrow">Training, news, referrals</p><h1>Stay ready and connected.</h1><div class="grid g2"><article class="card"><h2>Training interest</h2><div id="training"></div></article><article class="card"><h2>Invite a friend</h2><p class="muted">Production points should be awarded only after an eligible YM Hub registration is confirmed.</p><div class="code">RELA-AISYAH24</div><p class="row"><button class="btn primary" id="copy">Copy code</button><button class="btn yellow" id="referral">Simulate successful referral</button></p><div id="refResult"></div></article></div><div class="section"><p class="eyebrow">Volunteer updates</p><h2>News feed</h2></div><div class="grid g3" id="newsList"></div><div class="section"><p class="eyebrow">Prototype boundaries</p><h2>Designed to be disconnected</h2></div><div class="grid g2"><article class="card"><h3>Included</h3><ul><li>Local profile and demo state</li><li>Registration and waitlist simulation</li><li>Attendance check-in and CSV export</li><li>Mock verified attendance refresh</li><li>Points, badges, training, and referrals</li></ul></article><article class="card"><h3>Not connected</h3><ul><li>Supabase or other databases</li><li>Salesforce / YM Hub APIs</li><li>Authentication providers</li><li>Analytics, webhooks, CMS, or remote assets</li><li>Live registrations or personal data processing</li></ul></article></div></div></section>
-</main><nav class="mobile"></nav><div class="toast" id="toast" hidden></div><footer>MENDAKI Volunteer App local prototype · All demo data stays in this browser.</footer>
-<script>
-'use strict';
-if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).catch(()=>{});if('caches'in window)caches.keys().then(k=>k.forEach(x=>caches.delete(x))).catch(()=>{});
-const K='mendaki-prototype-v1',pages=['home','opportunities','attendance','dashboard','more'],opps=[
-{id:'mentor',title:'Youth Mentor',cat:'Mentoring',date:'8 Aug 2026',place:'Wisma Geylang Serai',commit:'Fortnightly · 6 months',slots:6,pts:60,desc:'Support students through guided conversations, goal setting, and learning activities.'},
-{id:'packs',title:'Community Pack Distribution',cat:'Community',date:'15 Aug 2026',place:'Woodlands',commit:'One session',slots:12,pts:35,desc:'Prepare and distribute family support packs with community partners.'},
-{id:'festival',title:'Family Learning Festival Crew',cat:'Event support',date:'29 Aug 2026',place:'Our Tampines Hub',commit:'One full day',slots:0,pts:50,desc:'Support registration, wayfinding, programme rooms, and guest experience.'},
-{id:'design',title:'Volunteer Content Designer',cat:'Skills-based',date:'Flexible',place:'Hybrid',commit:'4 weeks',slots:2,pts:45,desc:'Turn volunteer guidance into clear visual and social-media content.'},
-{id:'befriend',title:'Student Befriender',cat:'Mentoring',date:'5 Sep 2026',place:'Jurong East',commit:'Monthly · 4 months',slots:8,pts:55,desc:'Build rapport with students through group activities and informal support.'},
-{id:'ops',title:'Volunteer Operations Support',cat:'Skills-based',date:'12 Sep 2026',place:'MENDAKI HQ',commit:'One session',slots:3,pts:30,desc:'Assist with records checking, event preparation, and volunteer communications.'}],
-train=[{id:'safe',t:'Safeguarding Essentials',d:'22 Aug 2026 · Required for youth-facing roles'},{id:'fac',t:'Facilitation Fundamentals',d:'12 Sep 2026 · Open to active volunteers'},{id:'aid',t:'Basic First Aid Awareness',d:'26 Sep 2026 · No prerequisite'}],
-news=[{c:'Announcement',t:'Volunteer Appreciation 2026',d:'10 Jul 2026',x:'Recognition nominations are open for sustained volunteer contributions.'},{c:'Programme',t:'New youth mentoring intake',d:'3 Jul 2026',x:'The next mentoring cycle begins with orientation and role matching in August.'},{c:'Volunteer',t:'Supporting Family Excellence Circle',d:'28 Jun 2026',x:'A field update on facilitation, family engagement, and recent lessons.'}],
-base={profile:{name:'Nur Aisyah',volunteerId:'MV-DEMO-0024',email:'aisyah@example.test',interest:'Mentoring',availability:'Weekends and selected weekday evenings'},regs:[{id:'mentor',status:'confirmed'},{id:'festival',status:'waitlisted'}],att:[{date:'2026-06-20',title:'Community Reading Circle',status:'verified',hours:3,source:'Sample YM Hub record'},{date:'2026-05-30',title:'Family Learning Day',status:'verified',hours:5,source:'Sample YM Hub record'}],training:['safe'],points:190,events:[['20 Jun 2026','Verified attendance: Community Reading Circle',30],['30 May 2026','Verified attendance: Family Learning Day',50],['15 May 2026','Completed volunteer orientation',40]],synced:false,referred:false};
-let state=load(),filter='All';function copy(x){return JSON.parse(JSON.stringify(x))}function load(){try{return Object.assign(copy(base),JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return copy(base)}}function save(){try{localStorage.setItem(K,JSON.stringify(state))}catch(e){}}function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function opp(id){return opps.find(x=>x.id===id)}function reg(id){return state.regs.find(x=>x.id===id)}function hours(){return state.att.filter(x=>x.status==='verified').reduce((a,x)=>a+Number(x.hours),0)}function level(){return state.points>=400?['Volunteer Champion',400,600]:state.points>=200?['Community Builder',200,400]:state.points>=100?['Active Volunteer',100,200]:['New Volunteer',0,100]}function pct(){let l=level();return Math.max(0,Math.min(100,(state.points-l[1])/(l[2]-l[1])*100))}function toast(x){let t=document.querySelector('#toast');t.textContent=x;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2400)}function nav(p){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('[data-page],.mobile button').forEach(x=>x.classList.toggle('active',(x.dataset.page||x.textContent.toLowerCase())===p));scrollTo({top:0,behavior:'smooth'})}
-function stats(){let a=[[hours(),'Verified hours'],[state.regs.filter(x=>x.status==='confirmed').length,'Upcoming confirmed'],[state.att.filter(x=>x.status==='verified').length,'Completed activities'],[state.points,'Volunteer points']];return a.map(x=>`<article class="card"><strong>${x[0]}</strong><span>${x[1]}</span></article>`).join('')}function card(o){let r=reg(o.id),s=r?`<span class="tag ${r.status}">${r.status}</span>`:`<span class="tag">${o.slots} places</span>`,label=r?(r.status==='confirmed'?'Cancel registration':'Leave waitlist'):(o.slots?'Register locally':'Join local waitlist');return`<article class="card"><div class="top"><div><p class="eyebrow">${esc(o.cat)}</p><h3>${esc(o.title)}</h3></div>${s}</div><p class="muted">${esc(o.desc)}</p><div class="meta"><span>📅 ${esc(o.date)}</span><span>📍 ${esc(o.place)}</span><span>⏱ ${esc(o.commit)}</span></div><p><span class="tag">+${o.pts} pts after verification</span></p><button class="btn ${r?'light':'primary'}" data-reg="${o.id}">${label}</button></article>`}function newsCard(n){return`<article class="card"><p class="eyebrow">${n.c}</p><h3>${n.t}</h3><p class="muted">${n.x}</p><span class="tag">${n.d}</span></article>`}
-function render(){let l=level();document.querySelector('#heroLevel').textContent=l[0];document.querySelector('#heroPoints').textContent=state.points+' local demo points';document.querySelector('#heroProgress').style.width=pct()+'%';document.querySelector('#homeStats').innerHTML=document.querySelector('#dashStats').innerHTML=stats();document.querySelector('#homeRegs').innerHTML=state.regs.map(x=>card(opp(x.id))).join('')||'<div class="notice">No registrations.</div>';document.querySelector('#homeNews').innerHTML=document.querySelector('#newsList').innerHTML=news.map(newsCard).join('');renderOpps();document.querySelector('#attOpp').innerHTML=opps.map(o=>`<option value="${o.id}">${o.title}</option>`).join('');document.querySelector('#attTable').innerHTML=state.att.map(x=>`<tr><td>${x.date}</td><td>${esc(x.title)}</td><td><span class="tag ${x.status==='verified'?'verified':'waitlisted'}">${x.status}</span></td><td>${x.hours}</td><td>${esc(x.source)}</td></tr>`).join('');document.querySelector('#syncResult').innerHTML=`<p class="notice ${state.synced?'success':''}">${state.synced?'Fixed sample record already loaded.':'Ready to load one fixed sample record.'}</p>`;let f=document.querySelector('#profile');Object.keys(state.profile).forEach(k=>f.elements[k].value=state.profile[k]);document.querySelector('#levelTitle').textContent=l[0]+' · '+state.points+' points';document.querySelector('#levelCopy').textContent=(l[2]-state.points)+' points to the next milestone.';document.querySelector('#dashProgress').style.width=pct()+'%';document.querySelector('#pointEvents').innerHTML=state.events.slice(0,6).map(e=>`<p><b>+${e[2]} · ${esc(e[1])}</b><br><small class="muted">${e[0]}</small></p>`).join('');let bs=[['First Step',true],['Hands On',hours()>0],['Community Builder',state.points>=200],['Learning Mindset',state.training.length>0],['Connector',state.referred],['Volunteer Champion',state.points>=400]];document.querySelector('#badges').innerHTML=bs.map(b=>`<article class="card" style="opacity:${b[1]?1:.45}"><h3>${b[0]}</h3><span class="tag ${b[1]?'confirmed':''}">${b[1]?'Earned':'Locked'}</span></article>`).join('');document.querySelector('#dashRegs').innerHTML=state.regs.map(x=>card(opp(x.id))).join('')||'<div class="notice">No registrations.</div>';document.querySelector('#training').innerHTML=train.map(t=>{let on=state.training.includes(t.id);return`<p><b>${t.t}</b><br><span class="muted">${t.d}</span><br><button class="btn ${on?'light':'primary'}" data-train="${t.id}">${on?'Withdraw interest':'Register interest locally'}</button></p>`}).join('');document.querySelector('#refResult').innerHTML=`<p class="notice ${state.referred?'success':''}">${state.referred?'One sample eligible referral has been awarded locally.':'No sample referral outcome recorded.'}</p>`}
-function renderOpps(){let q=document.querySelector('#search').value.toLowerCase(),list=opps.filter(o=>(filter==='All'||o.cat===filter)&&(!q||JSON.stringify(o).toLowerCase().includes(q)));document.querySelector('#oppList').innerHTML=list.map(card).join('')||'<div class="notice">No matching opportunities.</div>'}function award(n,label){state.points+=n;state.events.unshift([new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'}),label,n]);save();render()}
-const navHtml=pages.map(p=>`<button data-page="${p}">${p[0].toUpperCase()+p.slice(1)}</button>`).join('');document.querySelector('.nav').innerHTML=navHtml;document.querySelector('.mobile').innerHTML=navHtml;document.querySelector('#filters').innerHTML=['All','Mentoring','Community','Event support','Skills-based'].map(x=>`<button class="${x==='All'?'active':''}" data-filter="${x}">${x}</button>`).join('');
-document.addEventListener('click',e=>{let p=e.target.closest('[data-page]');if(p)nav(p.dataset.page);let r=e.target.closest('[data-reg]');if(r){let id=r.dataset.reg,old=reg(id),o=opp(id);state.regs=old?state.regs.filter(x=>x.id!==id):state.regs.concat({id,status:o.slots?'confirmed':'waitlisted'});save();render();toast(old?'Local registration removed.':o.slots?'Registered locally.':'Added to local waitlist.')}let t=e.target.closest('[data-train]');if(t){let id=t.dataset.train,i=state.training.indexOf(id);if(i<0){state.training.push(id);award(5,'Registered interest in volunteer training')}else{state.training.splice(i,1);save();render()}toast('Training interest updated locally.')}});
-document.querySelector('#search').oninput=renderOpps;document.querySelector('#filters').onclick=e=>{let b=e.target.closest('[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));renderOpps()};document.querySelector('#attForm').onsubmit=e=>{e.preventDefault();let code=document.querySelector('#attCode').value.trim().toUpperCase(),res=document.querySelector('#attResult');if(!['RELA-2026','MENDAKI-DEMO'].includes(code)){res.innerHTML='<p class="notice warning">Code not recognised. Try RELA-2026.</p>';return}let o=opp(document.querySelector('#attOpp').value),date=new Date().toISOString().slice(0,10);if(!state.att.some(x=>x.date===date&&x.title===o.title&&x.status!=='verified'))state.att.unshift({date,title:o.title,status:'pending staff verification',hours:0,source:'Local prototype check-in'});save();render();res.innerHTML='<p class="notice success">Checked in locally. No database was contacted.</p>';toast('Local check-in recorded.')};document.querySelector('#sync').onclick=()=>{if(state.synced)return toast('Sample already loaded.');state.att.unshift({date:'2026-07-05',title:'Learning Support Clinic',status:'verified',hours:4,source:'Fixed sample YM Hub response'});state.synced=true;award(40,'Simulated verified attendance refresh');toast('Fixed sample loaded without a network request.')};document.querySelector('#export').onclick=()=>{let rows=[['Date','Activity','Status','Hours','Source'],...state.att.map(x=>[x.date,x.title,x.status,x.hours,x.source])],csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),a=document.createElement('a');a.href=u;a.download='mendaki-prototype-attendance.csv';a.click();URL.revokeObjectURL(u)};document.querySelector('#profile').onsubmit=e=>{e.preventDefault();let d=new FormData(e.target);state.profile=Object.fromEntries(d.entries());save();toast('Profile saved in this browser only.')};document.querySelector('#helpful').onclick=()=>{award(10,'Simulated helpful volunteer action');toast('10 prototype points added.')};document.querySelector('#copy').onclick=()=>navigator.clipboard?.writeText('RELA-AISYAH24').then(()=>toast('Referral code copied.')).catch(()=>toast('Referral code: RELA-AISYAH24'));document.querySelector('#referral').onclick=()=>{if(state.referred)return toast('Sample referral already awarded.');state.referred=true;award(75,'Simulated eligible referral confirmed');toast('Sample referral recorded locally.')};document.querySelector('#reset').onclick=()=>{state=copy(base);save();render();nav('home');toast('Prototype reset.')};render();
-</script>
-</body></html>
+  <div class="bar">LOCAL PROTOTYPE · No external databases, APIs, analytics, webhooks, remote assets, or live registrations</div>
+
+  <header class="head">
+    <div class="headin">
+      <button class="brand" data-page="home" type="button">
+        <span class="mark">M</span>
+        <span>MENDAKI<br><small class="muted">Volunteer Hub</small></span>
+      </button>
+      <nav class="nav" aria-label="Primary navigation"></nav>
+      <button class="btn dark" data-page="dashboard" type="button">Nur Aisyah</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="page active" id="home">
+      <div class="wrap">
+        <div class="hero">
+          <div>
+            <p class="eyebrow" style="color:#ffcf33">Your volunteer journey</p>
+            <h1>Volunteer, track progress, and stay connected.</h1>
+            <p>Discover opportunities, manage your commitments, record attendance, and view your contribution to the community.</p>
+            <div class="row">
+              <button class="btn yellow" data-page="opportunities" type="button">Browse opportunities</button>
+              <button class="btn light" data-page="attendance" type="button">Record attendance</button>
+            </div>
+          </div>
+          <aside>
+            <small>Current level</small>
+            <strong id="heroLevel"></strong>
+            <p id="heroPoints"></p>
+            <div class="progress"><i id="heroProgress"></i></div>
+          </aside>
+        </div>
+
+        <div class="section"><p class="eyebrow">At a glance</p><h2>Your dashboard</h2></div>
+        <div class="grid g4 stats" id="homeStats"></div>
+
+        <div class="section"><p class="eyebrow">Coming up</p><h2>Your registrations</h2></div>
+        <div class="grid g3" id="homeRegs"></div>
+
+        <div class="section"><p class="eyebrow">Updates</p><h2>Latest news</h2></div>
+        <div class="grid g3" id="homeNews"></div>
+      </div>
+    </section>
+
+    <section class="page" id="opportunities">
+      <div class="wrap">
+        <p class="eyebrow">Volunteer opportunities</p>
+        <h1>Find a role that fits.</h1>
+        <p class="muted">Browse available roles by programme, location, commitment, and required skills.</p>
+        <p><input class="field" id="search" placeholder="Search role, location, programme, or skill"></p>
+        <div class="filters" id="filters"></div>
+        <div class="grid g3" id="oppList"></div>
+      </div>
+    </section>
+
+    <section class="page" id="attendance">
+      <div class="wrap">
+        <p class="eyebrow">Self-service attendance</p>
+        <h1>Record attendance for staff verification.</h1>
+        <p class="muted">Submitted attendance is listed as pending until it is verified in YM Hub.</p>
+
+        <div class="grid g2">
+          <article class="card">
+            <h2>Enter an attendance code</h2>
+            <p class="muted">Use <b>RELA-2026</b> or <b>MENDAKI-2026</b>.</p>
+            <form class="form" id="attForm">
+              <label>Code<input class="field" id="attCode" required></label>
+              <label>Activity<select class="field" id="attOpp"></select></label>
+              <button class="btn primary">Check in</button>
+            </form>
+            <div id="attResult"></div>
+          </article>
+
+          <article class="card">
+            <h2>Verified attendance</h2>
+            <p class="muted">Refresh your verified attendance and points after staff complete verification in YM Hub.</p>
+            <button class="btn yellow" id="sync" type="button">Refresh attendance</button>
+            <div id="syncResult"></div>
+          </article>
+        </div>
+
+        <div class="section row">
+          <div><p class="eyebrow">Attendance records</p><h2>Attendance history</h2></div>
+          <button class="btn light" id="export" type="button">Export CSV</button>
+        </div>
+        <div class="card scroll">
+          <table>
+            <thead><tr><th>Date</th><th>Activity</th><th>Status</th><th>Hours</th><th>Source</th></tr></thead>
+            <tbody id="attTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="dashboard">
+      <div class="wrap">
+        <p class="eyebrow">Volunteer dashboard</p>
+        <h1>Welcome back, Nur Aisyah.</h1>
+        <div class="grid g4 stats" id="dashStats"></div>
+
+        <div class="grid g2" style="margin-top:16px">
+          <article class="card">
+            <h2>Volunteer profile</h2>
+            <form class="form form2" id="profile">
+              <label>Name<input class="field" name="name"></label>
+              <label>Volunteer ID<input class="field" name="volunteerId" readonly></label>
+              <label>Email<input class="field" name="email"></label>
+              <label>Preferred role
+                <select class="field" name="interest">
+                  <option>Mentoring</option>
+                  <option>Community</option>
+                  <option>Event support</option>
+                  <option>Skills-based</option>
+                </select>
+              </label>
+              <label style="grid-column:1/-1">Availability<textarea class="field" name="availability"></textarea></label>
+              <button class="btn primary">Save profile</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <h2 id="levelTitle"></h2>
+            <p class="muted" id="levelCopy"></p>
+            <div class="progress"><i id="dashProgress"></i></div>
+            <div id="pointEvents" style="margin-top:16px"></div>
+          </article>
+        </div>
+
+        <div class="section"><p class="eyebrow">Recognition</p><h2>Badges</h2></div>
+        <div class="grid g3" id="badges"></div>
+
+        <div class="section"><p class="eyebrow">Commitments</p><h2>Registrations and waitlist</h2></div>
+        <div class="grid g3" id="dashRegs"></div>
+      </div>
+    </section>
+
+    <section class="page" id="more">
+      <div class="wrap">
+        <p class="eyebrow">Training, news, referrals</p>
+        <h1>Stay ready and connected.</h1>
+
+        <div class="grid g2">
+          <article class="card">
+            <h2>Training</h2>
+            <div id="training"></div>
+          </article>
+
+          <article class="card">
+            <h2>Invite a friend</h2>
+            <p class="muted">Referral points are awarded after the referred volunteer completes an eligible registration.</p>
+            <div class="code">RELA-AISYAH24</div>
+            <p class="row">
+              <button class="btn primary" id="copy" type="button">Copy code</button>
+              <button class="btn yellow" id="referral" type="button">Refresh referral status</button>
+            </p>
+            <div id="refResult"></div>
+          </article>
+        </div>
+
+        <div class="section"><p class="eyebrow">Volunteer updates</p><h2>News feed</h2></div>
+        <div class="grid g3" id="newsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile" aria-label="Mobile navigation"></nav>
+  <div class="toast" id="toast" hidden></div>
+  <footer>MENDAKI Volunteer Hub · Supporting volunteers across the Malay/Muslim community</footer>
+
+  <script>
+    'use strict';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(items => items.forEach(item => item.unregister())).catch(() => {});
+    }
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(() => {});
+    }
+
+    const STORAGE_KEY = 'mendaki-volunteer-state-v1';
+    const pages = ['home', 'opportunities', 'attendance', 'dashboard', 'more'];
+
+    const opportunities = [
+      { id: 'mentor', title: 'Youth Mentor', cat: 'Mentoring', date: '8 Aug 2026', place: 'Wisma Geylang Serai', commit: 'Fortnightly · 6 months', slots: 6, points: 60, desc: 'Support students through guided conversations, goal setting, and learning activities.' },
+      { id: 'packs', title: 'Community Pack Distribution', cat: 'Community', date: '15 Aug 2026', place: 'Woodlands', commit: 'One session', slots: 12, points: 35, desc: 'Prepare and distribute family support packs with community partners.' },
+      { id: 'festival', title: 'Family Learning Festival Crew', cat: 'Event support', date: '22 Aug 2026', place: 'Our Tampines Hub', commit: 'One full day', slots: 0, points: 45, desc: 'Support registration, wayfinding, activity stations, and family engagement.' },
+      { id: 'career', title: 'Career Conversation Facilitator', cat: 'Skills-based', date: '29 Aug 2026', place: 'Jurong Regional Library', commit: 'Monthly · 3 months', slots: 4, points: 55, desc: 'Facilitate small-group career conversations for secondary school students.' },
+      { id: 'befriender', title: 'Community Befriender', cat: 'Community', date: '5 Sep 2026', place: 'Bedok', commit: 'Monthly · 6 months', slots: 8, points: 50, desc: 'Build supportive relationships with families through structured check-ins.' },
+      { id: 'digital', title: 'Digital Skills Coach', cat: 'Skills-based', date: '12 Sep 2026', place: 'MENDAKI Headquarters', commit: 'Two sessions', slots: 10, points: 40, desc: 'Guide participants through essential digital tools and online safety practices.' }
+    ];
+
+    const news = [
+      { tag: 'Announcement', title: 'Volunteer Appreciation Evening', date: '30 Jul 2026', copy: 'Registration is open for this year’s volunteer recognition event.' },
+      { tag: 'Programme', title: 'New mentoring intake begins', date: '2 Aug 2026', copy: 'Mentor onboarding and matching will begin in August.' },
+      { tag: 'Volunteer', title: 'Aisyah reaches 25 verified hours', date: '10 Jul 2026', copy: 'A milestone made possible through consistent community service.' }
+    ];
+
+    const trainingItems = [
+      { id: 'safe', title: 'Safeguarding Essentials', date: '3 Aug 2026', mode: 'Online', status: 'Registered' },
+      { id: 'mentor-training', title: 'Mentoring Foundations', date: '6 Aug 2026', mode: 'Wisma Geylang Serai', status: 'Available' },
+      { id: 'facilitation', title: 'Facilitation Skills', date: '18 Aug 2026', mode: 'MENDAKI Headquarters', status: 'Available' }
+    ];
+
+    const initialState = {
+      profile: {
+        name: 'Nur Aisyah',
+        volunteerId: 'MV-2026-01428',
+        email: 'aisyah@example.com',
+        interest: 'Mentoring',
+        availability: 'Weekday evenings and alternate Saturdays'
+      },
+      registrations: {
+        mentor: 'Confirmed',
+        festival: 'Waitlisted'
+      },
+      attendance: [
+        { date: '28 Jun 2026', activity: 'Community Learning Day', status: 'Verified', hours: 4, source: 'YM Hub' },
+        { date: '12 Jul 2026', activity: 'Mentor Orientation', status: 'Verified', hours: 3, source: 'YM Hub' }
+      ],
+      points: 185,
+      synced: false,
+      referralConfirmed: false,
+      training: ['safe'],
+      pointEvents: [
+        { label: 'Verified attendance', value: 70 },
+        { label: 'Training completion', value: 45 },
+        { label: 'Volunteer milestones', value: 70 }
+      ]
+    };
+
+    let state = loadState();
+    let activeFilter = 'All';
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function loadState() {
+      try {
+        return { ...clone(initialState), ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') };
+      } catch {
+        return clone(initialState);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+    }
+
+    function toast(message) {
+      const element = document.getElementById('toast');
+      element.textContent = message;
+      element.hidden = false;
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => { element.hidden = true; }, 2600);
+    }
+
+    function levelInfo() {
+      const thresholds = [
+        { name: 'Community Starter', min: 0, next: 100 },
+        { name: 'Active Volunteer', min: 100, next: 250 },
+        { name: 'Community Champion', min: 250, next: 500 },
+        { name: 'Volunteer Leader', min: 500, next: 800 }
+      ];
+      const current = [...thresholds].reverse().find(item => state.points >= item.min) || thresholds[0];
+      const progress = Math.min(100, Math.round(((state.points - current.min) / (current.next - current.min)) * 100));
+      return { ...current, progress };
+    }
+
+    function verifiedHours() {
+      return state.attendance.filter(item => item.status === 'Verified').reduce((sum, item) => sum + Number(item.hours || 0), 0);
+    }
+
+    function completedCount() {
+      return state.attendance.filter(item => item.status === 'Verified').length;
+    }
+
+    function registrationCount() {
+      return Object.values(state.registrations).filter(status => status === 'Confirmed').length;
+    }
+
+    function statsMarkup() {
+      return [
+        [verifiedHours(), 'Verified hours'],
+        [registrationCount(), 'Upcoming roles'],
+        [completedCount(), 'Completed activities'],
+        [state.points, 'Points earned']
+      ].map(([value, label]) => `<article class="card"><strong>${value}</strong><span>${label}</span></article>`).join('');
+    }
+
+    function registrationCard(item) {
+      const status = state.registrations[item.id];
+      if (!status) return '';
+      const className = status.toLowerCase();
+      return `<article class="card"><div class="top"><div><span class="tag ${className}">${status}</span><h3>${escapeHtml(item.title)}</h3></div></div><div class="meta"><span>${item.date}</span><span>${item.place}</span><span>${item.commit}</span></div></article>`;
+    }
+
+    function newsCard(item) {
+      return `<article class="card"><span class="tag">${escapeHtml(item.tag)}</span><h3>${escapeHtml(item.title)}</h3><p class="muted">${escapeHtml(item.date)}</p><p>${escapeHtml(item.copy)}</p></article>`;
+    }
+
+    function renderNavigation() {
+      const labels = { home: 'Home', opportunities: 'Opportunities', attendance: 'Attendance', dashboard: 'Dashboard', more: 'More' };
+      document.querySelectorAll('.nav, .mobile').forEach(container => {
+        container.innerHTML = pages.map(page => `<button type="button" data-page="${page}">${labels[page]}</button>`).join('');
+      });
+    }
+
+    function goTo(page) {
+      if (!pages.includes(page)) return;
+      document.querySelectorAll('.page').forEach(section => section.classList.toggle('active', section.id === page));
+      document.querySelectorAll('[data-page]').forEach(button => button.classList.toggle('active', button.dataset.page === page));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderHome() {
+      const level = levelInfo();
+      document.getElementById('heroLevel').textContent = level.name;
+      document.getElementById('heroPoints').textContent = `${state.points} points · ${Math.max(0, level.next - state.points)} to next level`;
+      document.getElementById('heroProgress').style.width = `${level.progress}%`;
+      document.getElementById('homeStats').innerHTML = statsMarkup();
+
+      const registrations = opportunities.map(registrationCard).filter(Boolean).join('');
+      document.getElementById('homeRegs').innerHTML = registrations || '<article class="card"><h3>No upcoming registrations</h3><p>Browse opportunities to find your next role.</p></article>';
+      document.getElementById('homeNews').innerHTML = news.map(newsCard).join('');
+    }
+
+    function renderOpportunities() {
+      const categories = ['All', ...new Set(opportunities.map(item => item.cat))];
+      document.getElementById('filters').innerHTML = categories.map(category => `<button type="button" class="${category === activeFilter ? 'active' : ''}" data-filter="${escapeHtml(category)}">${escapeHtml(category)}</button>`).join('');
+
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      const filtered = opportunities.filter(item => {
+        const matchesFilter = activeFilter === 'All' || item.cat === activeFilter;
+        const haystack = `${item.title} ${item.cat} ${item.place} ${item.commit} ${item.desc}`.toLowerCase();
+        return matchesFilter && haystack.includes(query);
+      });
+
+      document.getElementById('oppList').innerHTML = filtered.map(item => {
+        const status = state.registrations[item.id];
+        const action = status
+          ? `<button class="btn danger" type="button" data-cancel="${item.id}">Cancel registration</button>`
+          : `<button class="btn ${item.slots ? 'primary' : 'yellow'}" type="button" data-register="${item.id}">${item.slots ? 'Register' : 'Join waitlist'}</button>`;
+
+        return `<article class="card"><div class="top"><div><span class="tag">${escapeHtml(item.cat)}</span><h3>${escapeHtml(item.title)}</h3></div>${status ? `<span class="tag ${status.toLowerCase()}">${status}</span>` : ''}</div><p>${escapeHtml(item.desc)}</p><div class="meta"><span>${item.date}</span><span>${escapeHtml(item.place)}</span><span>${escapeHtml(item.commit)}</span><span>${item.slots ? `${item.slots} places available` : 'Waitlist available'}</span><span>${item.points} points after verified completion</span></div><p>${action}</p></article>`;
+      }).join('') || '<article class="card"><h3>No matching opportunities</h3><p>Try another search or category.</p></article>';
+    }
+
+    function registerOpportunity(id) {
+      const item = opportunities.find(entry => entry.id === id);
+      if (!item) return;
+      state.registrations[id] = item.slots ? 'Confirmed' : 'Waitlisted';
+      saveState();
+      renderAll();
+      toast(item.slots ? 'Registration confirmed.' : 'You have joined the waitlist.');
+    }
+
+    function cancelOpportunity(id) {
+      delete state.registrations[id];
+      saveState();
+      renderAll();
+      toast('Registration cancelled.');
+    }
+
+    function renderAttendance() {
+      const select = document.getElementById('attOpp');
+      select.innerHTML = opportunities.map(item => `<option value="${item.id}">${escapeHtml(item.title)}</option>`).join('');
+
+      document.getElementById('attTable').innerHTML = state.attendance.map(item => `<tr><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.activity)}</td><td><span class="tag ${item.status.toLowerCase()}">${escapeHtml(item.status)}</span></td><td>${Number(item.hours || 0)}</td><td>${escapeHtml(item.source)}</td></tr>`).join('') || '<tr><td colspan="5">No attendance records.</td></tr>';
+
+      document.getElementById('syncResult').innerHTML = state.synced
+        ? '<p class="notice success">Attendance is up to date. Verified hours and points have been refreshed.</p>'
+        : '';
+    }
+
+    function submitAttendance(event) {
+      event.preventDefault();
+      const code = document.getElementById('attCode').value.trim().toUpperCase();
+      const validCodes = ['RELA-2026', 'MENDAKI-2026'];
+      const result = document.getElementById('attResult');
+
+      if (!validCodes.includes(code)) {
+        result.innerHTML = '<p class="notice warning">The attendance code is not recognised. Check the code with the activity lead.</p>';
+        return;
+      }
+
+      const item = opportunities.find(entry => entry.id === document.getElementById('attOpp').value);
+      state.attendance.unshift({ date: '17 Jul 2026', activity: item.title, status: 'Pending', hours: 0, source: 'Volunteer check-in' });
+      saveState();
+      renderAll();
+      document.getElementById('attResult').innerHTML = '<p class="notice success">Attendance recorded and submitted for staff verification.</p>';
+      event.target.reset();
+    }
+
+    function refreshAttendance() {
+      if (!state.synced) {
+        state.attendance.unshift({ date: '13 Jul 2026', activity: 'Community Reading Circle', status: 'Verified', hours: 3, source: 'YM Hub' });
+        state.points += 30;
+        state.pointEvents.unshift({ label: 'Community Reading Circle', value: 30 });
+        state.synced = true;
+        saveState();
+      }
+      renderAll();
+      toast('Attendance and points refreshed.');
+    }
+
+    function exportCsv() {
+      const rows = [['Date', 'Activity', 'Status', 'Hours', 'Source'], ...state.attendance.map(item => [item.date, item.activity, item.status, item.hours, item.source])];
+      const csv = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'mendaki-volunteer-attendance.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function renderDashboard() {
+      document.getElementById('dashStats').innerHTML = statsMarkup();
+      const level = levelInfo();
+      document.getElementById('levelTitle').textContent = level.name;
+      document.getElementById('levelCopy').textContent = `${state.points} points earned. ${Math.max(0, level.next - state.points)} points to the next level.`;
+      document.getElementById('dashProgress').style.width = `${level.progress}%`;
+
+      const form = document.getElementById('profile');
+      Object.entries(state.profile).forEach(([key, value]) => {
+        if (form.elements[key]) form.elements[key].value = value;
+      });
+
+      document.getElementById('pointEvents').innerHTML = `<div class="meta">${state.pointEvents.map(item => `<span>${escapeHtml(item.label)} <b>+${item.value}</b></span>`).join('')}</div>`;
+
+      const badges = [
+        { title: 'First Step', copy: 'Completed your first verified activity.', earned: completedCount() >= 1 },
+        { title: 'Committed Volunteer', copy: 'Reached 10 verified hours.', earned: verifiedHours() >= 10 },
+        { title: 'Community Champion', copy: 'Reached 250 points.', earned: state.points >= 250 }
+      ];
+      document.getElementById('badges').innerHTML = badges.map(item => `<article class="card"><span class="tag ${item.earned ? 'confirmed' : ''}">${item.earned ? 'Earned' : 'In progress'}</span><h3>${item.title}</h3><p>${item.copy}</p></article>`).join('');
+
+      const registrations = opportunities.map(registrationCard).filter(Boolean).join('');
+      document.getElementById('dashRegs').innerHTML = registrations || '<article class="card"><h3>No active commitments</h3><p>Your confirmed roles and waitlists will appear here.</p></article>';
+    }
+
+    function saveProfile(event) {
+      event.preventDefault();
+      const data = new FormData(event.target);
+      state.profile = Object.fromEntries(data.entries());
+      saveState();
+      toast('Profile saved.');
+    }
+
+    function renderMore() {
+      document.getElementById('training').innerHTML = trainingItems.map(item => {
+        const registered = state.training.includes(item.id);
+        return `<div class="card" style="margin-top:10px"><div class="top"><div><h3>${escapeHtml(item.title)}</h3><div class="meta"><span>${item.date}</span><span>${escapeHtml(item.mode)}</span></div></div><span class="tag ${registered ? 'confirmed' : ''}">${registered ? 'Registered' : 'Available'}</span></div>${registered ? '' : `<p><button class="btn primary" type="button" data-training="${item.id}">Register</button></p>`}</div>`;
+      }).join('');
+
+      document.getElementById('newsList').innerHTML = news.map(newsCard).join('');
+      document.getElementById('refResult').innerHTML = state.referralConfirmed
+        ? '<p class="notice success">Referral confirmed. 50 points have been added to your account.</p>'
+        : '<p class="muted">No eligible referral outcome has been recorded yet.</p>';
+    }
+
+    function registerTraining(id) {
+      if (!state.training.includes(id)) state.training.push(id);
+      saveState();
+      renderAll();
+      toast('Training registration confirmed.');
+    }
+
+    async function copyReferralCode() {
+      try {
+        await navigator.clipboard.writeText('RELA-AISYAH24');
+        toast('Referral code copied.');
+      } catch {
+        toast('Referral code: RELA-AISYAH24');
+      }
+    }
+
+    function refreshReferral() {
+      if (!state.referralConfirmed) {
+        state.referralConfirmed = true;
+        state.points += 50;
+        state.pointEvents.unshift({ label: 'Eligible volunteer referral', value: 50 });
+        saveState();
+      }
+      renderAll();
+      toast('Referral status refreshed.');
+    }
+
+    function renderAll() {
+      renderHome();
+      renderOpportunities();
+      renderAttendance();
+      renderDashboard();
+      renderMore();
+    }
+
+    document.addEventListener('click', event => {
+      const pageButton = event.target.closest('[data-page]');
+      if (pageButton) goTo(pageButton.dataset.page);
+
+      const filterButton = event.target.closest('[data-filter]');
+      if (filterButton) {
+        activeFilter = filterButton.dataset.filter;
+        renderOpportunities();
+      }
+
+      const registerButton = event.target.closest('[data-register]');
+      if (registerButton) registerOpportunity(registerButton.dataset.register);
+
+      const cancelButton = event.target.closest('[data-cancel]');
+      if (cancelButton) cancelOpportunity(cancelButton.dataset.cancel);
+
+      const trainingButton = event.target.closest('[data-training]');
+      if (trainingButton) registerTraining(trainingButton.dataset.training);
+    });
+
+    document.getElementById('search').addEventListener('input', renderOpportunities);
+    document.getElementById('attForm').addEventListener('submit', submitAttendance);
+    document.getElementById('profile').addEventListener('submit', saveProfile);
+    document.getElementById('sync').addEventListener('click', refreshAttendance);
+    document.getElementById('export').addEventListener('click', exportCsv);
+    document.getElementById('copy').addEventListener('click', copyReferralCode);
+    document.getElementById('referral').addEventListener('click', refreshReferral);
+
+    renderNavigation();
+    renderAll();
+  </script>
+</body>
+</html>
